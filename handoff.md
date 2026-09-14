@@ -3,9 +3,8 @@
 Last updated: 2026-09-15  
 Repository: `/Users/kean/Dev/CatcherAI`  
 Branch / starting commit: `main` / `63e521b`  
-Current phase: Stage 3 (frontend shell and Mission Control) COMPLETE  
-Next stage: Stage 4 — advanced observability (workflow graph, swimlanes, reasoning artifacts,
-decision/provenance explorer, Memory Explorer, Graph Lab)
+Current phase: Stage 4 (advanced observability) COMPLETE
+Next stage: Stage 5 — evaluation and interaction polish
 
 ## Current objective
 
@@ -43,15 +42,10 @@ Read these files completely, in order, before editing:
 10. For historical implementation context, `docs/prompts/02-implementation-kickoff.md`,
     `docs/design/06-eval-results.md` and the remaining design/research documents.
 
-Stage 3's acceptance gate is met (component tests, a browser-launched C02 reaching a live decision,
-keyboard/focus/reduced-motion behavior — see that stage's entry in the history below for exact
-evidence). Do not begin Stage 4 (advanced observability) without first reading
-`frontend/src/` as it stands: `app/` (shell, router, providers, inspector context), `api/` (types,
-client, `useRunStream`), `projections/runProjection.ts`, `features/mission-control/`,
-`features/run-observatory/`. Stage 4 adds a workflow React Flow canvas, swimlanes, specialized
-event inspectors, plan/hypothesis diffs, the full Decision & Provenance explorer, and Memory
-Explorer/Graph Lab — extend the existing `features/` structure and `RunProjection` rather than
-restructuring what Stage 3 built.
+Stage 4's acceptance gate is met; see its stage-history entry for exact evidence. Stage 5 adds
+evaluation/capability navigation, replay controls, deep links, queue visualization and performance
+polish. Continue extending the existing `frontend/src/` feature structure and deterministic
+`RunProjection`; do not move replay or evaluation semantics into React components.
 
 ## Product and UX decision
 
@@ -324,7 +318,7 @@ See the stage history entry below for exactly what was built, the one deliberate
 (hand-rolled SSE parsing instead of `EventSource`), the one real backend bug found and fixed, and
 honest known limitations carried into Stage 4.
 
-### Stage 4 — Advanced observability (NEXT)
+### Stage 4 — Advanced observability: COMPLETE
 
 - Workflow graph, swimlanes and specialized event inspectors.
 - Plans, hypotheses and safe Reasoning Artifacts.
@@ -332,7 +326,7 @@ honest known limitations carried into Stage 4.
 - Memory Explorer and bounded Graph Lab, API and UI.
 - Demonstrate C06 replan, C11 subagents/reopen, C13 wait/policy gap and C12/C12b graph contrast.
 
-### Stage 5 — Evaluation and interaction polish
+### Stage 5 — Evaluation and interaction polish (NEXT)
 
 - Capability matrix and proving-event navigation.
 - Replay seek/speed/filter/bookmark controls, deep links and command palette.
@@ -569,6 +563,46 @@ Before reporting any stage complete:
 - Regenerated `schemas/openapi.json`. Added `data/generated/ui/` to `.gitignore` (per-run copied
   stores and the run registry; never committed).
 - Committed and pushed per the standing authorization below.
+
+### 2026-09-15 — Dispute Observatory Stage 4 advanced observability complete
+
+- Extended the pure frontend `RunProjection` with active/completed workflow nodes, committed
+  edges/back-edges, paired tool and subagent exchanges, versioned plan/hypothesis artifacts,
+  skills, verifier checks and panel events. Added a React Flow workflow canvas, actor swimlanes,
+  safe Reasoning Artifacts, run memory/graph overlays and type-aware event/blob inspection.
+- Expanded Decision & Provenance to show every persisted field path with clickable sequence links
+  and allowlisted source previews. Blob content remains lazy and is already redacted by
+  `EventEmitter.put_blob`; no private chain-of-thought field or fabricated explanation exists.
+- Added Memory Explorer (subject/status/as-of controls and lifecycle metadata) and Graph Lab
+  (operational JSONL graph only, depth 1–3 and 250-node hard cap). Added explicit API routers/read
+  models for memory notes and run operations, bounded case neighborhoods, run graph overlays,
+  allowlisted case/transaction/communication/packet/document/note sources and run-scoped blobs.
+  No endpoint accepts SQL or a filesystem path; ground-truth/simulation data remain unreachable.
+- Added `tests/test_api_stage4.py` and `runProjection.test.ts`. Backend coverage proves memory
+  filtering, source boundaries, graph bounds/referential integrity, isolated-run memory/graph
+  overlays and secret-free blobs; frontend coverage proves deterministic back-edge, verifier,
+  plan and tool-exchange reconstruction.
+- Fixed a Stage 3 projection bug exposed by C13: its mid-run auto-resume suspension emits
+  `termination(final_status="suspended")`, which the old reducer treated as the final end of the
+  run. `RunProjection.terminal` now becomes true only for decided/cancelled/ranked/failed terminal
+  statuses; a regression test covers the suspend → termination → resume prefix.
+- Acceptance traces re-run with the fake evaluator: **5/5 passed**, all hash chains valid and
+  replay reconciled. C06 (`90007`) recorded one replan; C11 (`90012`) recorded subagents,
+  graph query/write, panel and automatic reopen; C12 (`90013`) recorded a positive ring graph
+  write; C12b (`90014`) recorded a negative graph query and no forbidden ring-membership write;
+  C13 (`90015`) recorded wait/resume/clock advance, panel and policy-gap action.
+- Verification: `uv run pytest` — **97 passed, 1 skipped**; `ruff check` and `ruff format --check`
+  clean. Frontend `tsc -b` clean; Vitest **7 passed**; oxlint 0 errors / 3 pre-existing warnings;
+  production build clean at 567 KB JS / 36 KB CSS (gzip 177 KB / 7 KB), with Vite's non-blocking
+  >500 KB chunk warning after React Flow. Five-case fake evaluation above passed 5/5.
+- Known limitations carried into Stage 5: workflow node positions are deterministic but not yet
+  persisted/user-customizable; source preview stays local to the provenance chip instead of
+  deep-linking selection into the URL; Memory Explorer exposes persistent notes while semantic
+  retrieval activity is run-scoped in the Memory & Graph tab; React Flow should be route-split
+  during Stage 5 performance polish; recent-run status still polls and the desktop inspector/nav
+  remain hidden below `lg`; committed Playwright coverage remains Stage 6.
+- Updated README, the authoritative design, OpenAPI and this handoff; committed and pushed per the
+  standing stage-completion authorization.
 
 ### 2026-09-14 — Post-Stage-2 cleanup pass (`/simplify`, then targeted efficiency follow-ups)
 

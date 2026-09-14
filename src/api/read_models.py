@@ -15,15 +15,24 @@ from typing import Any
 
 from api.errors import not_found
 from api.models import (
+    BlobResponse,
     CaseDetail,
     CasePage,
     CaseSummary,
     CommunicationSummary,
     DecisionResponse,
+    GraphEdge,
+    GraphNode,
+    MemoryNoteDetail,
+    MemoryNotePage,
+    MemoryNoteSummary,
+    RunGraphResponse,
+    RunMemoryResponse,
     RunPage,
     RunRef,
     RunStatus,
     RunSummary,
+    SourceResponse,
     TransactionSummary,
 )
 from domain.events import EventEnvelope, event_from_row
@@ -365,3 +374,249 @@ def get_decision(connection: sqlite3.Connection, run_id: str) -> DecisionRespons
         record=json.loads(row["record_json"]),
         field_provenance=json.loads(row["provenance_json"]),
     )
+
+
+def _json_list(value: str | None) -> list[str]:
+    if not value:
+        return []
+    parsed = json.loads(value)
+    return [str(item) for item in parsed] if isinstance(parsed, list) else []
+
+
+def _memory_note(row: sqlite3.Row) -> MemoryNoteSummary:
+    return MemoryNoteSummary(
+        note_id=row["note_id"],
+        kind=row["kind"],
+        scope=row["scope"],
+        subject_ids=_json_list(row["subject_ids"]),
+        content=row["content"],
+        created_at=row["created_at"],
+        created_by=row["created_by"],
+        source_refs=_json_list(row["source_refs"]),
+        confidence=float(row["confidence"]),
+        status=row["status"],
+        valid_from=row["valid_from"] or None,
+        valid_to=row["valid_to"] or None,
+        superseded_by=row["superseded_by"] or None,
+        tags=_json_list(row["tags"]),
+        sensitivity=row["sensitivity"],
+        last_accessed_at=row["last_accessed_at"] or None,
+        access_count=int(row["access_count"] or 0),
+    )
+
+
+def list_memory_notes(
+    connection: sqlite3.Connection,
+    *,
+    subject: str | None,
+    scope: str | None,
+    kind: str | None,
+    tag: str | None,
+    status: str | None,
+    min_confidence: float | None,
+    as_of: str | None,
+    limit: int,
+    cursor: int,
+) -> MemoryNotePage:
+    clauses: list[str] = []
+    params: list[Any] = []
+    for field, value in (("scope", scope), ("kind", kind), ("status", status)):
+        if value:
+            clauses.append(f"{field} = ?")
+            params.append(value)
+    if subject:
+        clauses.append("subject_ids LIKE ?")
+        params.append(f'%"{subject}"%')
+    if tag:
+        clauses.append("tags LIKE ?")
+        params.append(f'%"{tag}"%')
+    if min_confidence is not None:
+        clauses.append("CAST(confidence AS REAL) >= ?")
+        params.append(min_confidence)
+    if as_of:
+        clauses.extend(["valid_from <= ?", "(valid_to IS NULL OR valid_to = '' OR ? < valid_to)"])
+        params.extend([as_of, as_of])
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    rows = connection.execute(
+        f"""SELECT * FROM agent_memory_notes {where}
+            ORDER BY created_at DESC, note_id LIMIT ? OFFSET ?""",
+        [*params, limit + 1, cursor],
+    ).fetchall()
+    return MemoryNotePage(
+        items=[_memory_note(row) for row in rows[:limit]],
+        next_cursor=str(cursor + limit) if len(rows) > limit else None,
+        limit=limit,
+    )
+
+
+def get_memory_note(connection: sqlite3.Connection, note_id: str) -> MemoryNoteDetail:
+    row = connection.execute(
+        "SELECT * FROM agent_memory_notes WHERE note_id=?", (note_id,)
+    ).fetchone()
+    if row is None:
+        raise not_found("memory_note_not_found", f"unknown memory note {note_id}", note_id=note_id)
+    events: list[EventEnvelope] = []
+    if _table_exists(connection, "run_events"):
+        event_rows = connection.execute(
+            """SELECT * FROM run_events WHERE refs_json LIKE ? OR payload_json LIKE ?
+               ORDER BY ts_wall, seq""",
+            (f'%"{note_id}"%', f'%"{note_id}"%'),
+        ).fetchall()
+        events = [event_from_row(event_row) for event_row in event_rows]
+    return MemoryNoteDetail(**_memory_note(row).model_dump(), lifecycle_events=events)
+
+
+_MEMORY_EVENT_TYPES = (
+    "memory_read",
+    "memory_verified",
+    "memory_rejected",
+    "memory_write",
+    "memory_write_skipped",
+    "memory_supersede",
+    "memory_retract",
+    "memory_consolidate",
+    "memory_expire",
+    "memory_purge",
+    "write_rejected",
+)
+
+
+def get_run_memory(connection: sqlite3.Connection, run_id: str) -> RunMemoryResponse:
+    get_run_summary(connection, run_id)
+    placeholders = ",".join("?" for _ in _MEMORY_EVENT_TYPES)
+    rows = connection.execute(
+        f"SELECT * FROM run_events WHERE run_id=? AND type IN ({placeholders}) ORDER BY seq",
+        (run_id, *_MEMORY_EVENT_TYPES),
+    ).fetchall()
+    operations = [event_from_row(row) for row in rows]
+    groups: dict[str, int] = {}
+    for event in operations:
+        store = str(event.payload.get("store", "unspecified"))
+        groups[store] = groups.get(store, 0) + 1
+    return RunMemoryResponse(run_id=run_id, operations=operations, groups=groups)
+
+
+def get_run_graph(connection: sqlite3.Connection, run_id: str) -> RunGraphResponse:
+    get_run_summary(connection, run_id)
+    rows = connection.execute(
+        """SELECT * FROM run_events WHERE run_id=?
+           AND type IN ('graph_query','graph_write') ORDER BY seq""",
+        (run_id,),
+    ).fetchall()
+    operations = [event_from_row(row) for row in rows]
+    nodes: dict[str, GraphNode] = {}
+    edges: list[GraphEdge] = []
+    for event in operations:
+        ids = event.payload.get("node_ids", [])
+        if isinstance(ids, list):
+            for node_id in ids:
+                value = str(node_id)
+                nodes[value] = GraphNode(
+                    id=value,
+                    label=value.split(":", 1)[-1],
+                    kind=value.split(":", 1)[0],
+                    properties={},
+                    source_refs=[value],
+                    event_seqs=[event.seq],
+                )
+        after = event.payload.get("after")
+        if event.type == "graph_write" and isinstance(after, dict):
+            target = str(after.get("node_id", event.payload.get("target_id", "hypothesis")))
+            nodes[target] = GraphNode(
+                id=target,
+                label=str(after.get("kind", target)),
+                kind="Hypothesis",
+                properties=after,
+                source_refs=[str(x) for x in after.get("evidence_refs", [])],
+                event_seqs=[event.seq],
+            )
+            for index, subject in enumerate(after.get("subject_ids", [])):
+                subject_id = str(subject)
+                nodes.setdefault(
+                    subject_id,
+                    GraphNode(
+                        id=subject_id,
+                        label=subject_id.split(":", 1)[-1],
+                        kind=subject_id.split(":", 1)[0],
+                        properties={},
+                        source_refs=[subject_id],
+                        event_seqs=[event.seq],
+                    ),
+                )
+                edges.append(
+                    GraphEdge(
+                        id=f"{target}:{index}",
+                        source=target,
+                        target=subject_id,
+                        label=str(after.get("relationship", "RELATED_TO")),
+                        properties={},
+                        source_refs=[str(x) for x in after.get("evidence_refs", [])],
+                        event_seqs=[event.seq],
+                    )
+                )
+    return RunGraphResponse(
+        run_id=run_id, operations=operations, nodes=list(nodes.values()), edges=edges
+    )
+
+
+def get_blob(connection: sqlite3.Connection, run_id: str, sha256: str) -> BlobResponse:
+    get_run_summary(connection, run_id)
+    digest = sha256.removeprefix("sha256:")
+    row = connection.execute("SELECT * FROM run_blobs WHERE sha256=?", (digest,)).fetchone()
+    if row is None:
+        raise not_found("blob_not_found", f"unknown blob {digest}", sha256=digest)
+    raw = bytes(row["content"])
+    content: Any = (
+        json.loads(raw)
+        if row["media_type"] == "application/json"
+        else raw.decode("utf-8", errors="replace")
+    )
+    return BlobResponse(
+        sha256=digest, media_type=row["media_type"], size_bytes=row["size_bytes"], content=content
+    )
+
+
+def resolve_source(connection: sqlite3.Connection, source_id: str) -> SourceResponse:
+    resolvers: list[tuple[str, str, str, tuple[Any, ...]]] = [
+        ("case", "SELECT * FROM disputes WHERE case_id=?", "case_id", (source_id,)),
+        ("transaction", "SELECT * FROM transactions WHERE txn_id=?", "txn_id", (source_id,)),
+        ("communication", "SELECT * FROM communications WHERE comm_id=?", "comm_id", (source_id,)),
+        (
+            "memory_note",
+            "SELECT * FROM agent_memory_notes WHERE note_id=?",
+            "note_id",
+            (source_id,),
+        ),
+        (
+            "document",
+            "SELECT * FROM documents WHERE doc_id=?",
+            "doc_id",
+            (source_id.split("@", 1)[0],),
+        ),
+        (
+            "evidence_packet",
+            """SELECT packet_id,case_id,txn_id,available_at,json
+               FROM evidence_packet_documents WHERE packet_id=?""",
+            "packet_id",
+            (source_id,),
+        ),
+    ]
+    for kind, sql, title_field, params in resolvers:
+        row = connection.execute(sql, params).fetchone()
+        if row is None:
+            continue
+        data = dict(row)
+        if kind == "evidence_packet":
+            data["document"] = json.loads(data.pop("json"))
+        for key in ("subject_ids", "source_refs", "tags", "meta_json"):
+            if key in data and data[key]:
+                data[key] = json.loads(data[key])
+        related = [source_id]
+        return SourceResponse(
+            source_id=source_id,
+            kind=kind,
+            title=str(data.get(title_field, source_id)),
+            data=data,
+            related_source_ids=related,
+        )
+    raise not_found("source_not_found", f"unknown source {source_id}", source_id=source_id)

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../../api/client'
 import { useRunStream } from '../../api/useRunStream'
@@ -8,6 +8,10 @@ import { projectRun } from '../../projections/runProjection'
 import { DecisionPanel } from './DecisionPanel'
 import { EventTimeline } from './EventTimeline'
 import { MetricsStrip } from './MetricsStrip'
+import { WorkflowCanvas } from './WorkflowCanvas'
+import { ActorSwimlanes } from './ActorSwimlanes'
+import { ReasoningArtifacts } from './ReasoningArtifacts'
+import { MemoryGraphOverlay } from './MemoryGraphOverlay'
 
 const TERMINAL = new Set(['decided', 'cancelled', 'failed', 'ranked'])
 
@@ -18,6 +22,7 @@ export function RunObservatoryPage() {
 
   const { events, status: streamStatus } = useRunStream(runId ?? null)
   const projection = useMemo(() => projectRun(events), [events])
+  const [view, setView] = useState<'timeline' | 'swimlanes' | 'artifacts' | 'memory'>('timeline')
 
   const runQuery = useQuery({
     queryKey: ['run', runId],
@@ -85,8 +90,15 @@ export function RunObservatoryPage() {
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <EventTimeline events={events} />
-        {canDecide && <DecisionPanel runId={runId} />}
+        <WorkflowCanvas projection={projection} />
+        <div className="sticky top-0 z-10 flex border-b border-border bg-surface-1 px-3">
+          {(['timeline', 'swimlanes', 'artifacts', 'memory'] as const).map((item) => <button key={item} type="button" onClick={() => setView(item)} className={`border-b-2 px-3 py-2 text-xs capitalize ${view === item ? 'border-cyan text-cyan' : 'border-transparent text-ink-muted'}`}>{item === 'artifacts' ? 'Reasoning artifacts' : item === 'memory' ? 'Memory & graph' : item}</button>)}
+        </div>
+        {view === 'timeline' && <EventTimeline events={events} />}
+        {view === 'swimlanes' && <div className="overflow-x-auto"><ActorSwimlanes events={events} /></div>}
+        {view === 'artifacts' && <ReasoningArtifacts projection={projection} />}
+        {view === 'memory' && <MemoryGraphOverlay runId={runId} />}
+        {canDecide && <DecisionPanel runId={runId} events={events} />}
       </div>
 
       <MetricsStrip projection={projection} streamStatus={streamStatus} />

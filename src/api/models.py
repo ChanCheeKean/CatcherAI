@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from domain.events import EventEnvelope
 
@@ -179,3 +179,86 @@ class QueueRunResponse(BaseModel):
     run_id: str
     status: RunStatus
     ranking: list[dict[str, Any]] | None
+
+
+class MemoryNoteSummary(BaseModel):
+    note_id: str
+    kind: str
+    scope: str
+    subject_ids: list[str]
+    content: str
+    created_at: str
+    created_by: str
+    source_refs: list[str]
+    confidence: float
+    status: str
+    valid_from: str | None
+    valid_to: str | None
+    superseded_by: str | None
+    tags: list[str]
+    sensitivity: str
+    last_accessed_at: str | None
+    access_count: int
+
+
+class MemoryNotePage(BaseModel):
+    items: list[MemoryNoteSummary]
+    next_cursor: str | None
+    limit: int
+
+
+class MemoryNoteDetail(MemoryNoteSummary):
+    lifecycle_events: list[EventEnvelope]
+
+
+class RunMemoryResponse(BaseModel):
+    run_id: str
+    operations: list[EventEnvelope]
+    groups: dict[str, int]
+
+
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    kind: str
+    properties: dict[str, Any]
+    source_refs: list[str]
+    event_seqs: list[int] = Field(default_factory=list)
+
+
+class GraphEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+    label: str
+    properties: dict[str, Any]
+    source_refs: list[str]
+    event_seqs: list[int] = Field(default_factory=list)
+
+
+class GraphResponse(BaseModel):
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+    legend: dict[str, str]
+
+
+class RunGraphResponse(BaseModel):
+    run_id: str
+    operations: list[EventEnvelope]
+    nodes: list[GraphNode]
+    edges: list[GraphEdge]
+
+
+class SourceResponse(BaseModel):
+    source_id: str
+    kind: str
+    title: str
+    data: dict[str, Any]
+    related_source_ids: list[str]
+
+
+class BlobResponse(BaseModel):
+    sha256: str
+    media_type: str
+    size_bytes: int
+    content: Any

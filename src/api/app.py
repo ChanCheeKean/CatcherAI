@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from api.constants import API_PREFIX
 from api.dependencies import load_config_state
 from api.errors import ApiError, api_error_handler
-from api.routers import cases, meta, queue, runs
+from api.routers import cases, graph, memory, meta, queue, runs, sources
 from api.run_manager import RunManager
 
 
@@ -42,6 +42,9 @@ def create_app(root: Path, db_path: Path | None = None, ui_dir: Path | None = No
     app.include_router(cases.router, prefix=API_PREFIX)
     app.include_router(runs.router, prefix=API_PREFIX)
     app.include_router(queue.router, prefix=API_PREFIX)
+    app.include_router(memory.router, prefix=API_PREFIX)
+    app.include_router(graph.router, prefix=API_PREFIX)
+    app.include_router(sources.router, prefix=API_PREFIX)
     return app
 
 

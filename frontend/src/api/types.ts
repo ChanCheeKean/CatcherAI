@@ -201,6 +201,35 @@ export interface QueueRunResponse {
   ranking: Array<Record<string, unknown>> | null
 }
 
+export interface MemoryNote {
+  note_id: string
+  kind: string
+  scope: string
+  subject_ids: string[]
+  content: string
+  created_at: string
+  created_by: string
+  source_refs: string[]
+  confidence: number
+  status: string
+  valid_from: string | null
+  valid_to: string | null
+  superseded_by: string | null
+  tags: string[]
+  sensitivity: string
+  last_accessed_at: string | null
+  access_count: number
+}
+
+export interface MemoryNotePage { items: MemoryNote[]; next_cursor: string | null; limit: number }
+export interface RunMemoryResponse { run_id: string; operations: EventEnvelope[]; groups: Record<string, number> }
+export interface GraphNode { id: string; label: string; kind: string; properties: Record<string, unknown>; source_refs: string[]; event_seqs: number[] }
+export interface GraphEdge { id: string; source: string; target: string; label: string; properties: Record<string, unknown>; source_refs: string[]; event_seqs: number[] }
+export interface GraphResponse { nodes: GraphNode[]; edges: GraphEdge[]; legend: Record<string, string> }
+export interface RunGraphResponse { run_id: string; operations: EventEnvelope[]; nodes: GraphNode[]; edges: GraphEdge[] }
+export interface SourceResponse { source_id: string; kind: string; title: string; data: Record<string, unknown>; related_source_ids: string[] }
+export interface BlobResponse { sha256: string; media_type: string; size_bytes: number; content: unknown }
+
 export interface ApiErrorBody {
   error: { code: string; message: string; details: Record<string, unknown> }
 }

@@ -592,7 +592,7 @@ Known limitations carried into Stage 4 (honest, not blocking):
 - No Playwright test is committed yet (planned for Stage 6, per this design's own staging); Stage 3
   acceptance was met by manual Playwright-driven verification instead, not skipped.
 
-### Stage 4 — Advanced observability
+### Stage 4 — Advanced observability: COMPLETE (2026-09-15)
 
 Deliver:
 
@@ -609,6 +609,15 @@ Acceptance:
 - C11 shows three specialists, shared-address graph evidence, panel and automatic reopening.
 - C13 shows provider wait/resume, condition evaluation and policy-gap write.
 - C12/C12b demonstrate positive and negative graph-memory writes without invented nodes.
+
+Delivered as a presentation-only extension of Stage 3: the run projection now reconstructs active
+and completed workflow nodes, committed edges/back-edges, paired tool/subagent exchanges, plans,
+hypotheses, verifier checks and panel artifacts. The live run page adds React Flow workflow,
+swimlane, Reasoning Artifacts, run memory/graph overlay, specialized inspector/blob loading and
+field provenance views. Memory Explorer and Graph Lab use new bounded read models and explicit
+source/blob resolvers. Graph Lab loads only the generated operational graph at depth 1–3 (250-node
+hard cap); it never manufactures inferred entities. See `handoff.md` for exact tests, acceptance
+case evidence and limitations.
 
 ### Stage 5 — Evaluation and interaction polish
 

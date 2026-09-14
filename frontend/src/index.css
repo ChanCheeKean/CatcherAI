@@ -76,3 +76,17 @@ body {
 .animate-pulse-edge {
   animation: pulse-edge 1.6s ease-in-out infinite;
 }
+
+.observatory-node {
+  width: 150px !important;
+  border: 1px solid var(--color-border-strong) !important;
+  border-radius: 7px !important;
+  background: var(--color-surface-2) !important;
+  color: var(--color-ink-muted) !important;
+  font: 11px var(--font-mono) !important;
+}
+
+.observatory-node.is-complete { border-color: color-mix(in srgb, var(--color-emerald) 55%, transparent) !important; color: var(--color-emerald) !important; }
+.observatory-node.is-active { border-color: var(--color-cyan) !important; color: var(--color-cyan) !important; box-shadow: 0 0 18px color-mix(in srgb, var(--color-cyan) 25%, transparent); }
+.react-flow__edge.is-back-edge path { stroke-dasharray: 5 4; }
+.react-flow__controls button { background: var(--color-surface-2); border-color: var(--color-border); fill: var(--color-ink-muted); }

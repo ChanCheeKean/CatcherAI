@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../api/client'
+import { useInspector } from '../../app/InspectorContext'
+import type { EventEnvelope } from '../../api/types'
+import { SourceChip } from '../../components/SourceChip'
 
 function formatMoney(amount: unknown): string {
   const value = Number(amount)
@@ -11,7 +14,8 @@ function formatMoney(amount: unknown): string {
  * show "reached a decision live." The full field-provenance explorer (event_seqs/source_ids per
  * field, clickable evidence trail) is Stage 4 scope per the design doc §3.3.
  */
-export function DecisionPanel({ runId }: { runId: string }) {
+export function DecisionPanel({ runId, events }: { runId: string; events: EventEnvelope[] }) {
+  const { select } = useInspector()
   const decisionQuery = useQuery({
     queryKey: ['decision', runId],
     queryFn: () => api.getRunDecision(runId),
@@ -28,6 +32,7 @@ export function DecisionPanel({ runId }: { runId: string }) {
   const cardholder = record.cardholder_resolution as Record<string, unknown> | undefined
   const networkActions = (record.network_actions as Array<Record<string, unknown>>) ?? []
   const confidence = Number(record.confidence ?? 0)
+  const provenance = decisionQuery.data.field_provenance as Record<string, { event_seqs?: number[]; source_ids?: string[] }>
 
   return (
     <div className="grid grid-cols-1 gap-4 border-t border-border bg-surface-1 p-4 sm:grid-cols-2">
@@ -69,6 +74,15 @@ export function DecisionPanel({ runId }: { runId: string }) {
         <p className="mt-1 text-xs text-ink-faint">
           confidence {confidence.toFixed(2)} · claim family {String(record.claim_family ?? '—')}
         </p>
+      </div>
+      <div className="sm:col-span-2 rounded-lg border border-border bg-surface-2 p-3">
+        <h3 className="text-xs font-medium text-ink-faint">Field provenance</h3>
+        <div className="mt-2 max-h-64 overflow-auto">
+          {Object.entries(provenance).map(([path, refs]) => <div key={path} className="grid grid-cols-[minmax(180px,1fr)_2fr] gap-2 border-t border-border py-2 text-xs">
+            <span className="break-all font-mono text-ink-muted">{path}</span>
+            <span className="flex flex-wrap gap-1">{refs.event_seqs?.map((seq) => <button key={seq} type="button" className="rounded bg-surface-3 px-1.5 py-0.5 font-mono text-cyan" onClick={() => { const event = events.find((item) => item.seq === seq); if (event) select(event) }}>seq {seq}</button>)}{refs.source_ids?.map((id) => <SourceChip key={id} sourceId={id} />)}</span>
+          </div>)}
+        </div>
       </div>
     </div>
   )

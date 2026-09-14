@@ -111,7 +111,7 @@ variants that rename merchants, the agentic provider and customers and reword in
 It compares decision semantics and verifies each event hash chain, catching logic that accidentally
 depends on an authored display name rather than operational data.
 
-### Dispute Observatory API (Stage 2: execution manager + live SSE stream)
+### Dispute Observatory API (Stage 4: advanced observability)
 
 A FastAPI presentation adapter (`src/api/`) exposes the SQLite trajectory store and can now start,
 cancel, and rerun fake-adapter runs itself. It still never mutates the pristine
@@ -136,7 +136,10 @@ Read endpoints: `/api/v1/health`, `/meta`, `/meta/routes`, `/meta/agents`, `/met
 `/meta/workflow`, `/schema/events`, `/cases` (paged/filterable), `/cases/{case_id}`,
 `/runs` (paged/filterable by `case_id`/`status`, merged across every store the API knows about),
 `/runs/{run_id}`, `/runs/{run_id}/events` (paged/filtered by `after_seq`/`type`/`actor`/`ref`), and
-`/runs/{run_id}/decision`.
+`/runs/{run_id}/decision`, `/runs/{run_id}/memory`, `/runs/{run_id}/graph`,
+`/runs/{run_id}/blobs/{sha256}`, `/memory/notes`, `/memory/notes/{note_id}`,
+`/graph/cases/{case_id}` (bounded to depth 1–3), and `/sources/{source_id}` (an explicit
+allowlist of operational source kinds; never an arbitrary path or query).
 
 Execution endpoints, all under `/api/v1`:
 
@@ -152,12 +155,13 @@ Execution endpoints, all under `/api/v1`:
 See [`docs/design/07-observability-console.md`](docs/design/07-observability-console.md) for the
 full staged plan and `handoff.md` for exact current status and honest Stage 2 limitations.
 
-### Dispute Observatory frontend (Stage 3: shell and Mission Control)
+### Dispute Observatory frontend (Stage 4: advanced observability)
 
 A React + TypeScript + Vite app in `frontend/` gives Mission Control (case browser, filters, run
-launcher, Q01 queue launcher, recent runs) and a basic live Run Observatory (ordered event
-timeline, an inspector for the selected event, a metrics strip and the cardholder/network decision
-once a run reaches one). There is no combined launcher script yet (Stage 6); run the API and the
+launcher, Q01 queue launcher, recent runs), a live Run Observatory (workflow graph, timeline and
+actor swimlanes, safe Reasoning Artifacts, specialized event/blob inspection, run memory/graph
+overlays, metrics and field-level decision provenance), plus standalone Memory Explorer and
+bounded Graph Lab views. There is no combined launcher script yet (Stage 6); run the API and the
 dev server in two terminals:
 
 ```bash
@@ -169,8 +173,8 @@ Vite proxies `/api` to `http://127.0.0.1:8000`, so the frontend never needs a ba
 commands: `npm run dev`, `npm run build` (`tsc -b && vite build`), `npm run test` (Vitest +
 React Testing Library), `npm run lint` (`oxlint`).
 
-Advanced observability (workflow graph, swimlanes, memory/graph explorers, evaluation view) and
-the one-command combined launcher are later stages; see
+Evaluation/capability navigation and playback polish are Stage 5; the one-command combined
+launcher is Stage 6. See
 [`docs/design/07-observability-console.md`](docs/design/07-observability-console.md).
 
 ### How the runtime is organized

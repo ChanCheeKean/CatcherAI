@@ -13,6 +13,12 @@ import type {
   RunStartResponse,
   RunSummary,
   WorkflowGraph,
+  MemoryNotePage,
+  RunMemoryResponse,
+  GraphResponse,
+  RunGraphResponse,
+  SourceResponse,
+  BlobResponse,
 } from './types'
 
 const API_PREFIX = '/api/v1'
@@ -97,6 +103,12 @@ export const api = {
     ),
   getRunDecision: (runId: string) =>
     request<DecisionResponse>(`/runs/${encodeURIComponent(runId)}/decision`),
+  getRunMemory: (runId: string) => request<RunMemoryResponse>(`/runs/${encodeURIComponent(runId)}/memory`),
+  getRunGraph: (runId: string) => request<RunGraphResponse>(`/runs/${encodeURIComponent(runId)}/graph`),
+  getBlob: (runId: string, sha256: string) => request<BlobResponse>(`/runs/${encodeURIComponent(runId)}/blobs/${encodeURIComponent(sha256.replace('sha256:', ''))}`),
+  listMemoryNotes: (params: { subject?: string; scope?: string; kind?: string; tag?: string; status?: string; min_confidence?: number; as_of?: string; limit?: number } = {}) => request<MemoryNotePage>(`/memory/notes${query(params)}`),
+  getCaseGraph: (caseId: string, depth = 2) => request<GraphResponse>(`/graph/cases/${encodeURIComponent(caseId)}${query({ depth })}`),
+  getSource: (sourceId: string) => request<SourceResponse>(`/sources/${encodeURIComponent(sourceId)}`),
 
   startQueueRun: (adapter: Adapter) =>
     request<RunStartResponse>('/queue/runs', {
