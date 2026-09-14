@@ -157,13 +157,18 @@ _TERMINAL_STATUS_BY_FINAL_STATUS: dict[str, RunStatus] = {
     "suspended": "suspended",
     "cancelled": "cancelled",
     "decided": "decided",
+    "ranked": "ranked",
 }
 
 
-def _derive_status(connection: sqlite3.Connection, run_id: str) -> RunStatus:
+def derive_status(connection: sqlite3.Connection, run_id: str) -> RunStatus:
     """A run's terminal state is marked by its latest `error` or `termination` event, which may
     not be the very last committed row: `terminate` also emits a trailing `run_completed` event,
-    and the checkpointer wrapper commits `checkpoint_saved` after that."""
+    and the checkpointer wrapper commits `checkpoint_saved` after that. A run that suspends and
+    auto-resumes internally (§4.4) emits one `termination` per segment, so only the *latest* one
+    reflects where the run currently stands; SSE streaming (`api/sse.py`) additionally consults
+    whether the driving task itself is still alive before treating a mid-run "suspended" reading
+    as the end of the stream."""
 
     row = connection.execute(
         """SELECT type, payload_json FROM run_events
@@ -205,7 +210,7 @@ def _runs_for_cases(connection: sqlite3.Connection, case_ids: list[str] | None) 
             "SELECT ts_wall, ts_virtual FROM run_events WHERE run_id = ? AND seq = ?",
             (row["run_id"], row["last_seq"]),
         ).fetchone()
-        status = _derive_status(connection, row["run_id"])
+        status = derive_status(connection, row["run_id"])
         wait = None
         if status == "suspended":
             wait_row = connection.execute(
@@ -241,14 +246,23 @@ def _runs_for_cases(connection: sqlite3.Connection, case_ids: list[str] | None) 
 
 
 def list_runs(
-    connection: sqlite3.Connection,
+    connections: list[sqlite3.Connection],
     *,
     case_id: str | None,
     status: str | None,
     limit: int,
     cursor: int,
 ) -> RunPage:
-    runs = _runs_for_cases(connection, [case_id] if case_id else None)
+    """Merge runs across every store the API currently knows about (§4.1, Stage 2 decision): the
+    configured default store plus every isolated UI-run workspace in the durable run registry."""
+
+    by_run_id: dict[str, RunSummary] = {}
+    for connection in connections:
+        for run in _runs_for_cases(connection, [case_id] if case_id else None):
+            by_run_id.setdefault(run.run_id, run)
+    runs = sorted(
+        by_run_id.values(), key=lambda run: (run.last_event_at or "", run.last_seq), reverse=True
+    )
     if status:
         runs = [run for run in runs if run.status == status]
     window = runs[cursor : cursor + limit + 1]

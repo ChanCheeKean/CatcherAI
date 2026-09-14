@@ -111,11 +111,13 @@ variants that rename merchants, the agentic provider and customers and reword in
 It compares decision semantics and verifies each event hash chain, catching logic that accidentally
 depends on an authored display name rather than operational data.
 
-### Dispute Observatory API (read-only, Stage 1)
+### Dispute Observatory API (Stage 2: execution manager + live SSE stream)
 
-A FastAPI presentation adapter (`src/api/`) exposes the same SQLite trajectory store read-only,
-for the planned frontend console. It never runs a case itself and never mutates the store it reads;
-point it at a copy (as `catcher run --db` does) to browse a store that already has runs in it.
+A FastAPI presentation adapter (`src/api/`) exposes the SQLite trajectory store and can now start,
+cancel, and rerun fake-adapter runs itself. It still never mutates the pristine
+`data/generated/catcher.sqlite`: every API-started run gets its own copied store and checkpoint
+file under `data/generated/ui/` (`RunManager` in `src/api/run_manager.py`), tracked in a small
+durable registry so run history and store routing survive an API restart.
 
 ```bash
 uv sync --extra dev --extra graph --extra api
@@ -130,13 +132,25 @@ json.dump(create_app(Path('.').resolve()).openapi(), open('schemas/openapi.json'
 "
 ```
 
-Endpoints: `/api/v1/health`, `/meta`, `/meta/routes`, `/meta/agents`, `/meta/skills`,
+Read endpoints: `/api/v1/health`, `/meta`, `/meta/routes`, `/meta/agents`, `/meta/skills`,
 `/meta/workflow`, `/schema/events`, `/cases` (paged/filterable), `/cases/{case_id}`,
-`/runs` (paged/filterable by `case_id`/`status`), `/runs/{run_id}`,
-`/runs/{run_id}/events` (paged/filtered by `after_seq`/`type`/`actor`/`ref`), and
-`/runs/{run_id}/decision`. There is no execution manager or live stream yet — see
-[`docs/design/07-observability-console.md`](docs/design/07-observability-console.md) for the full
-staged plan, and `handoff.md` for exact current status.
+`/runs` (paged/filterable by `case_id`/`status`, merged across every store the API knows about),
+`/runs/{run_id}`, `/runs/{run_id}/events` (paged/filtered by `after_seq`/`type`/`actor`/`ref`), and
+`/runs/{run_id}/decision`.
+
+Execution endpoints, all under `/api/v1`:
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/runs` | `{case_id, adapter, auto_resume}`; `202` with `run_id`/`events_url`/`stream_url` immediately |
+| POST | `/runs/{run_id}/cancel` | cancels an active run this API process started; a no-op on an already-finished one |
+| POST | `/runs/{run_id}/rerun` | fresh isolated run with the same case/adapter/auto_resume, a new `run_id` |
+| GET | `/runs/{run_id}/events/stream` | ordered, reconnectable SSE (`Last-Event-ID`/`after_seq`); closes once the run is done and every committed row has been sent |
+| POST | `/queue/runs` | runs Q01 (the portfolio queue) asynchronously the same way |
+| GET | `/queue/runs/{run_id}` | run status plus the full ranking once available |
+
+See [`docs/design/07-observability-console.md`](docs/design/07-observability-console.md) for the
+full staged plan and `handoff.md` for exact current status and honest Stage 2 limitations.
 
 ### How the runtime is organized
 

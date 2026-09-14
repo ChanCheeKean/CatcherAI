@@ -2,10 +2,9 @@
 
 Last updated: 2026-09-14  
 Repository: `/Users/kean/Dev/CatcherAI`  
-Branch / starting commit: `main` / `795e5ff` (still uncommitted; see below)  
-Current phase: Stage 1 (read-only FastAPI foundation) COMPLETE; no frontend yet, no execution
-manager or live stream yet  
-Next stage: Stage 2 — execution manager and live SSE stream
+Branch / starting commit: `main` / `d993fe3`  
+Current phase: Stage 2 (execution manager + live SSE stream) COMPLETE; no frontend yet  
+Next stage: Stage 3 — frontend shell and Mission Control
 
 ## Current objective
 
@@ -24,24 +23,29 @@ Read these files completely, in order, before editing:
 
 1. `docs/prompts/03-observability-console-kickoff.md` — implementation rules for the new initiative.
 2. `docs/design/07-observability-console.md` — authoritative UX, API/SSE contract, architecture,
-   source layout, six stages and acceptance gates (Stage 1's entry now reflects what was built).
-3. `README.md` — current working commands, including the new "Dispute Observatory API" section.
+   source layout, six stages and acceptance gates (Stage 1 and Stage 2's entries now reflect what
+   was actually built).
+3. `README.md` — current working commands, including the "Dispute Observatory API" section
+   (execution endpoints table added in Stage 2).
 4. `docs/design/05-agent-architecture.md` — runtime boundaries and automation constraints.
 5. `docs/design/03-data-dictionary.md` — data stores, joins and private-data boundaries.
 6. `schemas/trajectory-event.schema.json` and `src/domain/events.py` — canonical frontend event.
 7. `src/observability/emitter.py`, `src/replay.py`, `src/decisions.py` — event persistence, replay,
    blobs, hash chains and decision provenance.
-8. `src/runtime/langgraph_runtime.py`, `src/bootstrap.py`, `src/cli.py` — lifecycle methods Stage 2's
-   execution manager must wrap rather than duplicate (`start`/`result`/`resume`/`cancel`/`events`).
-9. `src/api/app.py`, `src/api/dependencies.py`, `src/api/read_models.py` — the Stage 1 foundation
-   Stage 2 extends: read this before adding `RunManager`, start/cancel/rerun endpoints or SSE, so
-   the isolated-store registry replaces the single-`db_path` shortcut cleanly instead of alongside it.
+8. `src/runtime/langgraph_runtime.py`, `src/bootstrap.py`, `src/cli.py` — lifecycle methods
+   `src/api/run_manager.py` wraps rather than duplicates (`start`/`result`/`resume`/`cancel`/
+   `events`, plus the new `is_done`).
+9. `src/api/run_manager.py`, `src/api/sse.py`, `src/api/dependencies.py`, `src/api/read_models.py`
+   — the Stage 2 execution/streaming layer Stage 3's frontend will call against. Read this before
+   adding any memory/graph/source router or touching run lifecycle: the isolated-store registry has
+   already replaced Stage 1's single-`db_path` shortcut; extend it rather than re-adding a shortcut.
 10. For historical implementation context, `docs/prompts/02-implementation-kickoff.md`,
     `docs/design/06-eval-results.md` and the remaining design/research documents.
 
-Do not begin Stage 3 (frontend) or add execution/SSE code casually — Stage 2's own acceptance gate
-(concurrency-safe start/cancel/rerun, gap-free reconnectable SSE, pristine-store isolation tests)
-must pass first.
+Do not begin Stage 4 (advanced observability) or add graph/memory/source routers casually — Stage
+3's own acceptance gate (component tests, a browser-launched C02 reaching a live decision, keyboard/
+focus/reduced-motion behavior) must pass first, and Stage 3 is a separate `frontend/` TypeScript
+app that this backend-only session has not scaffolded yet.
 
 ## Product and UX decision
 
@@ -96,16 +100,19 @@ The final launcher is `scripts/dev.sh`, optionally with root `dev.sh` as a conve
 ### Critical API decisions
 
 - `POST /api/v1/runs` creates an isolated store, starts `LangGraphRuntime.start()` in a background
-  task and immediately returns `202` with the run ID and stream URL.
+  task and immediately returns `202` with the run ID and stream URL. **Built in Stage 2.**
 - `GET /api/v1/runs/{run_id}/events/stream` sends complete canonical events, SSE `id=seq`, honors
-  `Last-Event-ID`, emits heartbeats and closes after the terminal suffix is committed.
-- A small durable UI registry maps run IDs to isolated store paths/status so history survives API
-  reloads.
-- Initial SSE should tail committed SQLite rows. It works for live, replay and reloaded API processes;
-  in-process `EventEmitter.subscribe()` may be an optimization later.
+  `Last-Event-ID`, emits heartbeats and closes after the terminal suffix is committed. **Built in
+  Stage 2** (`src/api/sse.py`); see that stage's handoff entry below for the one non-obvious
+  correctness problem it had to solve (a run can emit more than one `termination` event).
+- A small durable UI registry (`data/generated/ui/registry.sqlite`) maps run IDs to isolated store
+  paths/status so history survives API reloads. **Built in Stage 2** (`src/api/run_manager.py`).
+- SSE tails committed SQLite rows rather than subscribing to the in-process `EventEmitter`, exactly
+  as planned — it works for live, replay and reloaded API processes uniformly. **Built in Stage 2.**
 - Memory, graph and source endpoints are explicit read models/resolvers. Never accept arbitrary SQL
-  or filesystem paths.
+  or filesystem paths. **Not yet built** — planned for Stage 4.
 - The browser never receives `OPENAI_API_KEY`; it only sees whether the OpenAI adapter is available.
+  Verified again in Stage 2 (the same `test_meta_never_returns_the_openai_key` test from Stage 1).
 
 Full endpoint tables and response behavior are in `docs/design/07-observability-console.md` §5.
 
@@ -232,14 +239,77 @@ Known limitations carried into Stage 2 (honest, not blocking):
 - `/health`'s `graph_available` reports whether the `ladybug` package is importable, not whether a
   specific store's graph file loaded successfully; the runtime always has a NetworkX fallback.
 
-### Stage 2 — Execution manager and live stream
+### Stage 2 — Execution manager and live stream: COMPLETE
 
-- Isolated UI workspaces, durable run registry and background runtime tasks.
-- Start/status/cancel/rerun and Q01 endpoints.
-- Ordered reconnectable SSE with heartbeat and terminal close.
-- Simultaneous-run, reconnect, no-gap/no-duplicate and pristine-store tests.
+Delivered exactly the planned scope:
 
-### Stage 3 — Frontend shell and Mission Control
+- `src/api/run_manager.py` — `RunManager`: one copied store + `LangGraphRuntime` per UI-started run
+  under `data/generated/ui/`, plus a durable SQLite registry (`data/generated/ui/registry.sqlite`)
+  mapping `run_id -> {store_path, case_id, kind, adapter, auto_resume}` so run history and store
+  routing survive an API restart. Live runtime/task objects (for `cancel()` and for knowing whether
+  a run's own task is still alive) exist only in this process's memory.
+- `POST /runs`, `POST /runs/{run_id}/cancel`, `POST /runs/{run_id}/rerun`, `POST /queue/runs`,
+  `GET /queue/runs/{run_id}` (`src/api/routers/runs.py`, `src/api/routers/queue.py`).
+  `runtime.portfolio.rank_portfolio` gained an optional `run_id` parameter, backward compatible
+  with the CLI's `queue` command, so the API can know a queue run's ID before ranking finishes.
+- `GET /runs/{run_id}/events/stream` (`src/api/sse.py`) — polls the run's SQLite store (per the
+  design's own guidance), using `sse_starlette.EventSourceResponse`'s `ping=15` for heartbeats and
+  `Last-Event-ID`/`after_seq` for gap-free reconnect.
+- `src/api/dependencies.py` gained `get_run_manager`, `get_run_connection` (routes a single run to
+  its store via the registry, falling back to the app's configured store for Stage-1-style direct
+  runs) and `get_all_connections` (every known store, for `GET /runs`'s cross-store merge).
+- `tests/test_api_stage2.py` — 8 tests using `httpx.AsyncClient` over an in-process ASGI transport.
+
+**One real bug found and fixed, worth knowing before touching this code**: a run that suspends and
+auto-resumes *internally* (an evidence wait mid-investigation, not just the run's true end) emits
+one `termination` event **per segment**, not only at the very end — `prepare_wait`'s `_suspend()`
+helper in `langgraph_runtime.py` emits it unconditionally, then loops back into the graph when
+`auto_resume=True`. Naively closing the SSE stream on the first `termination` event truncates a
+live multi-wait run. Fixed with `LangGraphRuntime.is_done(run_id)` / `RunManager.is_task_done`,
+which report whether *this process's own asyncio task* for that run has actually finished — true
+exactly once, when no more events can ever be appended by it. `api/sse.py` only falls back to the
+persisted latest-`termination`/`error` status (safe, because nothing more will ever be written) for
+a run this process doesn't manage (historical, or started by a different process).
+
+A second, smaller fix: mixing an `async def` endpoint with a plain sync generator dependency made
+FastAPI resolve the dependency in a worker thread while the endpoint body ran on the event loop
+thread — `sqlite3` connections are thread-affine, so this crashed with `ProgrammingError`. Fixed by
+making `get_run_connection`/`get_all_connections` async generators and every run-lifecycle endpoint
+`async def`, so connection creation and use always happen on the same thread.
+
+Verified commands and results:
+
+```bash
+uv run pytest                        # 94 passed, 1 skipped (was 86/1)
+uv run ruff check src tests          # All checks passed!
+uv run ruff format --check src tests # 99 files already formatted
+```
+
+Live `curl`/manual acceptance against a temporary `uvicorn` process (not a committed script):
+started a case run (`202` immediately), streamed it via `curl -N .../events/stream` from seq 1
+to `termination`, started and cancelled a second run, reran the first, started and drained a Q01
+queue run (95 open cases ranked, rank 1 shown), listed `GET /runs` merged across stores, and
+confirmed via `git status`/sha256 that `data/generated/catcher.sqlite` was byte-identical before
+and after every one of those API calls.
+
+Known limitations carried into Stage 3 (honest, not blocking):
+
+- Cancel and SSE liveness both key off this process's in-memory `RunManager`; a run started by a
+  different API process (or before a restart) can still be inspected/replayed but not cancelled
+  from this process, and its stream closes via the persisted-status heuristic rather than true
+  liveness. This matches the design's own scoping note that `LangGraphRuntime` keeps active
+  tasks/emitters in-process.
+- `GET /queue/runs/{run_id}`'s ranking is cached in `RunManager` memory only (not persisted); it is
+  lost on an API restart, though the run's own events (including `portfolio_ranked`) are not.
+- No dedicated test forces a failure *after* a large event prefix has already streamed (only an
+  immediate bad-`case_id` failure, and a cancel-race test); prefix retention is structural (append-
+  only, hash-chained SQLite) rather than something this stage's tests needed to prove separately.
+- There is still no `POST /runs/{run_id}/resume` endpoint (it was never in the design's Stage 2
+  table); a genuinely suspended (`auto_resume=false`) run stays suspended until resumed some other
+  way (CLI `catcher resume`).
+- Memory, graph and source read models/routers do not exist yet — planned for Stage 4.
+
+### Stage 3 — Frontend shell and Mission Control (NEXT)
 
 - Vite React/TypeScript/Tailwind app and responsive three-pane shell.
 - Typed REST client, TanStack Query and SSE hook.
@@ -297,41 +367,44 @@ Material backend entry points:
 | Entity graph | `src/memory/graph.py` |
 | Existing lifecycle commands | `src/cli.py` |
 | Event schema | `src/domain/events.py`, `schemas/trajectory-event.schema.json` |
+| API read-only foundation (Stage 1) | `src/api/app.py`, `src/api/dependencies.py`, `src/api/models.py`, `src/api/read_models.py`, `src/api/routers/{meta,cases}.py` |
+| API execution manager + SSE (Stage 2) | `src/api/run_manager.py`, `src/api/sse.py`, `src/api/routers/{runs,queue}.py` |
 
 ## Last verified baseline
 
-Verified at the end of Stage 1 (this stage):
+Verified at the end of Stage 2 (this stage):
 
-- `uv sync --extra dev --extra graph --extra api` — resolves cleanly; adds `fastapi`, `uvicorn`,
-  `sse-starlette` (runtime `api` extra) and `httpx` (test-only, for `fastapi.testclient`).
-- `uv run pytest` — **86 passed, 1 skipped**, 1 deprecation warning from `starlette.testclient`
-  (an upstream `anyio` alias notice, not our code). The 8 new tests live in `tests/test_api.py`;
-  the prior 78/1 backend baseline is unchanged and still green.
+- `uv run pytest` — **94 passed, 1 skipped** (was 86/1), 1 deprecation warning from
+  `starlette.testclient` (an upstream `anyio` alias notice, not our code). The 8 new tests live in
+  `tests/test_api_stage2.py`; every Stage 1 test (`tests/test_api.py`) and the prior backend
+  baseline are unchanged and still green.
 - `uv run ruff check src tests` — all checks passed. `uv run ruff format --check src tests` — all
-  94 files already formatted.
-- Live `curl` acceptance against a temporary `uvicorn` process, described above under Stage 1.
-- Pristine `data/generated/catcher.sqlite` confirmed unmodified by any API read (no `run_events` or
-  `decision_records` table present in it; the API only ever opens `mode=ro` connections and Stage 1
-  has no write path at all).
+  99 files already formatted.
+- Live `curl`/manual acceptance against a temporary `uvicorn` process, described above under
+  Stage 2.
+- Pristine `data/generated/catcher.sqlite` confirmed unmodified (sha256 identical before/after) by
+  every API-started run in both the automated tests and the manual live-server session, including
+  a run that fails immediately on an unknown case ID.
 
 Not re-verified this stage (unchanged since the prior baseline, still assumed good):
 
 - All 20 routes × 3 presentation perturbations, full fake evaluation (21/21), Q01 metrics,
   `data/generator/validate.py` (401/401), the real-OpenAI smoke tests, and the built wheel. Rerun
-  these before a demo if the runtime/domain code changes; Stage 1 touched only `src/api/` and
-  added `tests/test_api.py`.
+  these before a demo if the runtime/domain code changes; Stage 2 touched only `src/api/`,
+  `src/runtime/langgraph_runtime.py` (one additive `is_done` method), `src/runtime/portfolio.py`
+  (one additive optional parameter), and added `tests/test_api_stage2.py`.
 
 The `.env` contains the user's OpenAI key. Never print, copy, commit or send its value to the browser.
 
 ## Known limitations relevant to the console
 
-- A read-only HTTP API exists (`src/api/`); there is still no frontend, no execution manager and
-  no live stream. See "Known limitations carried into Stage 2" under the Stage 1 entry above for
-  the API's own honest gaps (single configured store, no deadline filter, REST-only events).
-- `LangGraphRuntime` keeps active tasks/emitters in-process; Stage 2 needs a RunManager and durable
-  store registry around it.
-- `EventEmitter.subscribe()` handles active in-process subscribers, but reconnect/reload semantics are
-  not sufficient by themselves. The design chooses a persisted SQLite tail for Stage 2.
+- The API can now start, cancel, rerun and stream runs (`src/api/`), but there is still no
+  frontend. See "Known limitations carried into Stage 3" under the Stage 2 entry above for the
+  execution layer's own honest gaps (cancel/liveness is per-process, no queue-ranking persistence,
+  no resume endpoint, no memory/graph/source routers yet).
+- `LangGraphRuntime` still keeps active tasks/emitters in-process by design; `RunManager` wraps it
+  with a durable store registry but does not (and per the architecture doc should not) make a run
+  controllable or its liveness knowable from a different API process.
 - Cancellation records a terminal segment and keeps a checkpoint, but automatic restart scheduling
   remains outside this POC. UI labeling must be honest.
 - Decision provenance currently attaches the same collected source/event set to each leaf. The UI can
@@ -416,3 +489,38 @@ Before reporting any stage complete:
 - Updated `README.md` (new "Dispute Observatory API" section) and
   `docs/design/07-observability-console.md` (Stage 1 marked complete with what was actually built).
 - No commit was requested or created; the worktree remains uncommitted from `795e5ff`.
+
+### 2026-09-14 — Dispute Observatory Stage 2 execution manager and live SSE complete
+
+- Built `src/api/run_manager.py` (`RunManager`: isolated per-run copied stores under
+  `data/generated/ui/`, a durable SQLite run registry, case-run and Q01-queue lifecycle) and
+  `src/api/sse.py` (SQLite-tailing, reconnectable SSE stream via `sse_starlette`).
+- Added `POST /runs`, `POST /runs/{run_id}/cancel`, `POST /runs/{run_id}/rerun`,
+  `GET /runs/{run_id}/events/stream`, `POST /queue/runs`, `GET /queue/runs/{run_id}`
+  (`src/api/routers/runs.py`, new `src/api/routers/queue.py`); `GET /runs` now merges results
+  across every store the API knows about instead of Stage 1's single configured store.
+- Made one additive change each to `src/runtime/langgraph_runtime.py` (`LangGraphRuntime.is_done`,
+  plus retrieving a fire-and-forget `start()` task's exception so a failed run doesn't log an
+  "exception was never retrieved" warning) and `src/runtime/portfolio.py` (`rank_portfolio` gained
+  an optional `run_id` parameter); both are backward compatible with the existing CLI.
+- Found and fixed two real bugs during implementation/testing: (1) a run that suspends and
+  auto-resumes internally emits one `termination` event per segment, not just at the end, which
+  would have closed the SSE stream on the first wait of a live multi-wait run — fixed with
+  `is_done`/`is_task_done` reporting true process-local task completion, falling back to the
+  persisted-status heuristic only for runs this process doesn't manage; (2) mixing `async def`
+  endpoints with sync generator sqlite dependencies crashed with a cross-thread `sqlite3`
+  `ProgrammingError` — fixed by making the connection dependencies async and their endpoints async.
+- Added `tests/test_api_stage2.py` (8 tests, `httpx.AsyncClient` over an in-process ASGI transport):
+  gap-free/dup-free streaming to a decision, exact-suffix reconnect by `after_seq` and
+  `Last-Event-ID`, two simultaneous isolated runs with the pristine store hashed unchanged,
+  cancel-idempotency + rerun, rerun-rejection for an unmanaged run, a full Q01 queue run, an
+  immediate-failure run that never touches the pristine store, and cross-store `GET /runs` merging.
+- Verified end-to-end with a live `uvicorn` process: start/stream/cancel/rerun/queue all worked via
+  `curl`, and `data/generated/catcher.sqlite`'s sha256 was identical before and after.
+- Final baseline: 94 passed / 1 skipped tests (was 86/1), ruff check and format both clean.
+- Updated `README.md` ("Dispute Observatory API" section rewritten with an execution-endpoint
+  table) and `docs/design/07-observability-console.md` (Stage 2 marked complete with what was
+  actually built, including the two bugs above).
+- Regenerated `schemas/openapi.json`. Added `data/generated/ui/` to `.gitignore` (per-run copied
+  stores and the run registry; never committed).
+- Committed and pushed per the standing authorization below.

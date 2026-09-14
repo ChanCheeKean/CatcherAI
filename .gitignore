@@ -222,4 +222,5 @@ data/generated/*.sqlite
 data/generated/*.lbug
 data/generated/*.lbug.wal
 data/generated/eval/
+data/generated/ui/
 .DS_Store

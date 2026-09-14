@@ -146,9 +146,15 @@ class LangGraphRuntime:
         run_id = f"run-{uuid.uuid4().hex}"
         self.last_run_id = run_id
         emitter = self._emitter(run_id, case_id)
-        self._tasks[run_id] = asyncio.create_task(
+        task = asyncio.create_task(
             self._drive(emitter, {"run_id": run_id, "case_id": case_id}, auto_resume)
         )
+        # `start()` is fire-and-forget (a caller that wants the outcome awaits `result()`
+        # separately, e.g. the API's RunManager never does): mark a failure's exception retrieved
+        # so asyncio doesn't log it as unhandled — it is already durably recorded as an `error`
+        # event by `_drive`'s own exception handler.
+        task.add_done_callback(lambda t: not t.cancelled() and t.exception())
+        self._tasks[run_id] = task
         await asyncio.sleep(0)
         return run_id
 
@@ -174,6 +180,13 @@ class LangGraphRuntime:
             self._drive(emitter, None, auto_resume, external_event=external_event)
         )
         return await self._tasks[run_id]
+
+    def is_done(self, run_id: str) -> bool:
+        """True once this run's driving task has finished for any reason (decided, suspended,
+        cancelled, or failed) and will never append another event on its own."""
+
+        task = self._tasks.get(run_id)
+        return task is None or task.done()
 
     async def cancel(self, run_id: str) -> None:
         task = self._tasks[run_id]

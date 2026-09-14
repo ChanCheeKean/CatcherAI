@@ -33,10 +33,12 @@ class PortfolioState(TypedDict, total=False):
     ranking: list[dict[str, Any]]
 
 
-async def rank_portfolio(runtime: LangGraphRuntime) -> tuple[str, list[dict[str, Any]]]:
+async def rank_portfolio(
+    runtime: LangGraphRuntime, *, run_id: str | None = None
+) -> tuple[str, list[dict[str, Any]]]:
     """Run the portfolio graph and return its run id and full ranking."""
 
-    run_id = f"queue-{uuid.uuid4().hex}"
+    run_id = run_id or f"queue-{uuid.uuid4().hex}"
     runtime.last_run_id = run_id
     emitter = runtime._emitter(run_id, None)  # noqa: SLF001 - same package runtime
     ctx = runtime._context(emitter)  # noqa: SLF001

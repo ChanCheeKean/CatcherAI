@@ -9,7 +9,8 @@ from pydantic import BaseModel
 
 from domain.events import EventEnvelope
 
-RunStatus = Literal["running", "suspended", "decided", "cancelled", "failed"]
+RunStatus = Literal["running", "suspended", "decided", "cancelled", "failed", "ranked"]
+Adapter = Literal["fake", "openai"]
 
 
 class CaseSummary(BaseModel):
@@ -156,3 +157,27 @@ class WorkflowEdge(BaseModel):
 class WorkflowGraph(BaseModel):
     nodes: list[WorkflowNode]
     edges: list[WorkflowEdge]
+
+
+class RunCreateRequest(BaseModel):
+    case_id: str
+    adapter: Adapter = "fake"
+    auto_resume: bool = True
+
+
+class QueueRunCreateRequest(BaseModel):
+    adapter: Adapter = "fake"
+
+
+class RunStartResponse(BaseModel):
+    run_id: str
+    case_id: str | None
+    status: RunStatus
+    events_url: str
+    stream_url: str
+
+
+class QueueRunResponse(BaseModel):
+    run_id: str
+    status: RunStatus
+    ranking: list[dict[str, Any]] | None

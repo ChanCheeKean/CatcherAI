@@ -345,6 +345,45 @@
       }
     },
     "/api/v1/runs": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Start Run",
+        "operationId": "start_run_api_v1_runs_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "runs"
@@ -457,6 +496,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RunSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{run_id}/cancel": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Cancel Run",
+        "operationId": "cancel_run_api_v1_runs__run_id__cancel_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{run_id}/rerun": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Rerun Run",
+        "operationId": "rerun_run_api_v1_runs__run_id__rerun_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStartResponse"
                 }
               }
             }
@@ -587,6 +710,57 @@
         }
       }
     },
+    "/api/v1/runs/{run_id}/events/stream": {
+      "get": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Stream Run Events Endpoint",
+        "operationId": "stream_run_events_endpoint_api_v1_runs__run_id__events_stream_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "after_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "After Seq"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/runs/{run_id}/decision": {
       "get": {
         "tags": [
@@ -612,6 +786,89 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/queue/runs": {
+      "post": {
+        "tags": [
+          "queue"
+        ],
+        "summary": "Start Queue Run",
+        "operationId": "start_queue_run_api_v1_queue_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueRunCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunStartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/queue/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "queue"
+        ],
+        "summary": "Get Queue Run",
+        "operationId": "get_queue_run_api_v1_queue_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueRunResponse"
                 }
               }
             }
@@ -1334,6 +1591,63 @@
         ],
         "title": "MetaResponse"
       },
+      "QueueRunCreateRequest": {
+        "properties": {
+          "adapter": {
+            "type": "string",
+            "enum": [
+              "fake",
+              "openai"
+            ],
+            "title": "Adapter",
+            "default": "fake"
+          }
+        },
+        "type": "object",
+        "title": "QueueRunCreateRequest"
+      },
+      "QueueRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "suspended",
+              "decided",
+              "cancelled",
+              "failed",
+              "ranked"
+            ],
+            "title": "Status"
+          },
+          "ranking": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ranking"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status",
+          "ranking"
+        ],
+        "title": "QueueRunResponse"
+      },
       "Redaction": {
         "properties": {
           "path": {
@@ -1413,6 +1727,33 @@
         ],
         "title": "RouteSummary"
       },
+      "RunCreateRequest": {
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "title": "Case Id"
+          },
+          "adapter": {
+            "type": "string",
+            "enum": [
+              "fake",
+              "openai"
+            ],
+            "title": "Adapter",
+            "default": "fake"
+          },
+          "auto_resume": {
+            "type": "boolean",
+            "title": "Auto Resume",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "case_id"
+        ],
+        "title": "RunCreateRequest"
+      },
       "RunPage": {
         "properties": {
           "items": {
@@ -1459,7 +1800,8 @@
               "suspended",
               "decided",
               "cancelled",
-              "failed"
+              "failed",
+              "ranked"
             ],
             "title": "Status"
           },
@@ -1500,6 +1842,54 @@
         ],
         "title": "RunRef"
       },
+      "RunStartResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "suspended",
+              "decided",
+              "cancelled",
+              "failed",
+              "ranked"
+            ],
+            "title": "Status"
+          },
+          "events_url": {
+            "type": "string",
+            "title": "Events Url"
+          },
+          "stream_url": {
+            "type": "string",
+            "title": "Stream Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "case_id",
+          "status",
+          "events_url",
+          "stream_url"
+        ],
+        "title": "RunStartResponse"
+      },
       "RunSummary": {
         "properties": {
           "run_id": {
@@ -1524,7 +1914,8 @@
               "suspended",
               "decided",
               "cancelled",
-              "failed"
+              "failed",
+              "ranked"
             ],
             "title": "Status"
           },

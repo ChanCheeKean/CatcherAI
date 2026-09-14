@@ -424,21 +424,79 @@ Acceptance — met:
 - `curl` against a live `uvicorn` process lists cases, inspects a historical run and replays its
   ordered events (verified manually; see handoff for the exact commands and output).
 
-### Stage 2 — Execution manager and live stream
+### Stage 2 — Execution manager and live stream: COMPLETE (2026-09-14)
 
-Deliver:
+Delivered:
 
-- Isolated UI run workspaces and durable run registry.
-- Async start/status/cancel/rerun endpoints and Q01 execution.
-- Reconnectable ordered SSE, heartbeat and terminal close.
-- Concurrency-safe tests for two simultaneous fake runs, reconnect and failure retention.
+- `src/api/run_manager.py`: `RunManager` — one copied store + `LangGraphRuntime` per UI-started
+  run under `data/generated/ui/` (`bootstrap.isolated_workspace`/`build_runtime`, unchanged from
+  Stage 1's `catcher run --db` isolation), and a tiny durable SQLite registry
+  (`data/generated/ui/registry.sqlite`, table `runs(run_id, case_id, kind, store_path, adapter,
+  auto_resume, created_at)`) mapping `run_id -> store path` so run history and store routing
+  survive an API process restart. Live `LangGraphRuntime`/task objects (needed to `cancel()` or to
+  know whether a run's driving task is still alive) exist only in this process's memory, same as
+  the harness's own `_tasks`/`_emitters`.
+- `POST /runs`, `POST /runs/{run_id}/cancel`, `POST /runs/{run_id}/rerun`, `POST /queue/runs`,
+  `GET /queue/runs/{run_id}` (`src/api/routers/runs.py`, `src/api/routers/queue.py`).
+  `runtime.portfolio.rank_portfolio` gained an optional `run_id` parameter (backward compatible
+  with the CLI's `queue` command) so the API can know a queue run's ID before it finishes ranking.
+- `GET /runs/{run_id}/events/stream` (`src/api/sse.py`): polls the run's SQLite store rather than
+  subscribing to the in-process `EventEmitter`, per this design's own Stage 2 guidance — it works
+  identically for a live run, a run resumed in a different process, and pure historical replay.
+  `sse_starlette.EventSourceResponse`'s `ping=15` supplies the heartbeat; `Last-Event-ID` (falling
+  back to `after_seq`) resumes from any sequence with no gap or duplicate.
+- The one genuinely new problem this stage had to solve: a run that suspends and auto-resumes
+  *internally* (§4.4) emits one `termination` event **per segment**, not just at the very end (an
+  agentic-provider or evidence wait mid-investigation still gets one even though the run keeps
+  going). Naively closing the SSE stream on the first `termination` event would truncate a live
+  C04/C13-style run. The fix: `RunManager.is_task_done(run_id)` reports whether *this process's*
+  asyncio task for that run has actually finished — true only once, exactly when no more events
+  can ever be appended by it — and `api/sse.py` only falls back to the persisted
+  latest-`termination`/`error` status (`api/read_models.derive_status`, safe because nothing more
+  will ever be written) when the run is unmanaged by this process (a historical or
+  different-process run).
+- `src/api/dependencies.py` gained `get_run_manager`, and `get_run_connection`/
+  `get_all_connections` — async generators, not the plain sync ones Stage 1 used, because mixing a
+  sync generator dependency with an `async def` endpoint dispatches the dependency to a worker
+  thread while the endpoint body runs on the event loop thread, and `sqlite3` connections are
+  thread-affine; every run-lifecycle endpoint that touches a connection is `async def` for the same
+  reason. `GET /runs` now merges results across every store the API currently knows about
+  (`read_models.list_runs`, `list[sqlite3.Connection]`) instead of Stage 1's single configured
+  store, replacing that shortcut as planned rather than adding a second path alongside it.
+- `tests/test_api_stage2.py` (8 tests, `httpx.AsyncClient` over an in-process ASGI transport so the
+  SSE stream can be consumed concurrently with the run it follows): gap-free/dup-free streaming to
+  a decision, exact-suffix reconnect by both `after_seq` and `Last-Event-ID`, two simultaneous
+  case runs with the pristine store hashed unchanged before/after, cancel-is-idempotent + rerun,
+  rerun-rejection for an unmanaged run id, a full Q01 queue run, a bad-`case_id` run reaching
+  `failed` via a genuine `error` event without ever touching the pristine store, and `GET /runs`
+  merging a Stage-1-style direct run with an API-started one.
 
-Acceptance:
+Acceptance — met:
 
-- Starting a run returns immediately with `202`.
+- `POST /runs` returns `202` immediately (`RunManager.start_run` only awaits
+  `LangGraphRuntime.start()`, which itself only schedules the driving task).
 - A test consumes the stream from sequence 1 through one terminal decision with no gaps/duplicates.
-- Reconnecting from a middle sequence yields exactly the missing suffix.
-- UI runs never mutate the pristine scenario store.
+- Reconnecting from a middle sequence (via `after_seq` and via `Last-Event-ID`) yields exactly the
+  missing suffix.
+- Two simultaneous fake runs each decide correctly and the pristine store's sha256 is unchanged.
+- UI runs never mutate the pristine scenario store, including a run that fails immediately.
+
+Known limitations carried forward (honest, not blocking):
+
+- Cancel and the SSE "is this run still live" check both key off the in-memory `RunManager`
+  registry; a run started by a different API process (or before a restart) can still be inspected
+  and its history replayed via SSE/REST, but cannot be cancelled from this process, and its stream
+  closes using the persisted-status heuristic rather than true liveness. This matches the design's
+  own scoping ("LangGraphRuntime keeps active tasks/emitters in-process").
+- `GET /queue/runs/{run_id}`'s ranking is cached in `RunManager` memory only, not persisted; it is
+  lost on an API restart (the run's events, including `portfolio_ranked`, remain in its store).
+- No dedicated failure-injection test exercises a run that fails *after* producing a large event
+  prefix (only a run that fails immediately on an unknown case, and a `runtime.cancel()` race); the
+  append-only, hash-chained store design makes prefix retention structural rather than something
+  this stage's tests needed to prove separately.
+- There is still no resume-from-suspension endpoint (`POST /runs/{run_id}/resume` was never in this
+  design's Stage 2 endpoint table); a genuinely suspended (`auto_resume=false`) run stays suspended
+  until resumed some other way (CLI `catcher resume`).
 
 ### Stage 3 — Frontend shell and Mission Control
 

@@ -61,7 +61,7 @@ def meta(
         adapters={"fake": True, "openai": bool(os.environ.get("OPENAI_API_KEY"))},
         model=models.default.model,
         virtual_clock=scenario.virtual_clock,
-        feature_flags={"sse_stream": False, "execution_manager": False},
+        feature_flags={"sse_stream": True, "execution_manager": True},
     )
 
 
