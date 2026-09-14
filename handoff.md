@@ -3,8 +3,8 @@
 Last updated: 2026-09-15  
 Repository: `/Users/kean/Dev/CatcherAI`  
 Branch / starting commit: `main` / `63e521b`  
-Current phase: Stage 5 (evaluation and interaction polish) COMPLETE
-Next stage: Stage 6 — integrated launcher and final verification
+Current phase: Stage 6 (integrated launcher and final verification) COMPLETE
+Next stage: None — Dispute Observatory initiative complete
 
 ## Current objective
 
@@ -42,8 +42,8 @@ Read these files completely, in order, before editing:
 10. For historical implementation context, `docs/prompts/02-implementation-kickoff.md`,
     `docs/design/06-eval-results.md` and the remaining design/research documents.
 
-Stage 5's acceptance gate is met; see its stage-history entry for exact evidence. Stage 6 adds the
-combined launcher, committed browser E2E path, final documentation and full-system verification.
+All six stages and the Dispute Observatory definition of done are complete. See the Stage 6 history
+entry for final verification evidence and the remaining non-blocking POC limitations.
 
 ## Product and UX decision
 
@@ -331,7 +331,7 @@ honest known limitations carried into Stage 4.
 - Q01 deadline visualization and optional bounded fake-eval trigger.
 - Responsive/performance polish on the largest trace.
 
-### Stage 6 — Integrated launcher and final verification
+### Stage 6 — Integrated launcher and final verification: COMPLETE
 
 - `scripts/dev.sh` starts FastAPI and Vite, waits for health, forwards `.env` only to backend, and
   traps Ctrl-C to stop both.
@@ -374,19 +374,20 @@ Material backend entry points:
 
 ## Last verified baseline
 
-Verified after Stage 5 (see stage history below; this is the current baseline — earlier baselines
+Verified after Stage 6 (see stage history below; this is the current baseline — earlier baselines
 are kept below for history):
 
 - Backend: `uv run pytest` — **98 passed, 1 skipped**; `uv run ruff check src tests` and
-  `uv run ruff format --check src tests` clean. Evaluation API tests cover path stripping,
-  traversal rejection and proving-event resolution from an isolated attempt store.
-- Frontend: `npx tsc -b` clean; Vitest — **9 passed**; oxlint 0 errors / 3 pre-existing warnings;
+  `uv run ruff format --check src tests` clean.
+- Frontend: `npx tsc -b` clean; Vitest — **10 passed**; oxlint 0 errors / 3 pre-existing warnings;
   production build clean. Route splitting reduced the main entry to 372 KB and moved React Flow
   to a 178 KB shared chunk; run/evaluation/graph feature chunks are 25/5/3 KB respectively, with
   no Vite >500 KB warning.
-- Replay equivalence is exercised with a synthetic 1,000-event trace: final seek projection hash
-  equals live-follow projection hash. Capability-cell interaction is covered by a DOM test that
-  resolves the selected cell to its real sequence/type/summary.
+- `npm run e2e` — **1 passed** in Chromium. It started `scripts/dev.sh`, launched C02 through the
+  UI, observed live route/tool events, reached both decision outcomes with zero browser errors and
+  shut down both ports. A separate direct Ctrl-C test also released ports 8000 and 5173.
+- Clean install checks passed: `uv sync --extra dev --extra graph --extra api`, `npm ci`, and
+  `npx playwright install chromium`. The pristine scenario-store SHA-256 was unchanged by E2E.
 - Full fake evaluation over 20 hero cases plus Q01: **21/21 passed**. Dataset validation:
   **PASS 401 / FAIL 0**.
 
@@ -435,7 +436,6 @@ The `.env` contains the user's OpenAI key. Never print, copy, commit or send its
 - Queue rankings remain in process memory; after an API restart, the Q01 board falls back to the
   persisted `portfolio_ranked.top` subset rather than the full ranking. Evaluation reports are
   read-only by design; the optional UI trigger for a bounded fake evaluation was not implemented.
-- A committed Playwright path and the combined launcher remain Stage 6 deliverables.
 - `LangGraphRuntime` still keeps active tasks/emitters in-process by design; `RunManager` wraps it
   with a durable store registry but does not (and per the architecture doc should not) make a run
   controllable or its liveness knowable from a different API process.
@@ -634,6 +634,41 @@ Before reporting any stage complete:
   E2E test yet.
 - Updated README, the authoritative design, OpenAPI and this handoff; committed and pushed per the
   standing stage-completion authorization.
+
+### 2026-09-15 — Dispute Observatory Stage 6 integrated launcher and final verification complete
+
+- Added executable `scripts/dev.sh` and root `dev.sh`: both dependency sets are validated; FastAPI
+  starts on 8000 and must pass `/api/v1/health`; Vite then starts on strict port 5173 and must
+  respond before the ready message. `.env` is sourced only in the backend subshell and
+  `OPENAI_API_KEY` is explicitly removed from Vite's environment. INT/TERM/EXIT cleanup owns both
+  children. A direct TTY test reached both services, Ctrl-C exited 130, and `lsof` confirmed both
+  ports were released.
+- Added Playwright 1.63, `playwright.config.ts` and `e2e/observatory.spec.ts`, following the current
+  official `webServer`/`baseURL` pattern with graceful SIGTERM. The test uses the same launcher,
+  filters Mission Control to C02, starts a fake run, observes actual `route_decision` and
+  `tool_call` events, reaches cardholder and network decision panels and asserts no console/page
+  errors. Playwright teardown also released both ports.
+- The first E2E attempt failed because the live page stayed at its four-event REST snapshot even
+  though the run had reached 132 events and decided. This exposed a real client bug: the hand-rolled
+  SSE parser recognized LF blank lines but sse-starlette emits CRLF frames, so it accumulated the
+  entire stream as invalid JSON. `useRunStream` now normalizes trailing CR and has a production-
+  framing regression test. After the fix, E2E passed in 1.4 seconds and visibly received route/tool
+  events. A separate initial unit rerun briefly failed because the new regression test was inserted
+  inside a helper and Vitest also discovered the new E2E file; the test was moved into its suite and
+  Vitest was scoped to `src/**/*.test.{ts,tsx}` before final validation.
+- Clean-install verification passed: `uv sync --extra dev --extra graph --extra api`; `npm ci` (167
+  packages, 0 vulnerabilities); `npx playwright install chromium`. Final checks: backend
+  **98 passed, 1 skipped** with ruff check/format clean; frontend TypeScript clean, Vitest
+  **10 passed**, oxlint 0 errors / 3 pre-existing warnings, production build clean with no >500 KB
+  chunk warning; Playwright Chromium **1 passed**; the pristine scenario DB hash was unchanged.
+- Final fake evaluation over all 20 hero cases plus Q01 passed **21/21**; dataset validation passed
+  **401/401**. Generated UI, evaluation and browser artifacts remain ignored.
+- Updated root/frontend READMEs, the authoritative design and this handoff. No screenshot artifact
+  was committed because the automated browser path is the more durable acceptance evidence.
+- Remaining limitations are the documented POC boundaries: hand-maintained frontend DTOs,
+  process-local active-run control/full queue ranking, polled recent-run status, desktop-first event
+  inspector, coarse per-field provenance, scripted personas and no production security/deployment.
+- Committed and pushed per the standing stage-completion authorization.
 
 ### 2026-09-14 — Post-Stage-2 cleanup pass (`/simplify`, then targeted efficiency follow-ups)
 

@@ -32,18 +32,19 @@ function envelope(seq: number, type = 'node_entered'): EventEnvelope {
   }
 }
 
-function sseFrame(event: EventEnvelope): string {
-  return `id: ${event.seq}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`
+function sseFrame(event: EventEnvelope, newline = '\n'): string {
+  return [`id: ${event.seq}`, `event: ${event.type}`, `data: ${JSON.stringify(event)}`, '', ''].join(newline)
 }
 
-function streamResponse(events: EventEnvelope[]): Response {
+function streamResponse(events: EventEnvelope[], newline = '\n'): Response {
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
       const encoder = new TextEncoder()
-      for (const event of events) controller.enqueue(encoder.encode(sseFrame(event)))
+      for (const event of events) controller.enqueue(encoder.encode(sseFrame(event, newline)))
       controller.close()
     },
   })
+
   return new Response(body, { status: 200 })
 }
 
@@ -70,6 +71,18 @@ describe('useRunStream', () => {
 
     await waitFor(() => expect(result.current.status).toBe('closed'))
 
+    expect(result.current.events.map((event) => event.seq)).toEqual([1, 2, 3])
+  })
+
+  it('parses the CRLF framing emitted by the production SSE server', async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ items: [envelope(1)], next_after_seq: 1, limit: 500 })))
+    fetchMock.mockResolvedValueOnce(streamResponse([envelope(2), envelope(3)], '\r\n'))
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ run_id: 'run-1', status: 'decided' })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useRunStream('run-1'))
+    await waitFor(() => expect(result.current.status).toBe('closed'))
     expect(result.current.events.map((event) => event.seq)).toEqual([1, 2, 3])
   })
 

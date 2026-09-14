@@ -80,7 +80,10 @@ export function useRunStream(runId: string | null): UseRunStreamResult {
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
         buffer = lines.pop() ?? ''
-        for (const line of lines) {
+        for (const rawLine of lines) {
+          // SSE permits CRLF and sse-starlette emits it by default. Normalize before detecting
+          // blank frame separators; otherwise every data line accumulates into one invalid JSON.
+          const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine
           if (line === '') {
             flush()
           } else if (line.startsWith('data:')) {

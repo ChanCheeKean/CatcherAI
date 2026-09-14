@@ -223,4 +223,6 @@ data/generated/*.lbug
 data/generated/*.lbug.wal
 data/generated/eval/
 data/generated/ui/
+frontend/playwright-report/
+frontend/test-results/
 .DS_Store

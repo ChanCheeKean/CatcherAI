@@ -645,7 +645,7 @@ DOM rendering is capped to 350 matching events, eliminating the prior >500 KB en
 The optional UI-triggered evaluator was deliberately not added: reading durable reports meets the
 required scope and avoids introducing another long-running task manager before the integrated stage.
 
-### Stage 6 — Integrated launcher and final verification
+### Stage 6 — Integrated launcher and final verification: COMPLETE (2026-09-15)
 
 Deliver:
 
@@ -660,6 +660,16 @@ Acceptance:
 - Playwright launches a fake case, observes route/tool/subagent or wait activity as applicable, and
   reaches the decision view.
 - Backend tests, frontend tests/build/lint, data validation and 21/21 fake evaluation all pass.
+
+Delivered: `scripts/dev.sh` plus the root `dev.sh` shim validate installed dependencies, load
+`.env` only in the FastAPI subprocess, explicitly remove `OPENAI_API_KEY` from Vite, wait for both
+health checks and clean up both processes on Ctrl-C or failure. Playwright's supported `webServer`
+and `baseURL` configuration starts this exact script with graceful SIGTERM teardown. The committed
+Chromium path filters to C02, launches a fake run through the UI, observes real route/tool events,
+reaches both decision outcomes and asserts zero browser errors. This test exposed and fixed a real
+CRLF parsing bug in the custom SSE client; a unit regression now uses sse-starlette's production
+frame separator. Clean dependency installs, launcher teardown, full tests/build/lint, 21/21 fake
+evaluation and all 401 dataset checks pass.
 
 ## 9. Documentation rules during implementation
 

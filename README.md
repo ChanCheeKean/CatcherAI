@@ -111,7 +111,7 @@ variants that rename merchants, the agentic provider and customers and reword in
 It compares decision semantics and verifies each event hash chain, catching logic that accidentally
 depends on an authored display name rather than operational data.
 
-### Dispute Observatory API (Stage 5: evaluation and replay polish)
+### Dispute Observatory API
 
 A FastAPI presentation adapter (`src/api/`) exposes the SQLite trajectory store and can now start,
 cancel, and rerun fake-adapter runs itself. It still never mutates the pristine
@@ -159,7 +159,7 @@ Execution endpoints, all under `/api/v1`:
 See [`docs/design/07-observability-console.md`](docs/design/07-observability-console.md) for the
 full staged plan and `handoff.md` for exact current status and honest Stage 2 limitations.
 
-### Dispute Observatory frontend (Stage 5: evaluation and replay polish)
+### Dispute Observatory frontend
 
 A React + TypeScript + Vite app in `frontend/` gives Mission Control (case browser, filters, run
 launcher, Q01 queue launcher, recent runs), a live Run Observatory (workflow graph, timeline and
@@ -170,19 +170,33 @@ reconciliation and a deep-linkable capability matrix backed by actual proving ev
 support live-follow, seek, step, replay speed, event/actor/text filters, URL-linked selections and
 bookmarks; Q01 has a virtual-time deadline-pressure board. Press `Ctrl/Cmd+K` for navigation.
 Graph-heavy routes are loaded on demand and timeline DOM rendering is capped to the latest 350
-matching events for responsive ~1,000-event queue traces. There is no combined launcher script yet
-(Stage 6); run the API and the dev server in two terminals:
+matching events for responsive ~1,000-event queue traces.
+
+Install dependencies once, then start the entire Observatory with one command:
 
 ```bash
-uv run uvicorn api.app:app --app-dir src --port 8000   # terminal 1
-cd frontend && npm install && npm run dev               # terminal 2, http://localhost:5173
+uv sync --extra dev --extra graph --extra api
+cd frontend && npm ci && cd ..
+./dev.sh                         # http://127.0.0.1:5173; Ctrl-C stops both services
 ```
 
-Vite proxies `/api` to `http://127.0.0.1:8000`, so the frontend never needs a base URL. Frontend
-commands: `npm run dev`, `npm run build` (`tsc -b && vite build`), `npm run test` (Vitest +
-React Testing Library), `npm run lint` (`oxlint`).
+`dev.sh` delegates to `scripts/dev.sh`, checks dependencies, starts FastAPI on port 8000, waits for
+its health endpoint, then starts Vite on port 5173 and waits until the UI responds. It loads `.env`
+only inside the backend subprocess and explicitly removes `OPENAI_API_KEY` from Vite's environment.
+Both ports are strict; a collision fails clearly. Ctrl-C and process failure clean up both children.
 
-The one-command combined launcher and committed browser E2E path are Stage 6. See
+Vite proxies `/api` to `http://127.0.0.1:8000`, so the frontend never needs a base URL. Frontend
+commands: `npm run dev`, `npm run build`, `npm run test`, and `npm run lint`. The committed browser
+test starts the same combined launcher and drives a real fake-adapter run:
+
+```bash
+cd frontend
+npx playwright install chromium  # first browser-test run only
+npm run e2e
+```
+
+Stop any locally running Observatory first: the E2E configuration deliberately refuses to reuse
+ports, proving that its own launcher and teardown work. See
 [`docs/design/07-observability-console.md`](docs/design/07-observability-console.md).
 
 ### How the runtime is organized
