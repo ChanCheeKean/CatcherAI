@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00013-OR",
+  "case_id": "DSP-2026-00013",
+  "txn_id": "TXN-0020456",
+  "merchant_id": "MER-00160",
+  "source": "order_insight",
+  "requested_at": "2026-10-15T21:56:00Z",
+  "available_at": "2026-10-18T18:00:00Z",
+  "merchant_statement": "No prior relationship with this customer account.",
+  "order": {
+    "order_id": "ORD-433310A8",
+    "order_date": "2026-09-05",
+    "total": "747.05"
+  },
+  "customer_account": {
+    "login_id": "user5106",
+    "email_on_file": "shopper639@example.net"
+  },
+  "session": {
+    "ip": "203.0.113.90",
+    "device_fingerprint": "fp_433310a8c43ba5ee3414de6d11bee9c3ecaa31cc"
+  },
+  "shipping_address": "155 Industrial Pkwy Unit 22, Toledo, OH 43604"
+}

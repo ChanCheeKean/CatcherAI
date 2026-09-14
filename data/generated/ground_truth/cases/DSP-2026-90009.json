@@ -1,0 +1,322 @@
+{
+  "case_id": "DSP-2026-90009",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C08",
+  "title": "Pump Six",
+  "depth": "L3",
+  "regime": "REG_E",
+  "customer_id": "CUS-90008",
+  "txn_ids": [
+    "TXN-9000801",
+    "TXN-9000802"
+  ],
+  "summary": "Debit CNP fraud after skimming at Pinegrove Fuel #22. Reg E: card not lost → $0 liability (60-day rule only). New account (transfers within 30 days of first deposit) → 20 business days for provisional credit, 90 days to investigate; bank holiday calendar. CPP discoverable via graph across 9 other victims. Chargeback $1,240 (10.4); $59 below fraud recovery threshold → write off (cardholder still credited).",
+  "expected": {
+    "is_dispute": true,
+    "claim_family": "fraud_cnp",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9000801",
+        "action": "file_dispute",
+        "condition": "10.4",
+        "amount": "1240.00",
+        "prerequisite": "fraud_reported"
+      },
+      {
+        "txn_id": "TXN-9000802",
+        "action": "write_off_no_chargeback",
+        "amount": "59.00",
+        "prerequisite": "fraud_reported"
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "credited",
+      "credit_amount": "1299.00",
+      "liability_amount": "0.00"
+    },
+    "deadlines": {
+      "provisional_credit_deadline": "2026-11-10",
+      "investigation_deadline": "2027-01-11",
+      "written_confirmation_due_if_bank_requires": "2026-10-27"
+    },
+    "account_actions": [
+      "fraud_report_tc40",
+      "card_reissue"
+    ],
+    "adjudication": {
+      "review_panel_required": true,
+      "reason": "cross-customer finding (compromise point)"
+    },
+    "automated_actions": [
+      {
+        "action": "graph_write",
+        "edge": "SUSPECTED_COMPROMISE_POINT",
+        "subject_id": "MER-90008",
+        "status": "active",
+        "evidence": [
+          "DSP-2026-09201..09209",
+          "WEB-04156"
+        ]
+      },
+      {
+        "action": "watchlist_add",
+        "list": "merchant_compromise_points",
+        "subject_id": "MER-90008",
+        "window": "2026-09-15..2026-10-13"
+      },
+      {
+        "action": "enhanced_monitoring",
+        "scope": "cards with card-present use at MER-90008 in window and no fraud claim yet",
+        "optional": true
+      }
+    ]
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Account opened 2026-09-24; first deposit 2026-09-28; transfers 2026-10-09 (within 30 days)",
+      "evidence": [
+        "ACC-DDA-90008",
+        "account_events deposit_received"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Card not lost or stolen; compromise via skimming",
+      "evidence": [
+        "COM intake",
+        "WEB-04156"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Notice 2026-10-13; bank closed 2026-10-12 and 2026-11-11",
+      "evidence": [
+        "reference/bank_holidays_2026.csv"
+      ]
+    },
+    {
+      "id": "F4",
+      "fact": "AVS N, no 3DS, guest checkout from hosting IP, ship to Toledo industrial unit",
+      "evidence": [
+        "TXN-9000801",
+        "MEP-90009-OI"
+      ]
+    },
+    {
+      "id": "F5",
+      "fact": "9 other cardholders used MER-90008 between 2026-09-20 and 2026-10-02 then reported CNP fraud",
+      "evidence": [
+        "graph/sql: DSP-2026-09201..09209"
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "X1",
+      "between": [
+        "rep note: consider $50/$500 tier",
+        "REGE-1005.6"
+      ],
+      "resolution": "tiers for lost/stolen access device only; card not lost"
+    },
+    {
+      "id": "X2",
+      "between": [
+        "MEM-0152 / LFB-CB-2025-03: 10 calendar days",
+        "LFB-CB-2025-09 + REGE-1005.11"
+      ],
+      "resolution": "business days; new-account 20 business days"
+    }
+  ],
+  "computations": [
+    {
+      "name": "new_account",
+      "value": true,
+      "rule": "transfer within 30 days after first deposit"
+    },
+    {
+      "name": "provisional_credit_deadline",
+      "value": "2026-11-10",
+      "rule": "20 business days after 2026-10-13 excl. weekends/holidays"
+    },
+    {
+      "name": "investigation_deadline",
+      "value": "2027-01-11",
+      "rule": "90 calendar days"
+    },
+    {
+      "name": "liability",
+      "value": "0.00"
+    }
+  ],
+  "must_cite": [
+    "REGE-1005.11",
+    "REGE-1005.6",
+    "LFB-SOP-DSP-006@v4",
+    "LFB-CB-2025-09",
+    "LFB-SOP-DSP-008@v3",
+    "VISA-10.4@2026-04-18"
+  ],
+  "must_not": [
+    "assess $50 or $500 liability",
+    "use calendar days",
+    "use 10-business-day deadline 2026-10-27 as provisional credit deadline",
+    "charge back the $59",
+    "close without fraud report"
+  ],
+  "memory_ops": {
+    "read": [
+      "MEM-0152"
+    ],
+    "supersede": [
+      {
+        "note_id": "MEM-0152",
+        "replaced_by": "LFB-CB-2025-09"
+      }
+    ],
+    "write": [
+      {
+        "scope": "graph",
+        "edge": "SUSPECTED_COMPROMISE_POINT",
+        "subject_id": "MER-90008",
+        "status": "active"
+      }
+    ]
+  },
+  "components": [
+    "router (regime)",
+    "sandbox (business days)",
+    "graph_traversal (CPP)",
+    "subagents (graph analyst, reg E)",
+    "research",
+    "memory_forgetting",
+    "memory_write (graph)",
+    "automated_controls (watchlist)"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "regime",
+      "op": "eq",
+      "value": "REG_E"
+    },
+    {
+      "path": "cardholder_resolution.liability_amount",
+      "op": "eq",
+      "value": "0.00"
+    },
+    {
+      "path": "deadlines.provisional_credit_deadline",
+      "op": "eq",
+      "value": "2026-11-10"
+    },
+    {
+      "path": "network_actions[?txn_id=='TXN-9000801'].condition",
+      "op": "eq",
+      "value": "10.4"
+    },
+    {
+      "path": "network_actions[?txn_id=='TXN-9000802'].action",
+      "op": "eq",
+      "value": "write_off_no_chargeback"
+    }
+  ],
+  "rubric": [
+    "Explains why the 2-business-day tier does not apply",
+    "Surfaces Pinegrove #22 with supporting counts"
+  ],
+  "budget": {
+    "expected_tool_calls": "12-25"
+  },
+  "required_capabilities": [
+    {
+      "capability": "router",
+      "label": "Router",
+      "necessity": "primary",
+      "why": "debit → Reg E regime and clocks",
+      "trajectory_signals": [
+        "route_decision {route_id, method: rule|llm, confidence}"
+      ]
+    },
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / REPL",
+      "necessity": "primary",
+      "why": "20 business days with bank holidays → 2026-11-10",
+      "trajectory_signals": [
+        "computation {code, inputs, output}"
+      ]
+    },
+    {
+      "capability": "memory_graph",
+      "label": "Memory — graph",
+      "necessity": "primary",
+      "why": "common point of compromise across 9 other victims",
+      "trajectory_signals": [
+        "graph_query {cypher|pattern, node_ids}",
+        "graph_write {node|edge, status}"
+      ]
+    },
+    {
+      "capability": "subagents",
+      "label": "Subagents",
+      "necessity": "primary",
+      "why": "graph analyst and Reg E clock specialist in parallel",
+      "trajectory_signals": [
+        "subagent_started {name, parent_span_id}",
+        "subagent_finished {result_summary}",
+        "panel_position / adjudication"
+      ]
+    },
+    {
+      "capability": "read_paths",
+      "label": "Agent read paths (selective read)",
+      "necessity": "primary",
+      "why": "reject MEM-0152 / superseded CB-2025-03 (calendar days)",
+      "trajectory_signals": [
+        "memory_read {filters}",
+        "memory_verified / memory_rejected {note_id, reason}"
+      ]
+    },
+    {
+      "capability": "write_paths",
+      "label": "Agent write paths (selective write, consolidation, forgetting)",
+      "necessity": "primary",
+      "why": "graph edge SUSPECTED_COMPROMISE_POINT, watchlist, supersede MEM-0152",
+      "trajectory_signals": [
+        "memory_write / memory_supersede / memory_retract / memory_consolidate / memory_purge",
+        "write_rejected {reason}",
+        "automated_action"
+      ]
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "why": "pb-reg-e-clocks, pb-fraud-cnp",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ]
+    },
+    {
+      "capability": "memory_persistent",
+      "label": "Memory — persistent (SQLite system of record)",
+      "necessity": "supporting",
+      "why": "deposits, alerts, first deposit date",
+      "trajectory_signals": [
+        "tool_call sql_query / get_* with row ids in tool_result"
+      ]
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool / function calling",
+      "necessity": "supporting",
+      "why": "evidence + research",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {status, source_ids}"
+      ]
+    }
+  ]
+}

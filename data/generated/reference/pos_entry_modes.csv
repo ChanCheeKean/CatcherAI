@@ -1,0 +1,8 @@
+code,meaning
+01,Manual key entry (also used for e-commerce PAN entry)
+05,Integrated circuit (chip) read
+07,Contactless chip
+10,Credential on file
+90,Magnetic stripe read (full track)
+91,Contactless magnetic stripe
+95,Chip card read with unreliable CVV (fallback)

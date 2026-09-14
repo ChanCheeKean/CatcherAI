@@ -1,0 +1,6 @@
+code,meaning
+00,Approved
+05,Do not honor
+51,Insufficient funds
+59,Suspected fraud
+N7,CVV2 decline

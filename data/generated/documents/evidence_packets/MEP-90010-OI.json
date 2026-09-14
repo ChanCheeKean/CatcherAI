@@ -1,0 +1,96 @@
+{
+  "packet_id": "MEP-90010-OI",
+  "case_id": "DSP-2026-90010",
+  "txn_id": "TXN-9000904",
+  "merchant_id": "MER-90009",
+  "source": "order_insight",
+  "requested_at": "2026-10-20T13:00:00Z",
+  "available_at": "2026-10-20T22:30:00Z",
+  "order": {
+    "order_id": "NFG-1188230",
+    "placed_at": "2026-10-03T03:17:44Z",
+    "items": [
+      {
+        "sku": "STFT-DLX",
+        "description": "Starfall Tactics — Deluxe Edition (PC digital download)",
+        "price": "69.99"
+      }
+    ]
+  },
+  "customer_account": {
+    "login_id": "kestrelmoon",
+    "email": "kiran.tamurabell80@example.net",
+    "account_created_at": "2021-11-30T04:12:00Z",
+    "email_verified": true,
+    "account_changes_last_90d": []
+  },
+  "session": {
+    "ip": "198.18.77.140",
+    "device_id": "PCID-7F3A9C21B8E04D55",
+    "device_fingerprint": "fp_c0ffee1dc0ffee1dc0ffee1dc0ffee1dc0ffee1d",
+    "user_agent": "NebulaForgeLauncher/4.2 (Windows 11)"
+  },
+  "digital_usage": {
+    "first_launch": "2026-10-03T03:41:00Z",
+    "total_playtime_hours": "37.5",
+    "sessions": 19,
+    "last_session": "2026-10-19T06:10:00Z",
+    "achievements_unlocked": 14,
+    "device_id": "PCID-7F3A9C21B8E04D55"
+  },
+  "prior_transactions": [
+    {
+      "txn_date": "2026-03-20",
+      "merchant": "NEBULA FORGE*ARCADE",
+      "acquirer_id": "ACQ-07",
+      "amount": "14.99",
+      "description": "Nebula Forge Arcade — 'Cosmic Pinball' season pass",
+      "login_id": "kestrelmoon",
+      "ip": "198.18.77.140",
+      "device_id": "PCID-7F3A9C21B8E04D55",
+      "device_fingerprint": "fp_c0ffee1dc0ffee1dc0ffee1dc0ffee1dc0ffee1d",
+      "delivery_address": "(digital)",
+      "disputed": false,
+      "reported_fraud": false
+    },
+    {
+      "txn_date": "2026-05-15",
+      "merchant": "NEBULA FORGE*GAMES",
+      "acquirer_id": "ACQ-07",
+      "amount": "29.99",
+      "description": "Nebula Forge Games — 'Starfall Tactics' base game",
+      "login_id": "kestrelmoon",
+      "ip": "198.18.77.140",
+      "device_id": "PCID-7F3A9C21B8E04D55",
+      "device_fingerprint": "fp_c0ffee1dc0ffee1dc0ffee1dc0ffee1dc0ffee1d",
+      "delivery_address": "(digital)",
+      "disputed": false,
+      "reported_fraud": false
+    },
+    {
+      "txn_date": "2026-09-10",
+      "merchant": "NEBULA FORGE*GAMES",
+      "acquirer_id": "ACQ-07",
+      "amount": "9.99",
+      "description": "Nebula Forge Games — 'Starfall Tactics' soundtrack DLC",
+      "login_id": "kestrelmoon",
+      "ip": "198.18.77.140",
+      "device_id": "PCID-7F3A9C21B8E04D55",
+      "device_fingerprint": "fp_c0ffee1dc0ffee1dc0ffee1dc0ffee1dc0ffee1d",
+      "delivery_address": "(digital)",
+      "disputed": false,
+      "reported_fraud": false
+    }
+  ],
+  "compelling_evidence_claim": {
+    "framework": "Visa CE 3.0",
+    "matching_elements": [
+      "login_id",
+      "ip_address",
+      "device_id",
+      "device_fingerprint"
+    ],
+    "merchant_assertion": "4 matching data elements across 3 prior undisputed transactions"
+  },
+  "merchant_statement": "Purchase made from the customer's long-standing account on their usual PC and IP; game actively played for 37.5 hours."
+}

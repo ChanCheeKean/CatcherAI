@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00235-DI",
+  "case_id": "DSP-2026-00235",
+  "txn_id": "TXN-0001041",
+  "merchant_id": "MER-00162",
+  "source": "dispute_response",
+  "requested_at": "2026-05-21T14:06:00Z",
+  "available_at": "2026-06-18T20:00:00Z",
+  "merchant_statement": "Order placed from a returning customer account with prior undisputed orders.",
+  "order": {
+    "order_id": "ORD-07E07698",
+    "order_date": "2026-05-01",
+    "total": "319.19"
+  },
+  "customer_account": {
+    "login_id": "imani.nakashimahale26",
+    "email_on_file": "imani.nakashimahale26@example.net"
+  },
+  "session": {
+    "ip": "198.18.38.113",
+    "device_fingerprint": "fp_07e07698a80261f01f9e7f40c5c82433cbc2ef33"
+  },
+  "shipping_address": "4434 Rookwood Blvd, Westerville, OH 43091"
+}

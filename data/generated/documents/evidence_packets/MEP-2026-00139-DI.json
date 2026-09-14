@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00139-DI",
+  "case_id": "DSP-2026-00139",
+  "txn_id": "TXN-0005219",
+  "merchant_id": "MER-00157",
+  "source": "dispute_response",
+  "requested_at": "2026-09-02T19:15:00Z",
+  "available_at": "2026-10-06T20:00:00Z",
+  "merchant_statement": "Order placed from a returning customer account with prior undisputed orders.",
+  "order": {
+    "order_id": "ORD-498CC68B",
+    "order_date": "2026-07-19",
+    "total": "66.45"
+  },
+  "customer_account": {
+    "login_id": "jules.brennansato33",
+    "email_on_file": "jules.brennansato33@example.org"
+  },
+  "session": {
+    "ip": "198.18.102.234",
+    "device_fingerprint": "fp_498cc68b8b3b1c64c02469f5da8b79c0d1994bff"
+  },
+  "shipping_address": "1352 Rookwood Ln, Pittsburgh, PA 15257"
+}

@@ -1,0 +1,13 @@
+city,state,timezone,lat,lon
+Columbus,OH,America/New_York,39.9612,-82.9988
+Westerville,OH,America/New_York,40.1262,-82.9291
+Cleveland,OH,America/New_York,41.4993,-81.6944
+Pittsburgh,PA,America/New_York,40.4406,-79.9959
+Boston,MA,America/New_York,42.3601,-71.0589
+Brooklyn,NY,America/New_York,40.6782,-73.9442
+Jersey City,NJ,America/New_York,40.7178,-74.0431
+Chicago,IL,America/Chicago,41.8781,-87.6298
+Austin,TX,America/Chicago,30.2672,-97.7431
+Denver,CO,America/Denver,39.7392,-104.9903
+Los Angeles,CA,America/Los_Angeles,34.0522,-118.2437
+Seattle,WA,America/Los_Angeles,47.6062,-122.3321

@@ -1,0 +1,4 @@
+value,meaning
+05,Visa: fully authenticated (EMV 3DS / Visa Secure)
+06,Visa: authentication attempted (issuer/Visa attempts response)
+07,Visa: non-authenticated e-commerce

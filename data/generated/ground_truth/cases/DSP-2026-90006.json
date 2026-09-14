@@ -1,0 +1,259 @@
+{
+  "case_id": "DSP-2026-90006",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C05",
+  "title": "The Folio",
+  "depth": "L3",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90005",
+  "txn_ids": [
+    "TXN-9000501"
+  ],
+  "summary": "Hotel folio above quote. 12.5 invalid (T&E quoted vs actual) and 13.3 invalid (price discrepancy). Destination fee disclosed; upgrade initialed; parking billed with no vehicle (hotel's own valet log + cardholder's rideshare trips) → partial 13.1 for parking + parking tax.",
+  "expected": {
+    "is_dispute": true,
+    "claim_family": "services_not_received_partial",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9000501",
+        "action": "file_dispute",
+        "condition": "13.1",
+        "amount": "105.60"
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "partial",
+      "credit_amount": "105.60",
+      "reversal_amount": "328.46",
+      "note": "reverse 328.46 of temporary credit with Reg Z explanation"
+    },
+    "letters": [
+      "reg_z_partial_denial_explanation"
+    ],
+    "adjudication": {
+      "review_panel_required": false
+    }
+  },
+  "line_decisions": [
+    {
+      "line": "DEST",
+      "decision": "valid_charge",
+      "reason": "disclosed in confirmation and initialed"
+    },
+    {
+      "line": "UPG",
+      "decision": "valid_charge",
+      "reason": "initialed on registration card despite cardholder testimony"
+    },
+    {
+      "line": "VALET+TAX-PKG",
+      "decision": "dispute",
+      "reason": "no vehicle; hotel valet log empty; rideshare trips at arrival/departure"
+    }
+  ],
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Confirmation disclosed $35 destination fee and conditional parking",
+      "evidence": [
+        "COM attachment larkspur_confirmation_LK-88213.eml",
+        "WEB-04135"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Registration card initialed 'D.O.' beside paid upgrade",
+      "evidence": [
+        "MEP-90005-OI.registration_card"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Valet log shows no vehicle for room 814",
+      "evidence": [
+        "MEP-90005-OI.valet_log"
+      ]
+    },
+    {
+      "id": "F4",
+      "fact": "Rideshare trips on card at arrival (10-02) and departure (10-05)",
+      "evidence": [
+        "transactions Ridehop"
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "X1",
+      "between": [
+        "cardholder: upgrade complimentary",
+        "registration card initials"
+      ],
+      "resolution": "documented acknowledgment prevails; note residual uncertainty"
+    },
+    {
+      "id": "X2",
+      "between": [
+        "folio: valet 3 nights",
+        "valet log: no vehicle"
+      ],
+      "resolution": "merchant's own evidence contradicts charge"
+    }
+  ],
+  "computations": [
+    {
+      "name": "expected_by_cardholder",
+      "value": "653.47"
+    },
+    {
+      "name": "disputed",
+      "value": "434.06"
+    },
+    {
+      "name": "parking_with_tax",
+      "value": "105.60"
+    },
+    {
+      "name": "denied_portion",
+      "value": "328.46"
+    },
+    {
+      "name": "occupancy_tax",
+      "value": "129.93",
+      "rule": "(567+180+105)*0.1525"
+    }
+  ],
+  "must_cite": [
+    "VISA-12.5@2026-04-18",
+    "VISA-13.3@2026-04-18",
+    "VISA-13.1@2026-04-18",
+    "REGZ-1026.13"
+  ],
+  "must_not": [
+    "file 12.5",
+    "file 13.3 for price discrepancy",
+    "dispute the full 434.06",
+    "copy PRE-0007 outcome for the upgrade"
+  ],
+  "precedents": {
+    "distinguish": [
+      "PRE-0007"
+    ]
+  },
+  "components": [
+    "router",
+    "agent_graph",
+    "parallel_subagents (per folio line)",
+    "adversarial_review",
+    "sandbox",
+    "semantic_retrieval (policy + precedent)",
+    "contradiction_detection",
+    "skills (T&E lodging)"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "network_actions[0].condition",
+      "op": "eq",
+      "value": "13.1"
+    },
+    {
+      "path": "network_actions[0].amount",
+      "op": "eq",
+      "value": "105.60"
+    },
+    {
+      "path": "cardholder_resolution.reversal_amount",
+      "op": "eq",
+      "value": "328.46"
+    }
+  ],
+  "rubric": [
+    "Explains why 12.5 and 13.3 are invalid",
+    "Distinguishes PRE-0007 (no initials) from this case",
+    "Acknowledges cardholder's testimony respectfully while explaining the documented acknowledgment"
+  ],
+  "budget": {
+    "expected_tool_calls": "12-25"
+  },
+  "required_capabilities": [
+    {
+      "capability": "subagents",
+      "label": "Subagents",
+      "necessity": "primary",
+      "why": "parallel line-item analysis of the folio (destination fee / upgrade / parking)",
+      "trajectory_signals": [
+        "subagent_started {name, parent_span_id}",
+        "subagent_finished {result_summary}",
+        "panel_position / adjudication"
+      ]
+    },
+    {
+      "capability": "memory_semantic",
+      "label": "Memory — semantic / vector",
+      "necessity": "primary",
+      "why": "retrieve 12.5 and 13.3 exclusions phrased differently from the claim; find PRE-0007 to distinguish",
+      "trajectory_signals": [
+        "retrieval {query, filters: as_of/status/validity, doc_ids}"
+      ]
+    },
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / REPL",
+      "necessity": "primary",
+      "why": "parking + tax = 105.60; denied portion 328.46; occupancy tax check",
+      "trajectory_signals": [
+        "computation {code, inputs, output}"
+      ]
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "primary",
+      "why": "weigh cardholder testimony against the initialed registration card",
+      "trajectory_signals": [
+        "plan_created",
+        "plan_updated (agent-initiated)",
+        "hypothesis_updated"
+      ]
+    },
+    {
+      "capability": "memory_persistent",
+      "label": "Memory — persistent (SQLite system of record)",
+      "necessity": "primary",
+      "why": "rideshare transactions on arrival/departure corroborate 'no car'",
+      "trajectory_signals": [
+        "tool_call sql_query / get_* with row ids in tool_result"
+      ]
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "why": "pb-lodging-te",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ]
+    },
+    {
+      "capability": "agent_graph",
+      "label": "Agent graph engineering",
+      "necessity": "supporting",
+      "why": "verifier before partial decision",
+      "trajectory_signals": [
+        "node_entered / node_exited",
+        "edge_taken {from, to} incl. back-edges"
+      ]
+    },
+    {
+      "capability": "read_paths",
+      "label": "Agent read paths (selective read)",
+      "necessity": "supporting",
+      "why": "precedent used as lead, not copied",
+      "trajectory_signals": [
+        "memory_read {filters}",
+        "memory_verified / memory_rejected {note_id, reason}"
+      ]
+    }
+  ]
+}

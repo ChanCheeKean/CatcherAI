@@ -1,0 +1,6 @@
+code,meaning
+M,CVV2 match
+N,CVV2 no match
+P,Not processed
+S,CVV2 should be on card but merchant indicated not present
+U,Unable to verify / issuer not certified

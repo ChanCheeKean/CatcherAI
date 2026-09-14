@@ -1,0 +1,236 @@
+{
+  "case_id": "DSP-2026-90017",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C15",
+  "title": "Membership Mid-Flight",
+  "depth": "L3",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90020",
+  "txn_ids": [
+    "TXN-9001701",
+    "TXN-9001702"
+  ],
+  "related_case_ids": [
+    "DSP-2026-90018"
+  ],
+  "summary": "Sep charge already disputed (13.2); merchant's late Dispute Response shows disclosed 30-day notice term and post-cancellation use → accept response after certified cardholder review. Oct charge is after the merchant's own stated final billing date → new 13.2 dispute.",
+  "expected": {
+    "is_dispute": true,
+    "claim_family": "cancelled_recurring",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9001701",
+        "case_id": "DSP-2026-90017",
+        "action": "accept_dispute_response",
+        "amount": "64.00",
+        "prerequisite": "cardholder contacted to review evidence"
+      },
+      {
+        "txn_id": "TXN-9001702",
+        "case_id": "DSP-2026-90018",
+        "action": "file_dispute",
+        "condition": "13.2",
+        "amount": "64.00"
+      }
+    ],
+    "cardholder_resolution": [
+      {
+        "case_id": "DSP-2026-90017",
+        "outcome": "denied_with_explanation",
+        "reversal_amount": "64.00"
+      },
+      {
+        "case_id": "DSP-2026-90018",
+        "outcome": "provisional_credit_pending_network",
+        "credit_amount": "64.00"
+      }
+    ],
+    "deadlines": {
+      "DSP-2026-90017": {
+        "pre_arb_deadline": "2026-11-15",
+        "reg_z_resolution_deadline": "2026-12-05"
+      },
+      "DSP-2026-90018": {
+        "reg_z_resolution_deadline": "2027-01-05",
+        "visa_dispute_time_limit": "2027-01-30"
+      }
+    },
+    "adjudication": {
+      "review_panel_required": false
+    }
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Signed agreement clause 7: 30 days' written notice",
+      "evidence": [
+        "MEP-90017-DR"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Merchant auto-reply stated final billing date 2026-09-01",
+      "evidence": [
+        "COM attachment cancel_email_and_autoreply.eml"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Badge scans 2026-09-10 and 2026-09-14",
+      "evidence": [
+        "MEP-90017-DR.badge_scans"
+      ]
+    },
+    {
+      "id": "F4",
+      "fact": "Oct charge 2026-10-01 after merchant's own final billing date",
+      "evidence": [
+        "TXN-9001702"
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "X1",
+      "between": [
+        "intake: haven't been since August",
+        "badge scans in September"
+      ],
+      "resolution": "cardholder confirms visits"
+    }
+  ],
+  "computations": [
+    {
+      "name": "pre_arb_deadline",
+      "value": "2026-11-15",
+      "rule": "30 days from Dispute Response processing date 2026-10-16"
+    },
+    {
+      "name": "reg_z_deadline_c1",
+      "value": "2026-12-05",
+      "rule": "2 complete billing cycles after 2026-09-18 with cycle_day 5; 90-day cap 2026-12-17"
+    },
+    {
+      "name": "reg_z_deadline_c2",
+      "value": "2027-01-05"
+    }
+  ],
+  "must_cite": [
+    "VISA-13.2@2026-04-18",
+    "VISA-11.2-LIFECYCLE@2026-04-18",
+    "REGZ-1026.13"
+  ],
+  "must_not": [
+    "make a pre-arbitration attempt on the September charge",
+    "decline response without cardholder contact/certification",
+    "combine both charges in one dispute"
+  ],
+  "components": [
+    "mid-lifecycle state loading",
+    "wait_for_event/late evidence",
+    "replan",
+    "sandbox (billing cycles)",
+    "parallel case tracks",
+    "user_simulation",
+    "certification duty"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "network_actions[?case_id=='DSP-2026-90017'].action",
+      "op": "eq",
+      "value": "accept_dispute_response"
+    },
+    {
+      "path": "network_actions[?case_id=='DSP-2026-90018'].condition",
+      "op": "eq",
+      "value": "13.2"
+    },
+    {
+      "path": "deadlines.DSP-2026-90017.pre_arb_deadline",
+      "op": "eq",
+      "value": "2026-11-15"
+    }
+  ],
+  "rubric": [
+    "Tracks two charges at different lifecycle stages without conflating them"
+  ],
+  "budget": {
+    "expected_tool_calls": "10-22"
+  },
+  "required_capabilities": [
+    {
+      "capability": "agent_graph",
+      "label": "Agent graph engineering",
+      "necessity": "primary",
+      "why": "two charges on different lifecycle stages handled as parallel tracks",
+      "trajectory_signals": [
+        "node_entered / node_exited",
+        "edge_taken {from, to} incl. back-edges"
+      ]
+    },
+    {
+      "capability": "memory_persistent",
+      "label": "Memory — persistent (SQLite system of record)",
+      "necessity": "primary",
+      "why": "case lifecycle state, response processing date, billing cycle day",
+      "trajectory_signals": [
+        "tool_call sql_query / get_* with row ids in tool_result"
+      ]
+    },
+    {
+      "capability": "harness",
+      "label": "Harness",
+      "necessity": "primary",
+      "why": "late Dispute Response event + persona certification reply",
+      "trajectory_signals": [
+        "clock_advanced",
+        "evidence_arrived {packet_id}",
+        "persona_reply",
+        "eval_scored"
+      ]
+    },
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / REPL",
+      "necessity": "primary",
+      "why": "pre-arb deadline 2026-11-15; Reg Z deadlines 2026-12-05 and 2027-01-05",
+      "trajectory_signals": [
+        "computation {code, inputs, output}"
+      ]
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "primary",
+      "why": "re-plans after late merchant evidence",
+      "trajectory_signals": [
+        "plan_created",
+        "plan_updated (agent-initiated)",
+        "hypothesis_updated"
+      ]
+    },
+    {
+      "capability": "subagents",
+      "label": "Subagents",
+      "necessity": "supporting",
+      "why": "per-charge track",
+      "trajectory_signals": [
+        "subagent_started {name, parent_span_id}",
+        "subagent_finished {result_summary}",
+        "panel_position / adjudication"
+      ]
+    },
+    {
+      "capability": "loop_termination",
+      "label": "Loop engineering (real termination conditions)",
+      "necessity": "supporting",
+      "why": "wait for cardholder reply",
+      "trajectory_signals": [
+        "termination {reason}",
+        "wait_suspended {until, latest_safe_decision}",
+        "wait_resumed"
+      ]
+    }
+  ]
+}

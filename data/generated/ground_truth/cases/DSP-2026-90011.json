@@ -1,0 +1,279 @@
+{
+  "case_id": "DSP-2026-90011",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C10",
+  "title": "The Family Tablet",
+  "depth": "L4",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90010",
+  "txn_ids": [
+    "TXN-9001001",
+    "TXN-9001002",
+    "TXN-9001003",
+    "TXN-9001004",
+    "TXN-9001005",
+    "TXN-9001006",
+    "TXN-9001007",
+    "TXN-9001008",
+    "TXN-9001009",
+    "TXN-9001010",
+    "TXN-9001011",
+    "TXN-9001012",
+    "TXN-9001013",
+    "TXN-9001014",
+    "TXN-9001015",
+    "TXN-9001016",
+    "TXN-9001017",
+    "TXN-9001018",
+    "TXN-9001019",
+    "TXN-9001020",
+    "TXN-9001021",
+    "TXN-9001022",
+    "TXN-9001023"
+  ],
+  "summary": "Child's in-game purchases after the cardholder saved the card to the child's account. Reg Z apparent/implied authority (comment 12(b)(1)(ii)-3) vs 'never gave permission'; Visa CE item 11 (household member) would defeat 10.4 at pre-arb; merchant offers one-time minor refund for purchases in last 30 days (closing).",
+  "expected": {
+    "is_dispute": false,
+    "claim_family": "household_member_purchases",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9001001..TXN-9001023",
+        "action": "no_dispute",
+        "reason": "purchases by a person given apparent/implied authority; household-member compelling evidence would defeat 10.4"
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "denied_with_explanation",
+      "reversal_amount": "486.77",
+      "note": "reverse temporary credit with Reg Z explanation and grace period; record 2026-10-07 as notice that the child's use is no longer authorized (future purchases would be unauthorized)"
+    },
+    "cardholder_guidance": {
+      "merchant_minor_refund": {
+        "source": "WEB-04170",
+        "earliest_purchase_deadline": "2026-10-26",
+        "last_purchase_deadline": "2026-11-03"
+      },
+      "card_controls": [
+        "remove stored card from game account",
+        "optional card number reissue"
+      ]
+    },
+    "adjudication": {
+      "review_panel_required": true,
+      "reason": "authority/household determination (SOP-DSP-003 §2.3)",
+      "min_confidence": 0.75,
+      "conservative_default_applied": false,
+      "flip_fact": "evidence that the card was never saved or used with the cardholder's permission (cf. PRE-0010)"
+    },
+    "follow_ups": [
+      {
+        "at": "2026-11-04",
+        "action": "check for Pixelhollow credits on the account and send a confirmation",
+        "optional": true
+      }
+    ]
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Card saved to child's game account on 2026-02-14 from primary cardholder's phone and home IP",
+      "evidence": [
+        "MEP-90011-OI.payment_method_events"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Disputed purchases from family tablet also used for primary's banking logins",
+      "evidence": [
+        "MEP-90011-OI.purchases",
+        "account_events DEV-90010-TB"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "$4.99 February purchase not disputed",
+      "evidence": [
+        "TXN-9001000"
+      ]
+    },
+    {
+      "id": "F4",
+      "fact": "Merchant minor-refund window: 30 days from purchase",
+      "evidence": [
+        "WEB-04170"
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "label": "unauthorized use (no authority given)",
+      "for_": [
+        "cardholder statement"
+      ],
+      "against": [
+        "card saved by cardholder",
+        "prior use"
+      ]
+    },
+    {
+      "id": "H2",
+      "label": "authority given then exceeded",
+      "for_": [
+        "card saved by cardholder in Feb",
+        "household device"
+      ],
+      "against": [
+        "cardholder told child to ask"
+      ]
+    }
+  ],
+  "computations": [
+    {
+      "name": "refund_window_first_purchase_ends",
+      "value": "2026-10-26"
+    },
+    {
+      "name": "refund_window_last_purchase_ends",
+      "value": "2026-11-03"
+    },
+    {
+      "name": "total",
+      "value": "486.77"
+    }
+  ],
+  "must_cite": [
+    "REGZ-1026.12",
+    "VISA-11.5.1-COMPELLING-EVIDENCE@2026-04-18",
+    "LFB-CARDHOLDER-AGREEMENT@2025-01",
+    "LFB-SOP-DSP-003@v6",
+    "LFB-SOP-DSP-004@v2"
+  ],
+  "must_not": [
+    "file 10.4",
+    "decide without running the review panel",
+    "use age of cardholder or child as a risk signal",
+    "describe cardholder or child as fraudulent",
+    "omit the merchant refund deadline",
+    "wait for a human"
+  ],
+  "precedents": {
+    "distinguish": [
+      "PRE-0010"
+    ]
+  },
+  "components": [
+    "competing_hypotheses",
+    "automated review panel (advocates + adjudicator)",
+    "verifier",
+    "research",
+    "user_simulation",
+    "fairness guardrail",
+    "graph (household devices)",
+    "scheduled follow-up"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "network_actions[0].action",
+      "op": "eq",
+      "value": "no_dispute"
+    },
+    {
+      "path": "cardholder_resolution.outcome",
+      "op": "eq",
+      "value": "denied_with_explanation"
+    },
+    {
+      "path": "adjudication.review_panel_used",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "path": "explanation_for_cardholder",
+      "op": "contains_text",
+      "value": "2026-10-26"
+    }
+  ],
+  "rubric": [
+    "Adjudication record lists both hypotheses with evidence and the flip fact",
+    "Tone is supportive and non-accusatory"
+  ],
+  "budget": {
+    "expected_tool_calls": "10-20"
+  },
+  "required_capabilities": [
+    {
+      "capability": "subagents",
+      "label": "Subagents",
+      "necessity": "primary",
+      "why": "cardholder advocate + issuer advocate + adjudicator review panel",
+      "trajectory_signals": [
+        "subagent_started {name, parent_span_id}",
+        "subagent_finished {result_summary}",
+        "panel_position / adjudication"
+      ]
+    },
+    {
+      "capability": "agent_graph",
+      "label": "Agent graph engineering",
+      "necessity": "primary",
+      "why": "review-panel node gates the authority determination",
+      "trajectory_signals": [
+        "node_entered / node_exited",
+        "edge_taken {from, to} incl. back-edges"
+      ]
+    },
+    {
+      "capability": "memory_graph",
+      "label": "Memory — graph",
+      "necessity": "primary",
+      "why": "card-added fingerprint = primary cardholder's phone; tablet shared with banking logins",
+      "trajectory_signals": [
+        "graph_query {cypher|pattern, node_ids}",
+        "graph_write {node|edge, status}"
+      ]
+    },
+    {
+      "capability": "harness",
+      "label": "Harness",
+      "necessity": "primary",
+      "why": "persona discloses February card entry only when asked specifically",
+      "trajectory_signals": [
+        "clock_advanced",
+        "evidence_arrived {packet_id}",
+        "persona_reply",
+        "eval_scored"
+      ]
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "why": "pb-automated-adjudication",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ]
+    },
+    {
+      "capability": "memory_semantic",
+      "label": "Memory — semantic / vector",
+      "necessity": "supporting",
+      "why": "Reg Z comment 12(b)(1)(ii)-3; PRE-0010 distinction",
+      "trajectory_signals": [
+        "retrieval {query, filters: as_of/status/validity, doc_ids}"
+      ]
+    },
+    {
+      "capability": "write_paths",
+      "label": "Agent write paths (selective write, consolidation, forgetting)",
+      "necessity": "supporting",
+      "why": "scheduled follow-up; notice of revoked authority recorded",
+      "trajectory_signals": [
+        "memory_write / memory_supersede / memory_retract / memory_consolidate / memory_purge",
+        "write_rejected {reason}",
+        "automated_action"
+      ]
+    }
+  ]
+}

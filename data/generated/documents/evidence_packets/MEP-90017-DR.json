@@ -1,0 +1,29 @@
+{
+  "packet_id": "MEP-90017-DR",
+  "case_id": "DSP-2026-90017",
+  "txn_id": "TXN-9001701",
+  "merchant_id": "MER-90018",
+  "source": "dispute_response",
+  "requested_at": "2026-09-21T15:10:00Z",
+  "available_at": "2026-10-16T20:40:00Z",
+  "membership_agreement": {
+    "signed_at": "2025-01-10T23:05:00Z",
+    "signature": "electronic",
+    "clause_7": "Either party may terminate this membership with thirty (30) days' written notice. Monthly dues are billed on the 1st and are not prorated."
+  },
+  "cancellation": {
+    "received_at": "2026-08-29T02:10:00Z",
+    "auto_reply_final_billing_date": "2026-09-01"
+  },
+  "badge_scans": [
+    {
+      "ts": "2026-09-10T23:32:00Z",
+      "location": "Main floor turnstile"
+    },
+    {
+      "ts": "2026-09-14T14:05:00Z",
+      "location": "Pool entrance"
+    }
+  ],
+  "merchant_statement": "Member gave notice on 8/28; 30-day notice period covers the 9/1 dues as disclosed in the signed agreement and confirmed in our reply. Member used the club on 9/10 and 9/14."
+}

@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00113-DI",
+  "case_id": "DSP-2026-00113",
+  "txn_id": "TXN-0000067",
+  "merchant_id": "MER-00159",
+  "source": "dispute_response",
+  "requested_at": "2026-04-09T18:12:00Z",
+  "available_at": "2026-05-11T20:00:00Z",
+  "merchant_statement": "Order placed from a returning customer account with prior undisputed orders.",
+  "order": {
+    "order_id": "ORD-9C5097E3",
+    "order_date": "2026-03-15",
+    "total": "56.60"
+  },
+  "customer_account": {
+    "login_id": "bastian.coldiron99",
+    "email_on_file": "bastian.coldiron99@example.net"
+  },
+  "session": {
+    "ip": "198.18.129.33",
+    "device_fingerprint": "fp_9c5097e3fd0cd7256828a384d946ff23c13f81ba"
+  },
+  "shipping_address": "3990 Alder Crest St, Denver, CO 80225"
+}

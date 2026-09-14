@@ -1,0 +1,11 @@
+{
+  "packet_id": "MEP-90001-OI",
+  "case_id": "DSP-2026-90001",
+  "txn_id": "TXN-9000101",
+  "merchant_id": "MER-90001",
+  "source": "order_insight",
+  "requested_at": "",
+  "available_at": "2026-10-21T13:00:00Z",
+  "status": "no_data",
+  "message": "Merchant not reachable via Order Insight; no enrolment response since 2026-10-02. No order, shipment, or refund data returned."
+}

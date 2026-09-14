@@ -1,0 +1,361 @@
+schema_version: 1
+route_confidence_threshold: 0.80
+routes:
+  - id: descriptor_confusion_l1
+    priority: 10
+    match:
+      claim_family_initial: fraud_card_present
+      descriptor_history_count_min: 1
+    output:
+      depth: L1
+      graph_path: clarification_fast_path
+      agents: [lead_investigator]
+      skills: [eligibility-check]
+      budget:
+        tool_calls: 7
+        model_input_tokens: 30000
+        model_output_tokens: 4000
+        wall_seconds: 60
+        replans: 0
+        no_progress_iterations: 1
+
+  - id: duplicate_processing_l2
+    priority: 20
+    match:
+      claim_family_initial: duplicate
+    output:
+      depth: L2
+      graph_path: duplicate_investigation
+      agents: [lead_investigator]
+      skills: [eligibility-check]
+      budget:
+        tool_calls: 10
+        model_input_tokens: 50000
+        model_output_tokens: 6000
+        wall_seconds: 120
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: bundled_not_received_l2
+    priority: 15
+    match:
+      claim_family_initial: not_received
+      transaction_count_min: 2
+    output:
+      depth: L2
+      graph_path: split_low_value_and_investigate
+      agents: [lead_investigator]
+      skills: [eligibility-check, not-received]
+      budget:
+        tool_calls: 12
+        model_input_tokens: 50000
+        model_output_tokens: 6000
+        wall_seconds: 120
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: recurring_trial_l3
+    priority: 30
+    match:
+      claim_family_initial: cancelled_recurring
+    output:
+      depth: L3
+      graph_path: recurring_verify_replan
+      agents: [lead_investigator]
+      skills: [eligibility-check, recurring-trial]
+      budget:
+        tool_calls: 14
+        model_input_tokens: 70000
+        model_output_tokens: 8000
+        wall_seconds: 180
+        replans: 2
+        no_progress_iterations: 2
+
+  - id: debit_fraud_l3
+    priority: 25
+    match:
+      regime: REG_E
+      claim_family_initial: fraud_cnp
+    output:
+      depth: L3
+      graph_path: debit_fraud_parallel_specialists
+      agents: [lead_investigator, reg_e_clock_analyst, graph_link_analyst]
+      skills: [eligibility-check, reg-e-clocks, fraud-cnp]
+      budget:
+        tool_calls: 25
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 2
+        no_progress_iterations: 2
+
+  - id: high_value_cnp_ato_l4
+    priority: 35
+    match:
+      regime: REG_Z
+      claim_family_initial: fraud_cnp
+      billing_total_min: 500
+    output:
+      depth: L4
+      graph_path: ato_parallel_specialists
+      agents: [lead_investigator, security_events_analyst, merchant_evidence_analyst, graph_link_analyst]
+      skills: [eligibility-check, fraud-cnp, automated-adjudication]
+      budget:
+        tool_calls: 30
+        model_input_tokens: 120000
+        model_output_tokens: 16000
+        wall_seconds: 300
+        replans: 3
+        no_progress_iterations: 2
+
+  - id: single_not_received_graph_check_l2
+    priority: 40
+    match:
+      claim_family_initial: not_received
+      transaction_count: 1
+    output:
+      depth: L2
+      graph_path: delivery_then_graph_escalation
+      agents: [lead_investigator, graph_link_analyst, linked_case_analyst]
+      skills: [eligibility-check, not-received]
+      budget:
+        tool_calls: 35
+        model_input_tokens: 140000
+        model_output_tokens: 18000
+        wall_seconds: 300
+        replans: 2
+        no_progress_iterations: 2
+
+  - id: agentic_transaction_novel_l4
+    priority: 5
+    match:
+      transaction_channels_contains: agentic_commerce
+    output:
+      depth: L4
+      graph_path: novel_type_wait_for_provider_record
+      agents: [lead_investigator, cardholder_advocate, issuer_advocate, panel_adjudicator]
+      skills: [eligibility-check, agentic-transactions, automated-adjudication]
+      budget:
+        tool_calls: 20
+        model_input_tokens: 120000
+        model_output_tokens: 16000
+        wall_seconds: 300
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: recurring_mid_lifecycle_l3
+    priority: 28
+    match:
+      claim_family_initial: cancelled_recurring
+      stage: pre_arb_decision_due
+    output:
+      depth: L3
+      graph_path: parallel_case_tracks_after_late_response
+      agents: [lead_investigator, lifecycle_track_analyst]
+      skills: [dispute-lifecycle, recurring-trial]
+      budget:
+        tool_calls: 24
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: household_authority_l4
+    priority: 33
+    match:
+      regime: REG_Z
+      claim_family_initial: fraud_cnp
+      transaction_count_min: 5
+      prior_merchant_purchases_min: 1
+    output:
+      depth: L4
+      graph_path: household_authority_review_panel
+      agents: [lead_investigator, graph_link_analyst, merchant_evidence_analyst, cardholder_advocate, issuer_advocate, panel_adjudicator]
+      skills: [fraud-cnp, household-authority, automated-adjudication]
+      budget:
+        tool_calls: 24
+        model_input_tokens: 120000
+        model_output_tokens: 16000
+        wall_seconds: 300
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: merchant_pattern_not_received_l2
+    priority: 38
+    match:
+      claim_family_initial: not_received
+      transaction_count: 1
+      merchant_closed_same_family_disputes_min: 3
+    output:
+      depth: L2
+      graph_path: verify_merchant_pattern_then_curate
+      agents: [lead_investigator]
+      skills: [not-received, memory-hygiene]
+      budget:
+        tool_calls: 18
+        model_input_tokens: 60000
+        model_output_tokens: 8000
+        wall_seconds: 180
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: reg_e_not_received_credit_check_l1
+    priority: 14
+    match:
+      regime: REG_E
+      claim_family_initial: not_received
+    output:
+      depth: L1
+      graph_path: check_late_merchant_credit_first
+      agents: [lead_investigator]
+      skills: [eligibility-check, reg-e-clocks]
+      budget:
+        tool_calls: 10
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: credit_shortfall_fx_l2
+    priority: 16
+    match:
+      claim_family_initial: credit_not_processed
+    output:
+      depth: L2
+      graph_path: fx_reconciliation_and_fee_sop
+      agents: [lead_investigator]
+      skills: [eligibility-check]
+      budget:
+        tool_calls: 10
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: lodging_folio_amount_l3
+    priority: 18
+    match:
+      claim_family_initial: incorrect_amount
+    output:
+      depth: L3
+      graph_path: folio_line_fan_out
+      agents: [lead_investigator, folio_line_analyst]
+      skills: [lodging-te, eligibility-check]
+      budget:
+        tool_calls: 24
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: lodging_cancellation_l2
+    priority: 19
+    match:
+      claim_family_initial: cancelled_merch
+    output:
+      depth: L2
+      graph_path: timezone_cancellation_check
+      agents: [lead_investigator]
+      skills: [lodging-te, eligibility-check]
+      budget:
+        tool_calls: 14
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: not_as_described_l2
+    priority: 21
+    match:
+      claim_family_initial: not_as_described
+    output:
+      depth: L2
+      graph_path: as_of_listing_snapshot
+      agents: [lead_investigator]
+      skills: [eligibility-check]
+      budget:
+        tool_calls: 14
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: stale_claim_timeliness_l2
+    priority: 36
+    match:
+      claim_family_initial: not_received
+      transaction_age_days_min: 150
+    output:
+      depth: L2
+      graph_path: value_of_information_stop
+      agents: [lead_investigator]
+      skills: [eligibility-check, not-received]
+      budget:
+        tool_calls: 12
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: cnp_fraud_ce3_digital_l3
+    priority: 37
+    match:
+      regime: REG_Z
+      claim_family_initial: fraud_cnp
+      transaction_count: 1
+      prior_merchant_purchases_min: 1
+    output:
+      depth: L3
+      graph_path: evidence_review_then_reroute
+      agents: [lead_investigator]
+      skills: [fraud-cnp, eligibility-check]
+      budget:
+        tool_calls: 22
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: merchant_nonperformance_not_received_l2
+    priority: 39
+    match:
+      claim_family_initial: not_received
+      transaction_count: 1
+      evidence_has_proof_of_delivery: false
+    output:
+      depth: L2
+      graph_path: research_waiver_and_file
+      agents: [lead_investigator]
+      skills: [not-received, eligibility-check]
+      budget:
+        tool_calls: 14
+        model_input_tokens: 90000
+        model_output_tokens: 12000
+        wall_seconds: 240
+        replans: 1
+        no_progress_iterations: 2
+
+  - id: novel_or_ambiguous
+    priority: 10000
+    match:
+      fallback: true
+    output:
+      depth: L4
+      graph_path: full_investigation
+      agents: [lead_investigator]
+      skills: [eligibility-check, automated-adjudication]
+      budget:
+        tool_calls: 24
+        model_input_tokens: 120000
+        model_output_tokens: 16000
+        wall_seconds: 300
+        replans: 3
+        no_progress_iterations: 2

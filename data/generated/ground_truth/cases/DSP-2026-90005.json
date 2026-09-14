@@ -1,0 +1,180 @@
+{
+  "case_id": "DSP-2026-90005",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C04",
+  "title": "Split, Not Double",
+  "depth": "L2",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90004",
+  "txn_ids": [
+    "TXN-9000401",
+    "TXN-9000402"
+  ],
+  "summary": "Apparent duplicate is one authorization cleared in two shipments (qty 2, both delivered).",
+  "expected": {
+    "is_dispute": false,
+    "claim_family": "duplicate",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9000402",
+        "action": "no_dispute",
+        "reason": "not duplicate: multiple clearing sequence of one authorization"
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "no_error_split_shipment",
+      "reversal_amount": "64.18",
+      "note": "reverse temporary credit with Reg Z explanation; advise merchant return"
+    },
+    "letters": [
+      "reg_z_no_error_explanation"
+    ],
+    "adjudication": {
+      "review_panel_required": false
+    }
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Same auth code A7K2Q9, clearing seq 1/2 and 2/2, sum 128.36 = auth amount",
+      "evidence": [
+        "TXN-9000401",
+        "TXN-9000402"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Order quantity 2; two shipments; both delivered (second on 2026-10-16, after intake)",
+      "evidence": [
+        "MEP-90004-OI"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Posting dates differ (10-05 vs 10-09) although txn date is 10-03",
+      "evidence": [
+        "transactions"
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "X1",
+      "between": [
+        "intake: ordered one lamp",
+        "order: qty 2"
+      ],
+      "resolution": "order record; cardholder later confirms second delivery"
+    }
+  ],
+  "computations": [
+    {
+      "name": "clearing_sum",
+      "value": "128.36"
+    },
+    {
+      "name": "unit_total_with_tax",
+      "value": "64.18",
+      "rule": "round(60.55*1.06,2)"
+    }
+  ],
+  "must_cite": [
+    "VISA-12.6@2026-04-18",
+    "REGZ-1026.13"
+  ],
+  "must_not": [
+    "file 12.6",
+    "leave temporary credit in place as final"
+  ],
+  "components": [
+    "sandbox",
+    "tool_calling",
+    "contradiction_detection",
+    "user_simulation",
+    "wait_for_event"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "is_dispute",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "path": "cardholder_resolution.reversal_amount",
+      "op": "eq",
+      "value": "64.18"
+    }
+  ],
+  "rubric": [
+    "Explains multiple clearing sequence numbers in plain language",
+    "Offers merchant return path"
+  ],
+  "budget": {
+    "expected_tool_calls": "6-12"
+  },
+  "required_capabilities": [
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / REPL",
+      "necessity": "primary",
+      "why": "group clearings by auth code; 2 × round(60.55 × 1.06) = 128.36",
+      "trajectory_signals": [
+        "computation {code, inputs, output}"
+      ]
+    },
+    {
+      "capability": "memory_persistent",
+      "label": "Memory — persistent (SQLite system of record)",
+      "necessity": "primary",
+      "why": "clearing_seq/clearing_count/auth_amount on transactions",
+      "trajectory_signals": [
+        "tool_call sql_query / get_* with row ids in tool_result"
+      ]
+    },
+    {
+      "capability": "harness",
+      "label": "Harness",
+      "necessity": "primary",
+      "why": "packet at 12:00 ET and persona disclosure of the second delivery",
+      "trajectory_signals": [
+        "clock_advanced",
+        "evidence_arrived {packet_id}",
+        "persona_reply",
+        "eval_scored"
+      ]
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "supporting",
+      "why": "chooses to contact the cardholder after seeing quantity 2",
+      "trajectory_signals": [
+        "plan_created",
+        "plan_updated (agent-initiated)",
+        "hypothesis_updated"
+      ]
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool / function calling",
+      "necessity": "supporting",
+      "why": "evidence request + messaging",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {status, source_ids}"
+      ]
+    },
+    {
+      "capability": "loop_termination",
+      "label": "Loop engineering (real termination conditions)",
+      "necessity": "supporting",
+      "why": "stop once cardholder confirms",
+      "trajectory_signals": [
+        "termination {reason}",
+        "wait_suspended {until, latest_safe_decision}",
+        "wait_resumed"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "packet_id": "MEP-90005-OI",
+  "case_id": "DSP-2026-90006",
+  "txn_id": "TXN-9000501",
+  "merchant_id": "MER-90005",
+  "source": "order_insight",
+  "requested_at": "2026-10-13T15:00:00Z",
+  "available_at": "2026-10-16T18:20:00Z",
+  "reservation": {
+    "confirmation": "LK-88213",
+    "booked_at": "2026-08-31T01:11:00Z",
+    "channel": "hotel_website",
+    "room_type_booked": "Deluxe Queen",
+    "rate": "189.00",
+    "nights": 3,
+    "arrival": "2026-10-02",
+    "departure": "2026-10-05",
+    "disclosed_fees": [
+      "Destination fee $35.00/night plus tax, charged at property",
+      "Valet parking $32.00/night plus 10% tax, if applicable"
+    ]
+  },
+  "folio": {
+    "room": "814",
+    "lines": [
+      {
+        "code": "ROOM",
+        "description": "Room charge",
+        "qty": 3,
+        "unit": "189.00",
+        "amount": "567.00",
+        "taxable_rate": "0.1525"
+      },
+      {
+        "code": "UPG",
+        "description": "Suite upgrade King Suite",
+        "qty": 3,
+        "unit": "60.00",
+        "amount": "180.00",
+        "taxable_rate": "0.1525"
+      },
+      {
+        "code": "DEST",
+        "description": "Destination fee",
+        "qty": 3,
+        "unit": "35.00",
+        "amount": "105.00",
+        "taxable_rate": "0.1525"
+      },
+      {
+        "code": "VALET",
+        "description": "Valet parking",
+        "qty": 3,
+        "unit": "32.00",
+        "amount": "96.00",
+        "taxable_rate": "0.10"
+      },
+      {
+        "code": "TAX-OCC",
+        "description": "Room/occupancy tax 15.25%",
+        "amount": "129.93"
+      },
+      {
+        "code": "TAX-PKG",
+        "description": "Parking tax 10%",
+        "amount": "9.60"
+      }
+    ],
+    "total": "1087.53"
+  },
+  "registration_card": {
+    "signed_at": "2026-10-02T20:48:00Z",
+    "guest_signature": "present",
+    "text": "Room 814. Rate 189.00. UPG KING STE +$60/NT [initials: D.O.]. Destination fee acknowledged [initials: D.O.]. Vehicle: ______ Plate: ______"
+  },
+  "valet_log": {
+    "room": "814",
+    "entries": [],
+    "note": "No vehicle ticket issued to room 814 during stay"
+  },
+  "merchant_statement": "Guest accepted and initialed a paid suite upgrade and acknowledged the destination fee at check-in. All folio charges posted per hotel policy."
+}

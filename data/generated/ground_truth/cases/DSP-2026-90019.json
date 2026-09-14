@@ -1,0 +1,159 @@
+{
+  "case_id": "DSP-2026-90019",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C16",
+  "title": "The Listing Changed",
+  "depth": "L2",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90021",
+  "txn_ids": [
+    "TXN-9001801"
+  ],
+  "summary": "Not as described (battery 61% vs guaranteed ≥85%); return attempt refused although the listing at time of sale promised 30-day returns (changed later). Attempt to return valid; waiting period waived when merchant refuses return.",
+  "expected": {
+    "is_dispute": true,
+    "claim_family": "not_as_described",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9001801",
+        "action": "file_dispute",
+        "condition": "13.3",
+        "amount": "899.00",
+        "certification": [
+          "return attempted 2026-09-29; merchant refused RMA",
+          "merchandise at cardholder address"
+        ]
+      }
+    ],
+    "acceptable_alternatives": [
+      {
+        "condition": "13.7",
+        "rationale": "attempted return refused contrary to disclosed return policy"
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "provisional_credit_pending_network",
+      "credit_amount": "899.00"
+    },
+    "adjudication": {
+      "review_panel_required": false
+    }
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Listing at purchase date: battery ≥85%, 30-day returns",
+      "evidence": [
+        "WEB-04191"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Battery report 61% full-charge capacity",
+      "evidence": [
+        "COM attachment battery_report.txt"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Merchant refused RMA on 2026-09-29",
+      "evidence": [
+        "COM attachment renewtek_chat_2026-09-29.txt"
+      ]
+    },
+    {
+      "id": "F4",
+      "fact": "Current listing (2026-10-15) says final sale",
+      "evidence": [
+        "WEB-04198"
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "X1",
+      "between": [
+        "merchant: final sale",
+        "listing at time of sale: 30-day returns"
+      ],
+      "resolution": "policy as of purchase date governs"
+    }
+  ],
+  "must_cite": [
+    "VISA-13.3@2026-04-18",
+    "VISA-13.7@2026-04-18"
+  ],
+  "must_not": [
+    "rely on current listing",
+    "require completed return",
+    "wait 15 days"
+  ],
+  "components": [
+    "research (as-of snapshot)",
+    "semantic_retrieval",
+    "skills (not as described)",
+    "multiple-policy reasoning"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "network_actions[0].condition",
+      "op": "in",
+      "value": [
+        "13.3",
+        "13.7"
+      ]
+    },
+    {
+      "path": "network_actions[0].amount",
+      "op": "eq",
+      "value": "899.00"
+    }
+  ],
+  "rubric": [
+    "Uses the snapshot dated on the purchase date, and says why"
+  ],
+  "budget": {
+    "expected_tool_calls": "5-12"
+  },
+  "required_capabilities": [
+    {
+      "capability": "memory_semantic",
+      "label": "Memory — semantic / vector",
+      "necessity": "primary",
+      "why": "retrieve the listing snapshot captured on the purchase date",
+      "trajectory_signals": [
+        "retrieval {query, filters: as_of/status/validity, doc_ids}"
+      ]
+    },
+    {
+      "capability": "read_paths",
+      "label": "Agent read paths (selective read)",
+      "necessity": "primary",
+      "why": "select by captured_at, reject the current page",
+      "trajectory_signals": [
+        "memory_read {filters}",
+        "memory_verified / memory_rejected {note_id, reason}"
+      ]
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool / function calling",
+      "necessity": "primary",
+      "why": "research tool over dated snapshots",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {status, source_ids}"
+      ]
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "supporting",
+      "why": "pb-eligibility-check (13.3 vs 13.7)",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ]
+    }
+  ]
+}

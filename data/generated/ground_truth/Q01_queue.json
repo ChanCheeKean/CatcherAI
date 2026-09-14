@@ -1,0 +1,2315 @@
+{
+  "scenario": "Q01",
+  "title": "Monday Morning Queue",
+  "as_of": "2026-10-21T13:00:00+00:00",
+  "instructions": "Rank open cases by the earliest hard deadline that requires issuer action. Overdue clocks first.",
+  "notes": [
+    "Reg Z acknowledgment/resolution deadlines assume notice date = opened_at date",
+    "Reg Z resolution: end of second complete billing cycle after notice, capped at 90 days",
+    "Reg E business days use reference/bank_holidays_2026.csv",
+    "Hero-specific non-regulatory clocks included where they are hard (merchant refund window, awaited agentic-provider record)",
+    "expired_rights lists network time limits already passed: not urgent work, but a finding the investigator must surface"
+  ],
+  "top_15": [
+    {
+      "rank": 1,
+      "case_id": "DSP-2026-91301",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-10-21",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "hero_code": null
+    },
+    {
+      "rank": 2,
+      "case_id": "DSP-2026-90015",
+      "next_clock": "await_agentic_provider_record",
+      "next_deadline": "2026-10-23",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "hero_code": "C13"
+    },
+    {
+      "rank": 3,
+      "case_id": "DSP-2026-90011",
+      "next_clock": "merchant_minor_refund_window",
+      "next_deadline": "2026-10-26",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "hero_code": "C10"
+    },
+    {
+      "rank": 4,
+      "case_id": "DSP-2026-91305",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-10-28",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "hero_code": null
+    },
+    {
+      "rank": 5,
+      "case_id": "DSP-2026-09101",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-10-30",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "hero_code": null
+    },
+    {
+      "rank": 6,
+      "case_id": "DSP-2026-91304",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-01",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "hero_code": null
+    },
+    {
+      "rank": 7,
+      "case_id": "DSP-2026-09102",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-05",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "hero_code": null
+    },
+    {
+      "rank": 8,
+      "case_id": "DSP-2026-09208",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-07",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "hero_code": null
+    },
+    {
+      "rank": 9,
+      "case_id": "DSP-2026-09204",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "hero_code": null
+    },
+    {
+      "rank": 10,
+      "case_id": "DSP-2026-91306",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "hero_code": null
+    },
+    {
+      "rank": 11,
+      "case_id": "DSP-2026-09302",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "hero_code": null
+    },
+    {
+      "rank": 12,
+      "case_id": "DSP-2026-90009",
+      "next_clock": "reg_e_provisional_credit",
+      "next_deadline": "2026-11-10",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_E",
+      "stage": "investigating",
+      "hero_code": "C08"
+    },
+    {
+      "rank": 13,
+      "case_id": "DSP-2026-09205",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-10",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "hero_code": null
+    },
+    {
+      "rank": 14,
+      "case_id": "DSP-2026-09103",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "hero_code": null
+    },
+    {
+      "rank": 15,
+      "case_id": "DSP-2026-91307",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "hero_code": null
+    }
+  ],
+  "all_open": [
+    {
+      "case_id": "DSP-2026-91301",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "529.00",
+      "opened": "2026-09-21",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-10-21",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-10-21"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-08"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-14"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90015",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "412.60",
+      "opened": "2026-10-16",
+      "next_clock": "await_agentic_provider_record",
+      "next_deadline": "2026-10-23",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-04"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-31"
+        ],
+        [
+          "await_agentic_provider_record",
+          "2026-10-23"
+        ]
+      ],
+      "hero_code": "C13"
+    },
+    {
+      "case_id": "DSP-2026-90011",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "486.77",
+      "opened": "2026-10-07",
+      "next_clock": "merchant_minor_refund_window",
+      "next_deadline": "2026-10-26",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-18"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-25"
+        ],
+        [
+          "merchant_minor_refund_window",
+          "2026-10-26"
+        ]
+      ],
+      "hero_code": "C10"
+    },
+    {
+      "case_id": "DSP-2026-91305",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "610.00",
+      "opened": "2026-09-28",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-10-28",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-10-28"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-08"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-22"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-09101",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "2150.00",
+      "opened": "2026-09-30",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-10-30",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-10-30"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-24"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-91304",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "455.00",
+      "opened": "2026-10-02",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-01",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-01"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-08"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-27"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-09102",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "640.00",
+      "opened": "2026-10-06",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-05",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-05"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-17"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-11"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-09208",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "1212.22",
+      "opened": "2026-10-08",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-07",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-07"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-28"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-09204",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "720.49",
+      "opened": "2026-10-09",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-08"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-11"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-91306",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "344.00",
+      "opened": "2026-10-09",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-08"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-07"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-04"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-09302",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "265.00",
+      "opened": "2026-10-09",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-08"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-15"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90009",
+      "regime": "REG_E",
+      "stage": "investigating",
+      "amount": "1299.00",
+      "opened": "2026-10-13",
+      "next_clock": "reg_e_provisional_credit",
+      "next_deadline": "2026-11-10",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_provisional_credit",
+          "2026-11-10"
+        ],
+        [
+          "reg_e_investigation",
+          "2027-01-11"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-09"
+        ]
+      ],
+      "hero_code": "C08"
+    },
+    {
+      "case_id": "DSP-2026-09205",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "820.45",
+      "opened": "2026-10-11",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-10",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-10"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-28"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-09103",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "1875.50",
+      "opened": "2026-10-12",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-11"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-28"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-21"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-91307",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "188.00",
+      "opened": "2026-10-12",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-11"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-08"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-06"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90019",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "899.00",
+      "opened": "2026-10-13",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-12",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-12"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-23"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-19"
+        ]
+      ],
+      "hero_code": "C16"
+    },
+    {
+      "case_id": "DSP-2026-09209",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "748.88",
+      "opened": "2026-10-13",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-12",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-12"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-28"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-09207",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "262.79",
+      "opened": "2026-10-13",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-12",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-12"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-02"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90016",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "608.18",
+      "opened": "2026-10-14",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-13",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-13"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-27"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-10"
+        ]
+      ],
+      "hero_code": "C14"
+    },
+    {
+      "case_id": "DSP-2026-90020",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "329.40",
+      "opened": "2026-10-14",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-13",
+      "overdue_clocks": [],
+      "expired_rights": [
+        [
+          "visa_dispute_time_limit",
+          "2026-06-03"
+        ]
+      ],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-13"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-20"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-06-03"
+        ]
+      ],
+      "hero_code": "C17"
+    },
+    {
+      "case_id": "DSP-2026-90012",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "1389.00",
+      "opened": "2026-10-15",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-14",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-14"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-21"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-12"
+        ]
+      ],
+      "hero_code": "C11"
+    },
+    {
+      "case_id": "DSP-2026-90014",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "219.00",
+      "opened": "2026-10-15",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-14",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-14"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-16"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-05"
+        ]
+      ],
+      "hero_code": "C12b"
+    },
+    {
+      "case_id": "DSP-2026-09104",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "912.00",
+      "opened": "2026-10-16",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-15",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-15"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-27"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-30"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90022",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "86.50",
+      "opened": "2026-10-16",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-15",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-15"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-02"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-02"
+        ]
+      ],
+      "hero_code": "C19"
+    },
+    {
+      "case_id": "DSP-2026-90017",
+      "regime": "REG_Z",
+      "stage": "pre_arb_decision_due",
+      "amount": "64.00",
+      "opened": "2026-09-18",
+      "next_clock": "visa_pre_arbitration",
+      "next_deadline": "2026-11-15",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-05"
+        ],
+        [
+          "visa_pre_arbitration",
+          "2026-11-15"
+        ]
+      ],
+      "hero_code": "C15"
+    },
+    {
+      "case_id": "DSP-2026-90013",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "412.00",
+      "opened": "2026-10-19",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-18",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-18"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-08"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-10"
+        ]
+      ],
+      "hero_code": "C12"
+    },
+    {
+      "case_id": "DSP-2026-91308",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "240.00",
+      "opened": "2026-10-19",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-18",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-18"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-08"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-13"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90018",
+      "regime": "REG_Z",
+      "stage": "intake",
+      "amount": "64.00",
+      "opened": "2026-10-19",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-18",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-18"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-05"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-30"
+        ]
+      ],
+      "hero_code": "C15"
+    },
+    {
+      "case_id": "DSP-2026-00093",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "37.94",
+      "opened": "2026-09-12",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-11-18",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-11-18"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90002",
+      "regime": "REG_Z",
+      "stage": "intake",
+      "amount": "11.40",
+      "opened": "2026-10-19",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-18",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-18"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-09"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-12"
+        ]
+      ],
+      "hero_code": "C02"
+    },
+    {
+      "case_id": "DSP-2026-90001",
+      "regime": "REG_Z",
+      "stage": "intake",
+      "amount": "1284.00",
+      "opened": "2026-10-20",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-19",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-19"
+        ],
+        [
+          "reg_z_resolution",
+          "2026-12-25"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-17"
+        ]
+      ],
+      "hero_code": "C01"
+    },
+    {
+      "case_id": "DSP-2026-90010",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "69.99",
+      "opened": "2026-10-20",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-19",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-19"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-06"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-01"
+        ]
+      ],
+      "hero_code": "C09"
+    },
+    {
+      "case_id": "DSP-2026-90003",
+      "regime": "REG_Z",
+      "stage": "intake",
+      "amount": "32.48",
+      "opened": "2026-10-20",
+      "next_clock": "reg_z_acknowledgment",
+      "next_deadline": "2026-11-19",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_acknowledgment",
+          "2026-11-19"
+        ],
+        [
+          "reg_z_resolution",
+          "2027-01-03"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-10"
+        ]
+      ],
+      "hero_code": "C03"
+    },
+    {
+      "case_id": "DSP-2026-00184",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "56.83",
+      "opened": "2026-09-22",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-11-24",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-11-24"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00159",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "65.50",
+      "opened": "2026-09-16",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-11-25",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-11-25"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00214",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "42.32",
+      "opened": "2026-09-12",
+      "next_clock": "visa_dispute_time_limit",
+      "next_deadline": "2026-11-25",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-06"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-11-25"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00052",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "759.67",
+      "opened": "2026-09-26",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-11-28",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-11-28"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00097",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "65.00",
+      "opened": "2026-09-24",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-03",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-03"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00144",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "302.27",
+      "opened": "2026-09-18",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-04",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-04"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00011",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "189.94",
+      "opened": "2026-09-24",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-04",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-04"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00018",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "470.77",
+      "opened": "2026-09-18",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-06",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-06"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00107",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "161.49",
+      "opened": "2026-09-30",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-06",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-06"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-16"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00226",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "15.99",
+      "opened": "2026-09-09",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-06",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-06"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00061",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "114.21",
+      "opened": "2026-09-11",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-07",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-07"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00095",
+      "regime": "REG_E",
+      "stage": "dispute_filed",
+      "amount": "958.58",
+      "opened": "2026-09-09",
+      "next_clock": "reg_e_investigation",
+      "next_deadline": "2026-12-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_investigation",
+          "2026-12-08"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00186",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "322.90",
+      "opened": "2026-10-07",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-08"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00102",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "290.86",
+      "opened": "2026-09-24",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-08"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00030",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "56.77",
+      "opened": "2026-09-19",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-08",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-08"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-26"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00169",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "140.77",
+      "opened": "2026-09-22",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-09",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-09"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00134",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "174.74",
+      "opened": "2026-09-30",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-10",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-10"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00129",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "66.41",
+      "opened": "2026-09-29",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-10",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-10"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-23"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00067",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "39.77",
+      "opened": "2026-09-24",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-10",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-10"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00208",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "897.81",
+      "opened": "2026-10-06",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-11"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00132",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "759.16",
+      "opened": "2026-09-19",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-11"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00100",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "80.52",
+      "opened": "2026-09-20",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-11"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00133",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "17.99",
+      "opened": "2026-09-21",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-11"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90006",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "434.06",
+      "opened": "2026-10-12",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-12",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-12"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-03"
+        ]
+      ],
+      "hero_code": "C05"
+    },
+    {
+      "case_id": "DSP-2026-90007",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "119.88",
+      "opened": "2026-10-07",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-12",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-12"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-28"
+        ]
+      ],
+      "hero_code": "C06"
+    },
+    {
+      "case_id": "DSP-2026-00012",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "14.22",
+      "opened": "2026-10-03",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-12",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-12"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-25"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90005",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "64.18",
+      "opened": "2026-10-13",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-15",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-15"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-06"
+        ]
+      ],
+      "hero_code": "C04"
+    },
+    {
+      "case_id": "DSP-2026-00117",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "6.56",
+      "opened": "2026-09-22",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-15",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-15"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00094",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "1004.26",
+      "opened": "2026-10-11",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-16",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-16"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-05"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00034",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "497.51",
+      "opened": "2026-10-10",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-16",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-16"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-25"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00180",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "22.99",
+      "opened": "2026-10-03",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-16",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-16"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00088",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "9.99",
+      "opened": "2026-10-15",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-16",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-16"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-15"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00103",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "1156.82",
+      "opened": "2026-10-17",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-20",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-20"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-31"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00149",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "734.68",
+      "opened": "2026-10-06",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-20",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-20"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90008",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "29.64",
+      "opened": "2026-10-08",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-20",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-20"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-30"
+        ]
+      ],
+      "hero_code": "C07"
+    },
+    {
+      "case_id": "DSP-2026-00158",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "13.54",
+      "opened": "2026-10-18",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-20",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-20"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-24"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00238",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "164.90",
+      "opened": "2026-10-18",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-21",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-21"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-22"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00224",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "17.99",
+      "opened": "2026-09-28",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-22",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-22"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00196",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "1090.63",
+      "opened": "2026-10-14",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-23",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-23"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-06"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00116",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "177.64",
+      "opened": "2026-10-05",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-24",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-24"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00016",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "22.99",
+      "opened": "2026-10-17",
+      "next_clock": "visa_dispute_time_limit",
+      "next_deadline": "2026-12-24",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-15"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2026-12-24"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00015",
+      "regime": "REG_E",
+      "stage": "dispute_filed",
+      "amount": "45.37",
+      "opened": "2026-09-26",
+      "next_clock": "reg_e_investigation",
+      "next_deadline": "2026-12-25",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_investigation",
+          "2026-12-25"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00013",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "747.05",
+      "opened": "2026-10-15",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-27",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-27"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-04"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00014",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "21.31",
+      "opened": "2026-10-16",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-27",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-27"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-28"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00231",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "4.64",
+      "opened": "2026-10-18",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-27",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-27"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-13"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00104",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "60.07",
+      "opened": "2026-10-18",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2026-12-28",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2026-12-28"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-06"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00236",
+      "regime": "REG_E",
+      "stage": "dispute_filed",
+      "amount": "7.43",
+      "opened": "2026-10-01",
+      "next_clock": "reg_e_investigation",
+      "next_deadline": "2026-12-30",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_investigation",
+          "2026-12-30"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00175",
+      "regime": "REG_Z",
+      "stage": "dispute_filed",
+      "amount": "144.40",
+      "opened": "2026-10-05",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2027-01-01",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-01"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00002",
+      "regime": "REG_Z",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "123.37",
+      "opened": "2026-10-11",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2027-01-01",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-01"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-17"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00053",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "257.54",
+      "opened": "2026-10-18",
+      "next_clock": "visa_dispute_time_limit",
+      "next_deadline": "2027-01-02",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-15"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-02"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00069",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "162.68",
+      "opened": "2026-10-17",
+      "next_clock": "visa_dispute_time_limit",
+      "next_deadline": "2027-01-02",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-12"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-02"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00087",
+      "regime": "REG_E",
+      "stage": "dispute_filed",
+      "amount": "4.03",
+      "opened": "2026-10-05",
+      "next_clock": "reg_e_investigation",
+      "next_deadline": "2027-01-03",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_investigation",
+          "2027-01-03"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00225",
+      "regime": "REG_E",
+      "stage": "dispute_filed",
+      "amount": "475.45",
+      "opened": "2026-10-09",
+      "next_clock": "reg_e_investigation",
+      "next_deadline": "2027-01-07",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_investigation",
+          "2027-01-07"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-90021",
+      "regime": "REG_E",
+      "stage": "investigating",
+      "amount": "143.20",
+      "opened": "2026-10-15",
+      "next_clock": "visa_dispute_time_limit",
+      "next_deadline": "2027-01-07",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_investigation",
+          "2027-01-13"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-07"
+        ]
+      ],
+      "hero_code": "C18"
+    },
+    {
+      "case_id": "DSP-2026-00062",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "3.92",
+      "opened": "2026-10-19",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2027-01-09",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-09"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-28"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00171",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "551.60",
+      "opened": "2026-10-18",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2027-01-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-11"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-10"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00047",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "240.96",
+      "opened": "2026-10-20",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2027-01-11",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-11"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-03"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00082",
+      "regime": "REG_E",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "197.95",
+      "opened": "2026-10-14",
+      "next_clock": "reg_e_investigation",
+      "next_deadline": "2027-01-12",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_investigation",
+          "2027-01-12"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-12"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00005",
+      "regime": "REG_E",
+      "stage": "awaiting_merchant_evidence",
+      "amount": "247.77",
+      "opened": "2026-10-15",
+      "next_clock": "reg_e_investigation",
+      "next_deadline": "2027-01-13",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_e_investigation",
+          "2027-01-13"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-04"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00166",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "231.86",
+      "opened": "2026-10-20",
+      "next_clock": "visa_dispute_time_limit",
+      "next_deadline": "2027-01-13",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-15"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-13"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00220",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "81.11",
+      "opened": "2026-10-19",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2027-01-13",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-13"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-02-05"
+        ]
+      ],
+      "hero_code": null
+    },
+    {
+      "case_id": "DSP-2026-00111",
+      "regime": "REG_Z",
+      "stage": "investigating",
+      "amount": "551.56",
+      "opened": "2026-10-19",
+      "next_clock": "reg_z_resolution",
+      "next_deadline": "2027-01-16",
+      "overdue_clocks": [],
+      "expired_rights": [],
+      "all_clocks": [
+        [
+          "reg_z_resolution",
+          "2027-01-16"
+        ],
+        [
+          "visa_dispute_time_limit",
+          "2027-01-19"
+        ]
+      ],
+      "hero_code": null
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "router",
+      "label": "Router",
+      "necessity": "primary",
+      "why": "portfolio-level prioritization by earliest hard deadline",
+      "trajectory_signals": [
+        "route_decision {route_id, method: rule|llm, confidence}"
+      ]
+    },
+    {
+      "capability": "subagents",
+      "label": "Subagents",
+      "necessity": "primary",
+      "why": "per-case clock computation fan-out",
+      "trajectory_signals": [
+        "subagent_started {name, parent_span_id}",
+        "subagent_finished {result_summary}",
+        "panel_position / adjudication"
+      ]
+    },
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / REPL",
+      "necessity": "primary",
+      "why": "Reg Z cycles, Reg E business days, pre-arb deadlines for 95 open cases",
+      "trajectory_signals": [
+        "computation {code, inputs, output}"
+      ]
+    },
+    {
+      "capability": "memory_persistent",
+      "label": "Memory — persistent (SQLite system of record)",
+      "necessity": "primary",
+      "why": "open case state across the portfolio",
+      "trajectory_signals": [
+        "tool_call sql_query / get_* with row ids in tool_result"
+      ]
+    },
+    {
+      "capability": "agent_graph",
+      "label": "Agent graph engineering",
+      "necessity": "supporting",
+      "why": "batch map-reduce",
+      "trajectory_signals": [
+        "node_entered / node_exited",
+        "edge_taken {from, to} incl. back-edges"
+      ]
+    },
+    {
+      "capability": "harness",
+      "label": "Harness",
+      "necessity": "supporting",
+      "why": "batch scenario run",
+      "trajectory_signals": [
+        "clock_advanced",
+        "evidence_arrived {packet_id}",
+        "persona_reply",
+        "eval_scored"
+      ]
+    }
+  ]
+}

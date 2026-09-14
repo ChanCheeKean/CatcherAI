@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00070-DI",
+  "case_id": "DSP-2026-00070",
+  "txn_id": "TXN-0003872",
+  "merchant_id": "MER-00159",
+  "source": "dispute_response",
+  "requested_at": "2026-04-28T13:39:00Z",
+  "available_at": "2026-05-18T20:00:00Z",
+  "merchant_statement": "Order placed from a returning customer account with prior undisputed orders.",
+  "order": {
+    "order_id": "ORD-EBE6CAB9",
+    "order_date": "2026-04-05",
+    "total": "97.32"
+  },
+  "customer_account": {
+    "login_id": "hugo.dunmore46",
+    "email_on_file": "hugo.dunmore46@example.org"
+  },
+  "session": {
+    "ip": "198.18.175.146",
+    "device_fingerprint": "fp_ebe6cab9c79ea81074fc8c5f4b0edda37b430b70"
+  },
+  "shipping_address": "4971 Stonebrook Ave, Seattle, WA 98159"
+}

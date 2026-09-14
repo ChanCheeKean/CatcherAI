@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00096-DI",
+  "case_id": "DSP-2026-00096",
+  "txn_id": "TXN-0017586",
+  "merchant_id": "MER-00178",
+  "source": "dispute_response",
+  "requested_at": "2026-07-13T13:30:00Z",
+  "available_at": "2026-08-09T20:00:00Z",
+  "merchant_statement": "Order placed from a returning customer account with prior undisputed orders.",
+  "order": {
+    "order_id": "ORD-E098D910",
+    "order_date": "2026-06-09",
+    "total": "44.15"
+  },
+  "customer_account": {
+    "login_id": "imani.abernathy57",
+    "email_on_file": "imani.abernathy57@example.org"
+  },
+  "session": {
+    "ip": "198.18.4.213",
+    "device_fingerprint": "fp_e098d910f142385adfa8922d5234f2af7e82e413"
+  },
+  "shipping_address": "2986 Maple Ridge Ln, Los Angeles, CA 90040"
+}

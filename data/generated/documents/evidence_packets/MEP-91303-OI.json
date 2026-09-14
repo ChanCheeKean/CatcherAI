@@ -1,0 +1,37 @@
+{
+  "packet_id": "MEP-91303-OI",
+  "case_id": "DSP-2026-91303",
+  "txn_id": "TXN-0019990",
+  "merchant_id": "MER-90014",
+  "source": "order_insight",
+  "requested_at": "2026-09-12T17:00:00Z",
+  "available_at": "2026-09-13T22:00:00Z",
+  "shipments": [
+    {
+      "carrier": "ParcelPath",
+      "tracking_number": "PP90130355127",
+      "events": [
+        {
+          "ts": "2026-09-08T13:00:00Z",
+          "status": "shipped"
+        },
+        {
+          "ts": "2026-09-11T18:15:00Z",
+          "status": "delivered",
+          "address": "77 Rookwood Ln, Westerville, OH 43082"
+        }
+      ],
+      "proof_of_delivery": {
+        "address": "77 Rookwood Ln, Westerville, OH 43082",
+        "gps_distance_m": 11,
+        "photo_description": "Box on porch at front door; house number matches."
+      }
+    }
+  ],
+  "customer_account": {
+    "login_id": "yael.sutcliffe65",
+    "ip": "198.18.163.62",
+    "device_fingerprint": "fp_59901c4a083a67efe3e8a9711307839e5a5f0b9e"
+  },
+  "merchant_statement": "Delivered to cardholder's address with photo and GPS confirmation."
+}

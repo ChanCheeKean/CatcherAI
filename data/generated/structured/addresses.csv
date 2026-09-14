@@ -1,0 +1,587 @@
+address_id,line1,line2,city,state,postal_code,country,lat,lon,address_type
+ADR-000001,914 Copperleaf Way,,Columbus,OH,43299,US,40.0192,-82.96776,residential
+ADR-000002,1628 Norwood Fen Ln,,Columbus,OH,43298,US,39.99882,-82.94996,commercial
+ADR-000003,3990 Alder Crest St,,Denver,CO,80225,US,39.72376,-105.02736,residential
+ADR-000004,3123 Brindle Rd,,Denver,CO,80226,US,39.69052,-104.95562,commercial
+ADR-000005,220 Rookwood Way,,Chicago,IL,60642,US,41.83657,-87.62759,residential
+ADR-000006,4251 Elmsworth Blvd,,Chicago,IL,60626,US,41.87488,-87.57473,commercial
+ADR-000007,351 Thistledown Blvd,,Cleveland,OH,44182,US,41.50719,-81.70156,residential
+ADR-000008,2239 Bramblewood St,,Brooklyn,NY,11266,US,40.70236,-73.94702,residential
+ADR-000009,3246 Larchmont Rise Rd,Apt 17A,Columbus,OH,43270,US,39.99995,-83.03352,residential
+ADR-000010,3683 Ivybridge Ave,,Columbus,OH,43228,US,40.01585,-82.94064,commercial
+ADR-000011,2800 Norwood Fen Ct,,Westerville,OH,43057,US,40.16837,-82.91174,residential
+ADR-000012,261 Rookwood Way,,Westerville,OH,43053,US,40.1525,-82.89075,commercial
+ADR-000013,2871 Oriel Blvd,,Columbus,OH,43243,US,39.92283,-83.02079,residential
+ADR-000014,3517 Maple Ridge Ln,Apt 1C,Denver,CO,80204,US,39.72551,-105.00384,residential
+ADR-000015,4358 Alder Crest Pl,,Denver,CO,80266,US,39.75275,-104.95448,commercial
+ADR-000016,2707 Willowmere Blvd,,Denver,CO,80257,US,39.69333,-105.01,commercial
+ADR-000017,3843 Norwood Fen Dr,,Austin,TX,78748,US,30.29818,-97.74121,residential
+ADR-000018,2872 Thistledown Dr,,Pittsburgh,PA,15287,US,40.3807,-80.05103,residential
+ADR-000019,3068 Elmsworth Way,,Pittsburgh,PA,15225,US,40.48734,-79.93691,commercial
+ADR-000020,2824 Norwood Fen Dr,Apt 7C,Cleveland,OH,44166,US,41.53276,-81.6634,residential
+ADR-000021,3401 Quarry Lake Way,,Chicago,IL,60680,US,41.93679,-87.60216,residential
+ADR-000022,117 Bramblewood Ln,,Chicago,IL,60637,US,41.82306,-87.58937,commercial
+ADR-000023,3676 Carroll Bend Pl,,Seattle,WA,98193,US,47.56206,-122.278,residential
+ADR-000024,758 Harrowgate St,,Seattle,WA,98197,US,47.66198,-122.3371,commercial
+ADR-000025,2712 Harrowgate Ct,Apt 10E,Cleveland,OH,44124,US,41.49478,-81.68484,residential
+ADR-000026,963 Umberfield Ln,,Cleveland,OH,44188,US,41.55763,-81.72572,commercial
+ADR-000027,2990 Umberfield Pl,Apt 4B,Seattle,WA,98132,US,47.56672,-122.34634,residential
+ADR-000028,4434 Rookwood Blvd,,Westerville,OH,43091,US,40.12196,-82.92817,residential
+ADR-000029,2110 Elmsworth Ct,,Westerville,OH,43038,US,40.07359,-82.93357,commercial
+ADR-000030,1895 Larchmont Rise St,,Columbus,OH,43206,US,39.92166,-82.94329,residential
+ADR-000031,2337 Carroll Bend St,,Columbus,OH,43250,US,39.90278,-83.02921,commercial
+ADR-000032,4732 Elmsworth Way,,Los Angeles,CA,90070,US,34.08006,-118.27906,residential
+ADR-000033,4413 Fennimore Pl,,Los Angeles,CA,90082,US,34.07649,-118.19528,commercial
+ADR-000034,3281 Dovetail St,,Los Angeles,CA,90013,US,34.05968,-118.2707,commercial
+ADR-000035,4444 Oriel Ave,Apt 14B,Cleveland,OH,44180,US,41.46271,-81.65687,residential
+ADR-000036,1179 Thistledown St,,Cleveland,OH,44144,US,41.54134,-81.72475,commercial
+ADR-000037,788 Copperleaf St,,Boston,MA,02158,US,42.3652,-71.07123,residential
+ADR-000038,2226 Elmsworth Ave,,Boston,MA,02170,US,42.30773,-71.02128,commercial
+ADR-000039,1617 Stonebrook Ln,,Chicago,IL,60614,US,41.85911,-87.61722,residential
+ADR-000040,4938 Willowmere Blvd,,Austin,TX,78739,US,30.21165,-97.70162,residential
+ADR-000041,1909 Saffron Hill Rd,,Austin,TX,78719,US,30.23675,-97.70569,commercial
+ADR-000042,1944 Fennimore Rd,,Cleveland,OH,44199,US,41.54452,-81.65297,residential
+ADR-000043,2556 Kestrel Run Pl,,Chicago,IL,60611,US,41.84369,-87.66931,residential
+ADR-000044,1623 Larchmont Rise Rd,,Chicago,IL,60697,US,41.92108,-87.65841,commercial
+ADR-000045,1033 Zephyr Glen Dr,,Columbus,OH,43269,US,39.96839,-83.05036,residential
+ADR-000046,1704 Harrowgate Ave,,Boston,MA,02175,US,42.34215,-71.0729,residential
+ADR-000047,4372 Ivybridge Rd,Apt 14C,Columbus,OH,43289,US,40.00638,-82.98164,residential
+ADR-000048,1937 Saffron Hill Way,,Columbus,OH,43284,US,40.01979,-82.94701,commercial
+ADR-000049,1351 Umberfield Ave,,Denver,CO,80273,US,39.73532,-104.99376,residential
+ADR-000050,3360 Fennimore St,,Denver,CO,80219,US,39.69214,-105.04,commercial
+ADR-000051,1968 Zephyr Glen Ave,,Columbus,OH,43282,US,39.90485,-83.03793,residential
+ADR-000052,4814 Glenhaven Rd,,Columbus,OH,43255,US,39.90963,-82.96304,commercial
+ADR-000053,1189 Quarry Lake Dr,,Columbus,OH,43206,US,39.93654,-82.9802,residential
+ADR-000054,4580 Saffron Hill Ave,,Columbus,OH,43289,US,39.986,-83.03097,commercial
+ADR-000055,4734 Yarrow Way,Apt 21B,Seattle,WA,98114,US,47.63214,-122.33151,residential
+ADR-000056,3753 Bramblewood Ln,,Seattle,WA,98155,US,47.55833,-122.34488,commercial
+ADR-000057,2701 Vantage Point Ave,,Chicago,IL,60685,US,41.91059,-87.59118,residential
+ADR-000058,3671 Quarry Lake Blvd,,Chicago,IL,60674,US,41.85018,-87.60174,commercial
+ADR-000059,1091 Vantage Point Ln,Apt 17B,Columbus,OH,43275,US,39.90692,-83.03095,residential
+ADR-000060,2044 Maple Ridge Pl,Apt 3F,Chicago,IL,60659,US,41.92289,-87.62786,residential
+ADR-000061,2416 Dovetail Ct,,Chicago,IL,60694,US,41.82312,-87.63167,commercial
+ADR-000062,1640 Kestrel Run Blvd,Apt 19D,Columbus,OH,43297,US,40.0137,-83.02303,residential
+ADR-000063,1525 Ivybridge Ct,,Columbus,OH,43238,US,39.9897,-82.95428,commercial
+ADR-000064,1704 Saffron Hill Ave,,Chicago,IL,60667,US,41.87008,-87.63169,residential
+ADR-000065,2389 Saffron Hill Rd,,Chicago,IL,60669,US,41.8564,-87.68417,commercial
+ADR-000066,408 Bramblewood Pl,,Chicago,IL,60620,US,41.82896,-87.68424,residential
+ADR-000067,3843 Oriel Ct,,Chicago,IL,60631,US,41.84434,-87.57566,commercial
+ADR-000068,4920 Kestrel Run Dr,,Columbus,OH,43267,US,39.92648,-82.98238,residential
+ADR-000069,3997 Dovetail Pl,,Columbus,OH,43235,US,39.96975,-82.97133,commercial
+ADR-000070,19 Wharfside Rd,Apt 21D,Jersey City,NJ,07324,US,40.67953,-74.02132,residential
+ADR-000071,4601 Zephyr Glen Ln,,Jersey City,NJ,07322,US,40.77534,-74.0326,commercial
+ADR-000072,2642 Thistledown St,,Seattle,WA,98169,US,47.58282,-122.34133,residential
+ADR-000073,4135 Norwood Fen Rd,,Seattle,WA,98191,US,47.65593,-122.38483,commercial
+ADR-000074,2167 Carroll Bend Dr,,Pittsburgh,PA,15286,US,40.39183,-80.05368,residential
+ADR-000075,3080 Carroll Bend Pl,,Seattle,WA,98141,US,47.59454,-122.29533,residential
+ADR-000076,1745 Juniper Hollow Ave,,Jersey City,NJ,07363,US,40.75995,-74.07229,residential
+ADR-000077,3844 Brindle Dr,,Seattle,WA,98183,US,47.56626,-122.29325,residential
+ADR-000078,4261 Marigold Ln,,Seattle,WA,98152,US,47.58539,-122.37815,commercial
+ADR-000079,3847 Kestrel Run Ct,,Los Angeles,CA,90093,US,34.02422,-118.27371,residential
+ADR-000080,2069 Thistledown Ln,,Los Angeles,CA,90051,US,34.05354,-118.30224,commercial
+ADR-000081,1773 Dovetail Ln,,Los Angeles,CA,90006,US,34.06602,-118.3018,commercial
+ADR-000082,1957 Yarrow St,,Los Angeles,CA,90014,US,34.02588,-118.25401,residential
+ADR-000083,2303 Fennimore Pl,,Los Angeles,CA,90031,US,34.01231,-118.2866,commercial
+ADR-000084,756 Alder Crest Ave,,Columbus,OH,43214,US,39.9357,-83.03843,residential
+ADR-000085,1790 Marigold Dr,,Denver,CO,80268,US,39.70354,-105.01002,residential
+ADR-000086,4811 Marigold Dr,,Denver,CO,80235,US,39.77387,-104.98982,commercial
+ADR-000087,4227 Bramblewood Rd,,Denver,CO,80221,US,39.70716,-105.04717,residential
+ADR-000088,4679 Oriel Ct,,Denver,CO,80242,US,39.79798,-104.94669,commercial
+ADR-000089,515 Rookwood Dr,,Brooklyn,NY,11252,US,40.73323,-73.9015,residential
+ADR-000090,1479 Willowmere Ct,,Brooklyn,NY,11265,US,40.6818,-73.97602,commercial
+ADR-000091,4550 Alder Crest Dr,Apt 13A,Pittsburgh,PA,15285,US,40.47551,-79.96435,residential
+ADR-000092,1701 Oriel Rd,Apt 13B,Austin,TX,78729,US,30.32632,-97.68502,residential
+ADR-000093,992 Oriel Rd,,Austin,TX,78744,US,30.22228,-97.78577,commercial
+ADR-000094,1141 Elmsworth Way,,Brooklyn,NY,11295,US,40.65655,-73.97691,residential
+ADR-000095,4268 Brindle Pl,Apt 21C,Cleveland,OH,44194,US,41.44773,-81.72381,residential
+ADR-000096,2223 Thistledown Way,,Cleveland,OH,44163,US,41.44047,-81.75358,commercial
+ADR-000097,4161 Larchmont Rise St,,Jersey City,NJ,07399,US,40.6756,-74.01847,residential
+ADR-000098,4668 Umberfield Ln,,Los Angeles,CA,90083,US,34.03337,-118.1949,residential
+ADR-000099,3701 Maple Ridge Way,,Los Angeles,CA,90014,US,34.04884,-118.22338,commercial
+ADR-000100,1952 Quarry Lake St,,Denver,CO,80270,US,39.74769,-105.04201,residential
+ADR-000101,2660 Willowmere Pl,,Denver,CO,80249,US,39.77212,-104.93693,commercial
+ADR-000102,3904 Umberfield Rd,,Chicago,IL,60667,US,41.90636,-87.60617,residential
+ADR-000103,3010 Ivybridge Ln,,Columbus,OH,43253,US,39.94264,-83.05617,residential
+ADR-000104,4424 Harrowgate Rd,,Columbus,OH,43227,US,39.93705,-82.94742,commercial
+ADR-000105,72 Maple Ridge Ct,,Denver,CO,80290,US,39.74313,-104.9448,residential
+ADR-000106,83 Saffron Hill Rd,,Austin,TX,78781,US,30.30703,-97.70087,residential
+ADR-000107,1550 Glenhaven Ave,,Austin,TX,78746,US,30.32551,-97.75714,commercial
+ADR-000108,1388 Elmsworth Blvd,,Seattle,WA,98185,US,47.60617,-122.29037,residential
+ADR-000109,1154 Dovetail Ave,,Seattle,WA,98158,US,47.63121,-122.33513,commercial
+ADR-000110,1801 Ivybridge St,,Westerville,OH,43032,US,40.10662,-82.94879,residential
+ADR-000111,3162 Pemberly Ave,,Westerville,OH,43034,US,40.15992,-82.94902,commercial
+ADR-000112,3208 Larchmont Rise Dr,,Westerville,OH,43002,US,40.07351,-82.91292,residential
+ADR-000113,4614 Thistledown Pl,,Westerville,OH,43018,US,40.1111,-82.88495,commercial
+ADR-000114,3670 Oriel St,Apt 16C,Pittsburgh,PA,15297,US,40.47148,-80.03865,residential
+ADR-000115,202 Wharfside Dr,,Pittsburgh,PA,15226,US,40.42201,-79.94355,commercial
+ADR-000116,1965 Norwood Fen St,,Austin,TX,78771,US,30.24074,-97.78967,residential
+ADR-000117,2119 Fennimore Way,,Austin,TX,78717,US,30.28879,-97.7663,commercial
+ADR-000118,4971 Stonebrook Ave,,Seattle,WA,98159,US,47.60293,-122.33461,residential
+ADR-000119,1379 Dovetail Dr,,Seattle,WA,98185,US,47.63934,-122.38691,commercial
+ADR-000120,1982 Pemberly St,,Seattle,WA,98140,US,47.55963,-122.30004,commercial
+ADR-000121,452 Elmsworth Rd,,Chicago,IL,60671,US,41.87178,-87.58406,residential
+ADR-000122,4322 Vantage Point Rd,,Columbus,OH,43210,US,40.00919,-82.94183,residential
+ADR-000123,2362 Yarrow St,,Los Angeles,CA,90044,US,33.99398,-118.26683,residential
+ADR-000124,2170 Yarrow Ct,Apt 21D,Los Angeles,CA,90062,US,34.09448,-118.2473,residential
+ADR-000125,1173 Marigold Ln,,Austin,TX,78786,US,30.2574,-97.76467,residential
+ADR-000126,2103 Yarrow Pl,Apt 2E,Austin,TX,78728,US,30.27234,-97.6952,residential
+ADR-000127,4326 Dovetail Ave,,Austin,TX,78767,US,30.25425,-97.69644,commercial
+ADR-000128,2649 Juniper Hollow Ave,Apt 22F,Chicago,IL,60653,US,41.858,-87.68813,residential
+ADR-000129,1030 Stonebrook St,,Chicago,IL,60619,US,41.88715,-87.64315,commercial
+ADR-000130,3077 Elmsworth Ct,Apt 5A,Columbus,OH,43265,US,39.99202,-82.98375,residential
+ADR-000131,3579 Bramblewood Blvd,,Austin,TX,78712,US,30.21145,-97.80003,residential
+ADR-000132,327 Maple Ridge Rd,,Austin,TX,78707,US,30.22413,-97.72624,commercial
+ADR-000133,2333 Glenhaven Way,,Austin,TX,78755,US,30.24447,-97.77906,residential
+ADR-000134,3661 Willowmere Ln,Apt 24C,Chicago,IL,60608,US,41.86236,-87.66641,residential
+ADR-000135,2607 Ivybridge Ln,,Columbus,OH,43240,US,40.00295,-83.02172,residential
+ADR-000136,41 Quarry Lake Blvd,,Cleveland,OH,44195,US,41.53487,-81.66641,residential
+ADR-000137,3240 Fennimore Dr,,Cleveland,OH,44108,US,41.47105,-81.72118,commercial
+ADR-000138,2225 Ivybridge Pl,,Cleveland,OH,44155,US,41.51475,-81.7175,residential
+ADR-000139,4233 Vantage Point Rd,,Cleveland,OH,44122,US,41.46557,-81.73513,commercial
+ADR-000140,2979 Elmsworth Way,,Denver,CO,80225,US,39.78991,-105.03812,residential
+ADR-000141,1633 Kestrel Run Way,,Denver,CO,80285,US,39.72889,-104.93711,commercial
+ADR-000142,4586 Marigold Way,Apt 20E,Brooklyn,NY,11275,US,40.64057,-73.98618,residential
+ADR-000143,1831 Harrowgate Blvd,,Pittsburgh,PA,15207,US,40.39982,-79.94688,residential
+ADR-000144,798 Zephyr Glen Way,,Cleveland,OH,44119,US,41.45671,-81.72378,residential
+ADR-000145,3437 Rookwood Dr,,Boston,MA,02114,US,42.32024,-71.00856,residential
+ADR-000146,4728 Zephyr Glen Way,,Boston,MA,02191,US,42.3765,-71.00074,commercial
+ADR-000147,221 Vantage Point Ct,,Westerville,OH,43007,US,40.10891,-82.87432,residential
+ADR-000148,1602 Willowmere Way,,Westerville,OH,43006,US,40.11928,-82.94005,commercial
+ADR-000149,2891 Zephyr Glen Rd,Apt 21A,Austin,TX,78714,US,30.23475,-97.79705,residential
+ADR-000150,1016 Marigold Pl,,Austin,TX,78744,US,30.27896,-97.72481,commercial
+ADR-000151,3367 Maple Ridge Ave,,Seattle,WA,98120,US,47.62658,-122.3464,residential
+ADR-000152,1352 Rookwood Ln,,Pittsburgh,PA,15257,US,40.47475,-80.01878,residential
+ADR-000153,1036 Oriel Blvd,,Cleveland,OH,44116,US,41.50486,-81.6541,residential
+ADR-000154,65 Maple Ridge Way,,Cleveland,OH,44194,US,41.44556,-81.74248,commercial
+ADR-000155,3436 Oriel St,,Cleveland,OH,44134,US,41.44499,-81.69814,residential
+ADR-000156,1014 Wharfside Dr,,Cleveland,OH,44135,US,41.52239,-81.68077,commercial
+ADR-000157,3469 Glenhaven Rd,,Los Angeles,CA,90083,US,34.01284,-118.22849,residential
+ADR-000158,3722 Umberfield Dr,Apt 1A,Boston,MA,02117,US,42.36002,-71.02312,residential
+ADR-000159,737 Norwood Fen St,,Boston,MA,02169,US,42.31118,-71.05661,commercial
+ADR-000160,1515 Yarrow Ave,,Chicago,IL,60693,US,41.90782,-87.59332,residential
+ADR-000161,3417 Kestrel Run Ln,,Columbus,OH,43283,US,39.98079,-83.02359,residential
+ADR-000162,2682 Umberfield Dr,,Columbus,OH,43275,US,40.00138,-82.96886,commercial
+ADR-000163,426 Saffron Hill Ln,Apt 7E,Brooklyn,NY,11296,US,40.68243,-73.97859,residential
+ADR-000164,2415 Oriel Rd,,Columbus,OH,43234,US,39.95384,-83.01772,residential
+ADR-000165,3232 Quarry Lake Blvd,,Austin,TX,78795,US,30.21228,-97.68902,residential
+ADR-000166,2291 Rookwood Blvd,Apt 10C,Los Angeles,CA,90033,US,34.0103,-118.28577,residential
+ADR-000167,2636 Norwood Fen St,,Los Angeles,CA,90015,US,33.99395,-118.22032,commercial
+ADR-000168,3524 Thistledown Rd,Apt 9F,Austin,TX,78756,US,30.31374,-97.79399,residential
+ADR-000169,595 Zephyr Glen Pl,,Los Angeles,CA,90045,US,34.02134,-118.19426,residential
+ADR-000170,3781 Glenhaven St,,Los Angeles,CA,90099,US,34.05683,-118.19379,commercial
+ADR-000171,2199 Willowmere Dr,,Denver,CO,80213,US,39.71878,-105.01996,residential
+ADR-000172,253 Carroll Bend Ave,,Denver,CO,80260,US,39.69442,-104.98632,commercial
+ADR-000173,1765 Ivybridge Dr,,Los Angeles,CA,90062,US,34.08783,-118.27053,residential
+ADR-000174,4151 Saffron Hill Rd,Apt 16C,Jersey City,NJ,07376,US,40.69549,-73.99171,residential
+ADR-000175,4668 Stonebrook Ln,,Seattle,WA,98157,US,47.62641,-122.32136,residential
+ADR-000176,3422 Wharfside Pl,,Seattle,WA,98108,US,47.63623,-122.37471,commercial
+ADR-000177,1815 Norwood Fen Ave,,Chicago,IL,60641,US,41.90804,-87.6087,residential
+ADR-000178,1586 Carroll Bend Rd,,Chicago,IL,60629,US,41.91097,-87.66121,commercial
+ADR-000179,2114 Fennimore St,,Brooklyn,NY,11232,US,40.72921,-73.99131,residential
+ADR-000180,3831 Fennimore Ct,,Brooklyn,NY,11264,US,40.68133,-73.89919,commercial
+ADR-000181,1688 Carroll Bend Way,Apt 19E,Pittsburgh,PA,15216,US,40.48375,-79.99782,residential
+ADR-000182,232 Glenhaven Ln,,Pittsburgh,PA,15216,US,40.42714,-79.96695,commercial
+ADR-000183,4840 Quarry Lake Pl,,Columbus,OH,43282,US,39.98013,-82.97585,residential
+ADR-000184,4831 Ivybridge St,,Boston,MA,02143,US,42.33456,-71.04495,residential
+ADR-000185,4182 Pemberly Ct,,Boston,MA,02164,US,42.36433,-71.08848,commercial
+ADR-000186,531 Glenhaven St,,Chicago,IL,60612,US,41.93386,-87.64394,residential
+ADR-000187,634 Willowmere Dr,,Chicago,IL,60670,US,41.9176,-87.59957,commercial
+ADR-000188,4094 Vantage Point Blvd,,Austin,TX,78734,US,30.26585,-97.80255,residential
+ADR-000189,3976 Alder Crest St,,Austin,TX,78706,US,30.22951,-97.75073,commercial
+ADR-000190,4831 Yarrow Pl,,Westerville,OH,43032,US,40.13532,-82.96945,residential
+ADR-000191,2915 Maple Ridge St,,Westerville,OH,43019,US,40.06932,-82.9494,commercial
+ADR-000192,1242 Fennimore Way,,Brooklyn,NY,11201,US,40.69762,-73.95997,residential
+ADR-000193,2623 Oriel St,Apt 18A,Columbus,OH,43234,US,40.01958,-82.97776,residential
+ADR-000194,3690 Yarrow Blvd,,Columbus,OH,43252,US,39.97109,-83.05625,commercial
+ADR-000195,1680 Harrowgate Rd,,Pittsburgh,PA,15203,US,40.45318,-79.97201,residential
+ADR-000196,505 Pemberly Ct,,Pittsburgh,PA,15211,US,40.42624,-80.02201,commercial
+ADR-000197,2854 Juniper Hollow Ave,,Cleveland,OH,44166,US,41.53817,-81.72444,residential
+ADR-000198,968 Dovetail St,,Cleveland,OH,44184,US,41.52942,-81.72495,commercial
+ADR-000199,2738 Rookwood Rd,Apt 10D,Los Angeles,CA,90021,US,34.00546,-118.28801,residential
+ADR-000200,26 Larchmont Rise Ct,,Los Angeles,CA,90062,US,34.10152,-118.20161,commercial
+ADR-000201,52 Carroll Bend St,,Brooklyn,NY,11210,US,40.7115,-73.99554,residential
+ADR-000202,1805 Yarrow Pl,,Brooklyn,NY,11211,US,40.62882,-73.92351,commercial
+ADR-000203,2108 Thistledown Dr,Apt 11A,Cleveland,OH,44174,US,41.45448,-81.69036,residential
+ADR-000204,309 Rookwood Pl,,Cleveland,OH,44183,US,41.47199,-81.70558,commercial
+ADR-000205,613 Oriel Ave,Apt 21F,Austin,TX,78772,US,30.21749,-97.79333,residential
+ADR-000206,545 Ivybridge Dr,,Austin,TX,78757,US,30.28584,-97.74763,commercial
+ADR-000207,2666 Norwood Fen Dr,,Denver,CO,80260,US,39.77682,-104.98196,residential
+ADR-000208,1151 Saffron Hill St,,Denver,CO,80297,US,39.68378,-105.01332,commercial
+ADR-000209,586 Brindle Blvd,,Columbus,OH,43218,US,39.95549,-83.04988,residential
+ADR-000210,3013 Zephyr Glen Rd,,Columbus,OH,43228,US,40.01875,-83.0267,commercial
+ADR-000211,4753 Juniper Hollow Way,,Columbus,OH,43226,US,39.9619,-82.98413,commercial
+ADR-000212,4849 Ivybridge Way,,Denver,CO,80226,US,39.78823,-104.99444,residential
+ADR-000213,3680 Norwood Fen Ln,,Denver,CO,80218,US,39.76501,-105.03302,commercial
+ADR-000214,2556 Quarry Lake Rd,Apt 3D,Denver,CO,80290,US,39.75522,-104.97221,residential
+ADR-000215,3651 Harrowgate Ave,,Chicago,IL,60678,US,41.84155,-87.60989,residential
+ADR-000216,1644 Thistledown St,,Chicago,IL,60616,US,41.8416,-87.62732,commercial
+ADR-000217,3117 Carroll Bend Ln,,Columbus,OH,43201,US,39.95063,-82.98117,residential
+ADR-000218,2972 Yarrow Ln,,Columbus,OH,43222,US,39.90301,-82.94677,commercial
+ADR-000219,45 Willowmere Way,,Austin,TX,78713,US,30.27555,-97.68732,residential
+ADR-000220,835 Stonebrook Ct,,Austin,TX,78786,US,30.22506,-97.80058,commercial
+ADR-000221,2916 Kestrel Run Dr,,Los Angeles,CA,90078,US,34.07603,-118.22804,residential
+ADR-000222,4931 Rookwood St,Apt 9A,Chicago,IL,60644,US,41.83003,-87.62502,residential
+ADR-000223,2534 Brindle Rd,,Pittsburgh,PA,15258,US,40.49192,-80.00759,residential
+ADR-000224,64 Saffron Hill Ave,,Chicago,IL,60631,US,41.932,-87.65463,residential
+ADR-000225,3278 Ivybridge Ln,Apt 22D,Chicago,IL,60668,US,41.88247,-87.58275,residential
+ADR-000226,3726 Yarrow Pl,,Chicago,IL,60678,US,41.83938,-87.65123,commercial
+ADR-000227,2708 Elmsworth Dr,,Brooklyn,NY,11214,US,40.68543,-73.96149,residential
+ADR-000228,4455 Zephyr Glen Ln,,Boston,MA,02119,US,42.38574,-71.11337,residential
+ADR-000229,2391 Willowmere Blvd,,Boston,MA,02168,US,42.33654,-71.02848,commercial
+ADR-000230,40 Willowmere Ln,Apt 13F,Columbus,OH,43202,US,39.9486,-82.9734,residential
+ADR-000231,1488 Pemberly Ave,,Brooklyn,NY,11231,US,40.67993,-73.99802,residential
+ADR-000232,4127 Saffron Hill Dr,,Brooklyn,NY,11206,US,40.66744,-73.99902,commercial
+ADR-000233,3662 Juniper Hollow Pl,,Seattle,WA,98190,US,47.57919,-122.39195,residential
+ADR-000234,3571 Copperleaf Ln,,Seattle,WA,98102,US,47.61655,-122.29101,residential
+ADR-000235,3820 Pemberly Ct,,Jersey City,NJ,07357,US,40.67433,-74.07759,residential
+ADR-000236,2564 Elmsworth Ave,,Jersey City,NJ,07304,US,40.77482,-73.99149,commercial
+ADR-000237,4817 Ivybridge Ln,,Jersey City,NJ,07394,US,40.74463,-74.07477,commercial
+ADR-000238,4344 Maple Ridge Way,Apt 7D,Austin,TX,78774,US,30.21087,-97.72833,residential
+ADR-000239,1739 Zephyr Glen Way,,Austin,TX,78746,US,30.28533,-97.70752,commercial
+ADR-000240,3468 Fennimore Pl,,Cleveland,OH,44127,US,41.49807,-81.74195,residential
+ADR-000241,4078 Dovetail Rd,,Cleveland,OH,44181,US,41.55695,-81.67679,commercial
+ADR-000242,2574 Yarrow Way,,Seattle,WA,98151,US,47.58085,-122.31345,residential
+ADR-000243,3814 Ivybridge Blvd,,Seattle,WA,98139,US,47.6281,-122.28571,commercial
+ADR-000244,3942 Brindle Ct,Apt 19B,Columbus,OH,43287,US,39.97825,-82.95074,residential
+ADR-000245,2348 Larchmont Rise Way,,Columbus,OH,43202,US,39.91744,-82.96751,commercial
+ADR-000246,72 Thistledown Ct,,Columbus,OH,43242,US,40.01405,-83.02559,residential
+ADR-000247,2007 Fennimore Way,,Columbus,OH,43237,US,39.93438,-82.98158,commercial
+ADR-000248,1534 Brindle Rd,,Los Angeles,CA,90033,US,34.05722,-118.25873,residential
+ADR-000249,962 Zephyr Glen St,,Los Angeles,CA,90001,US,34.09275,-118.23694,commercial
+ADR-000250,416 Kestrel Run Ave,Apt 15C,Seattle,WA,98187,US,47.64032,-122.32358,residential
+ADR-000251,2757 Carroll Bend Ln,,Los Angeles,CA,90051,US,33.99683,-118.198,residential
+ADR-000252,189 Rookwood Pl,,Los Angeles,CA,90060,US,34.03647,-118.25615,commercial
+ADR-000253,2632 Marigold Ave,,Los Angeles,CA,90053,US,34.07115,-118.23265,residential
+ADR-000254,3910 Stonebrook Ave,,Los Angeles,CA,90011,US,34.10262,-118.27397,commercial
+ADR-000255,2741 Oriel Blvd,,Columbus,OH,43287,US,39.99575,-83.03248,residential
+ADR-000256,2001 Norwood Fen Rd,,Columbus,OH,43223,US,39.99634,-82.99325,commercial
+ADR-000257,4556 Stonebrook Dr,,Brooklyn,NY,11288,US,40.66824,-73.9318,residential
+ADR-000258,3982 Stonebrook St,,Chicago,IL,60671,US,41.8426,-87.61799,residential
+ADR-000259,2614 Glenhaven Rd,,Chicago,IL,60636,US,41.91364,-87.61461,commercial
+ADR-000260,3909 Carroll Bend Ln,,Columbus,OH,43252,US,40.012,-82.93883,residential
+ADR-000261,755 Willowmere St,,Jersey City,NJ,07372,US,40.75606,-74.06473,residential
+ADR-000262,275 Willowmere Rd,,Jersey City,NJ,07369,US,40.65988,-74.06705,commercial
+ADR-000263,4867 Glenhaven Rd,,Boston,MA,02123,US,42.38581,-71.09073,residential
+ADR-000264,4807 Vantage Point Ln,Apt 2E,Cleveland,OH,44132,US,41.55324,-81.75129,residential
+ADR-000265,1173 Rookwood St,,Cleveland,OH,44149,US,41.43972,-81.65646,commercial
+ADR-000266,771 Thistledown Way,Apt 12D,Austin,TX,78799,US,30.27038,-97.79122,residential
+ADR-000267,2565 Saffron Hill Blvd,,Columbus,OH,43273,US,39.9818,-83.05298,residential
+ADR-000268,1969 Juniper Hollow St,,Columbus,OH,43285,US,39.9223,-82.98907,commercial
+ADR-000269,761 Marigold Pl,,Los Angeles,CA,90001,US,34.00231,-118.27651,residential
+ADR-000270,4214 Rookwood Pl,,Cleveland,OH,44187,US,41.53055,-81.7408,residential
+ADR-000271,4257 Zephyr Glen Ave,,Cleveland,OH,44128,US,41.50234,-81.73345,commercial
+ADR-000272,2756 Alder Crest Ave,,Cleveland,OH,44155,US,41.44405,-81.64976,commercial
+ADR-000273,3599 Juniper Hollow Ln,,Columbus,OH,43281,US,39.94981,-83.01087,residential
+ADR-000274,3432 Wharfside Blvd,,Columbus,OH,43262,US,39.93509,-82.95001,commercial
+ADR-000275,2270 Fennimore Ln,,Cleveland,OH,44178,US,41.50435,-81.72562,residential
+ADR-000276,1596 Fennimore Way,,Seattle,WA,98159,US,47.62439,-122.36893,residential
+ADR-000277,3463 Willowmere Ct,,Westerville,OH,43048,US,40.1179,-82.8746,residential
+ADR-000278,422 Oriel Way,,Denver,CO,80287,US,39.75613,-105.02509,residential
+ADR-000279,2966 Marigold Way,,Denver,CO,80216,US,39.73446,-105.02911,commercial
+ADR-000280,371 Wharfside St,,Columbus,OH,43286,US,39.92761,-83.02527,residential
+ADR-000281,3446 Glenhaven Dr,,Columbus,OH,43245,US,39.97325,-83.00446,residential
+ADR-000282,887 Stonebrook Pl,,Columbus,OH,43243,US,39.97537,-83.02248,commercial
+ADR-000283,1949 Oriel Ave,,Columbus,OH,43220,US,39.99341,-83.05071,residential
+ADR-000284,4805 Kestrel Run Ln,,Chicago,IL,60664,US,41.8942,-87.60236,residential
+ADR-000285,4814 Bramblewood St,,Pittsburgh,PA,15250,US,40.436,-80.03912,residential
+ADR-000286,926 Saffron Hill Rd,,Pittsburgh,PA,15283,US,40.42836,-79.99533,commercial
+ADR-000287,4183 Vantage Point St,,Boston,MA,02122,US,42.34017,-71.00155,residential
+ADR-000288,1528 Thistledown Dr,,Boston,MA,02178,US,42.41549,-71.00467,commercial
+ADR-000289,1282 Rookwood Pl,Apt 9F,Boston,MA,02198,US,42.33052,-71.08521,residential
+ADR-000290,849 Fennimore Rd,,Boston,MA,02181,US,42.41473,-71.0065,commercial
+ADR-000291,901 Rookwood Pl,,Cleveland,OH,44169,US,41.48784,-81.72247,residential
+ADR-000292,4532 Quarry Lake Ln,,Cleveland,OH,44160,US,41.50102,-81.64718,commercial
+ADR-000293,3091 Wharfside Ct,,Cleveland,OH,44124,US,41.51652,-81.65063,residential
+ADR-000294,2545 Yarrow Dr,,Cleveland,OH,44190,US,41.456,-81.6919,commercial
+ADR-000295,884 Elmsworth Dr,,Denver,CO,80278,US,39.69206,-104.99592,residential
+ADR-000296,3992 Zephyr Glen Dr,,Denver,CO,80268,US,39.7308,-105.04707,commercial
+ADR-000297,1578 Marigold St,,Denver,CO,80226,US,39.69568,-104.96236,commercial
+ADR-000298,1534 Juniper Hollow Ct,,Columbus,OH,43232,US,39.99219,-82.98901,residential
+ADR-000299,766 Norwood Fen Ct,,Columbus,OH,43209,US,39.97624,-82.98456,commercial
+ADR-000300,2166 Alder Crest Ln,Apt 2E,Pittsburgh,PA,15219,US,40.45133,-80.00222,residential
+ADR-000301,3034 Pemberly St,,Pittsburgh,PA,15241,US,40.4322,-79.93687,commercial
+ADR-000302,510 Glenhaven St,,Pittsburgh,PA,15239,US,40.38532,-80.04195,commercial
+ADR-000303,1214 Willowmere Pl,,Columbus,OH,43235,US,39.91833,-83.04782,residential
+ADR-000304,707 Carroll Bend St,,Columbus,OH,43219,US,39.95252,-82.9557,commercial
+ADR-000305,2397 Larchmont Rise Blvd,,Boston,MA,02197,US,42.32789,-71.05995,residential
+ADR-000306,802 Saffron Hill Ave,,Boston,MA,02193,US,42.3728,-71.06968,commercial
+ADR-000307,2269 Kestrel Run Dr,,Boston,MA,02103,US,42.35334,-71.07336,commercial
+ADR-000308,3425 Maple Ridge Dr,,Los Angeles,CA,90043,US,34.0758,-118.24333,residential
+ADR-000309,872 Larchmont Rise Way,,Los Angeles,CA,90080,US,34.03916,-118.27001,commercial
+ADR-000310,2156 Yarrow Ave,Apt 13F,Cleveland,OH,44162,US,41.47893,-81.68717,residential
+ADR-000311,593 Fennimore Pl,,Cleveland,OH,44144,US,41.49488,-81.65371,commercial
+ADR-000312,1324 Vantage Point St,Apt 11F,Pittsburgh,PA,15274,US,40.45265,-79.9381,residential
+ADR-000313,1251 Stonebrook Ln,,Pittsburgh,PA,15268,US,40.42984,-79.97233,commercial
+ADR-000314,1496 Larchmont Rise Pl,,Denver,CO,80277,US,39.76557,-105.04436,residential
+ADR-000315,21 Quarry Lake Ave,,Denver,CO,80219,US,39.77266,-105.02826,commercial
+ADR-000316,3637 Quarry Lake Ave,,Columbus,OH,43247,US,39.98126,-83.02487,residential
+ADR-000317,2642 Umberfield Ct,,Columbus,OH,43264,US,39.91869,-82.98829,commercial
+ADR-000318,3696 Rookwood Pl,,Columbus,OH,43274,US,39.97011,-83.00934,residential
+ADR-000319,3412 Oriel Way,,Columbus,OH,43263,US,39.96585,-82.94823,commercial
+ADR-000320,1372 Umberfield Pl,,Boston,MA,02182,US,42.31455,-71.09612,residential
+ADR-000321,4318 Marigold Way,,Boston,MA,02151,US,42.34539,-71.10948,commercial
+ADR-000322,3275 Juniper Hollow St,,Austin,TX,78789,US,30.30489,-97.7507,residential
+ADR-000323,1345 Maple Ridge Blvd,,Austin,TX,78789,US,30.29819,-97.75139,commercial
+ADR-000324,82 Juniper Hollow St,Apt 14E,Pittsburgh,PA,15223,US,40.44725,-79.99352,residential
+ADR-000325,4828 Quarry Lake Ave,,Pittsburgh,PA,15297,US,40.38455,-79.94618,commercial
+ADR-000326,4795 Vantage Point Ln,Apt 4C,Pittsburgh,PA,15297,US,40.49861,-80.02429,residential
+ADR-000327,2548 Umberfield Ct,,Columbus,OH,43259,US,39.99465,-83.03123,residential
+ADR-000328,1681 Thistledown Dr,,Columbus,OH,43275,US,39.92105,-83.02186,commercial
+ADR-000329,91 Thistledown Dr,,Boston,MA,02186,US,42.34163,-71.04684,residential
+ADR-000330,4164 Dovetail Ave,,Boston,MA,02139,US,42.36966,-71.10544,commercial
+ADR-000331,4960 Ivybridge Ln,Apt 20D,Columbus,OH,43298,US,39.96805,-82.99087,residential
+ADR-000332,4769 Zephyr Glen Ave,,Columbus,OH,43213,US,39.92303,-82.97151,commercial
+ADR-000333,3488 Thistledown Dr,,Cleveland,OH,44195,US,41.54754,-81.75263,residential
+ADR-000334,4612 Maple Ridge Way,,Cleveland,OH,44197,US,41.55069,-81.64843,commercial
+ADR-000335,4098 Norwood Fen Ln,Apt 17A,Boston,MA,02180,US,42.34394,-71.05299,residential
+ADR-000336,1659 Thistledown St,,Boston,MA,02193,US,42.30338,-71.06729,commercial
+ADR-000337,4087 Rookwood Pl,,Denver,CO,80222,US,39.72013,-105.03189,residential
+ADR-000338,861 Copperleaf St,,Seattle,WA,98156,US,47.6593,-122.35815,residential
+ADR-000339,2400 Willowmere Blvd,,Seattle,WA,98145,US,47.58915,-122.37167,commercial
+ADR-000340,2720 Norwood Fen Blvd,Apt 22C,Boston,MA,02119,US,42.32429,-71.07422,residential
+ADR-000341,4701 Oriel Way,,Columbus,OH,43222,US,39.95527,-82.97657,residential
+ADR-000342,4637 Copperleaf Ave,,Columbus,OH,43278,US,39.97855,-83.02238,commercial
+ADR-000343,4858 Fennimore Way,,Los Angeles,CA,90015,US,34.01906,-118.28677,residential
+ADR-000344,3403 Vantage Point Ln,,Los Angeles,CA,90086,US,34.00266,-118.27435,commercial
+ADR-000345,1277 Dovetail Ave,,Los Angeles,CA,90005,US,34.0756,-118.3004,residential
+ADR-000346,2549 Vantage Point Way,,Jersey City,NJ,07321,US,40.67933,-74.03716,residential
+ADR-000347,4908 Brindle Blvd,Apt 23C,Columbus,OH,43211,US,39.9097,-82.96171,residential
+ADR-000348,3543 Vantage Point St,,Columbus,OH,43256,US,39.96317,-82.94133,commercial
+ADR-000349,3619 Willowmere St,,Seattle,WA,98147,US,47.58881,-122.33456,residential
+ADR-000350,1791 Carroll Bend Ln,,Seattle,WA,98111,US,47.65315,-122.33668,commercial
+ADR-000351,1120 Zephyr Glen Rd,Apt 13B,Boston,MA,02134,US,42.39504,-71.05436,residential
+ADR-000352,1258 Kestrel Run Rd,Apt 20F,Jersey City,NJ,07370,US,40.67029,-74.0807,residential
+ADR-000353,4304 Ivybridge Ct,,Los Angeles,CA,90031,US,34.02695,-118.25643,residential
+ADR-000354,4463 Wharfside Ave,,Columbus,OH,43248,US,40.00898,-82.98862,residential
+ADR-000355,4110 Elmsworth St,,Columbus,OH,43243,US,39.91646,-82.99243,commercial
+ADR-000356,4683 Fennimore Dr,,Cleveland,OH,44110,US,41.46644,-81.6979,residential
+ADR-000357,2743 Saffron Hill Rd,,Cleveland,OH,44149,US,41.52002,-81.74579,commercial
+ADR-000358,2033 Harrowgate Blvd,,Jersey City,NJ,07338,US,40.66133,-74.05136,residential
+ADR-000359,2836 Pemberly Ct,,Jersey City,NJ,07332,US,40.74338,-74.03274,commercial
+ADR-000360,912 Oriel Rd,,Denver,CO,80218,US,39.73526,-105.02092,residential
+ADR-000361,2660 Rookwood Ln,,Denver,CO,80258,US,39.7949,-104.98305,commercial
+ADR-000362,547 Glenhaven Blvd,,Westerville,OH,43022,US,40.13492,-82.95804,residential
+ADR-000363,897 Ivybridge Way,,Los Angeles,CA,90077,US,34.08385,-118.21855,residential
+ADR-000364,1372 Umberfield Pl,,Los Angeles,CA,90048,US,34.03454,-118.24512,commercial
+ADR-000365,1461 Oriel St,,Chicago,IL,60634,US,41.8262,-87.65072,residential
+ADR-000366,3030 Wharfside Dr,,Chicago,IL,60681,US,41.92951,-87.58596,commercial
+ADR-000367,1562 Yarrow Ct,Apt 7D,Seattle,WA,98126,US,47.60106,-122.29876,residential
+ADR-000368,3013 Brindle Ave,Apt 2E,Jersey City,NJ,07372,US,40.7646,-73.98934,residential
+ADR-000369,978 Ivybridge Ave,,Jersey City,NJ,07391,US,40.72638,-74.07337,commercial
+ADR-000370,3796 Alder Crest Blvd,,Los Angeles,CA,90030,US,34.06359,-118.21724,residential
+ADR-000371,4044 Quarry Lake St,,Los Angeles,CA,90006,US,34.11208,-118.25112,commercial
+ADR-000372,1663 Stonebrook Ln,,Cleveland,OH,44126,US,41.4905,-81.65361,residential
+ADR-000373,1410 Elmsworth Blvd,,Cleveland,OH,44130,US,41.50878,-81.65991,commercial
+ADR-000374,1517 Norwood Fen Pl,Apt 24D,Jersey City,NJ,07380,US,40.69,-74.01138,residential
+ADR-000375,4476 Quarry Lake Pl,,Jersey City,NJ,07377,US,40.70626,-73.99866,commercial
+ADR-000376,1748 Pemberly Blvd,,Columbus,OH,43292,US,39.98559,-82.94299,residential
+ADR-000377,3655 Vantage Point Pl,,Columbus,OH,43295,US,39.93588,-83.00617,commercial
+ADR-000378,3593 Saffron Hill Blvd,,Chicago,IL,60685,US,41.85606,-87.64602,residential
+ADR-000379,1031 Brindle Rd,,Seattle,WA,98105,US,47.6175,-122.35517,residential
+ADR-000380,421 Rookwood Rd,,Seattle,WA,98190,US,47.62321,-122.37017,commercial
+ADR-000381,4132 Wharfside St,Apt 24C,Westerville,OH,43096,US,40.07289,-82.93932,residential
+ADR-000382,1730 Maple Ridge Rd,,Brooklyn,NY,11272,US,40.64072,-73.93328,residential
+ADR-000383,4913 Glenhaven Blvd,,Brooklyn,NY,11222,US,40.67196,-73.93578,commercial
+ADR-000384,2645 Bramblewood Blvd,,Seattle,WA,98138,US,47.63877,-122.33012,residential
+ADR-000385,3009 Rookwood Rd,,Austin,TX,78744,US,30.22443,-97.79717,residential
+ADR-000386,445 Norwood Fen Blvd,,Austin,TX,78745,US,30.30607,-97.77398,commercial
+ADR-000387,4279 Stonebrook Ct,,Los Angeles,CA,90042,US,34.11053,-118.25856,residential
+ADR-000388,2568 Norwood Fen Ct,Apt 19D,Brooklyn,NY,11260,US,40.69077,-73.91495,residential
+ADR-000389,2707 Dovetail Rd,,Brooklyn,NY,11218,US,40.68028,-73.89806,commercial
+ADR-000390,1118 Stonebrook Rd,,Brooklyn,NY,11242,US,40.65051,-73.89676,residential
+ADR-000391,4128 Maple Ridge St,Apt 12F,Chicago,IL,60682,US,41.85071,-87.63513,residential
+ADR-000392,2440 Elmsworth Ct,,Cleveland,OH,44160,US,41.51701,-81.67136,residential
+ADR-000393,2073 Marigold Ave,,Cleveland,OH,44158,US,41.55604,-81.70578,commercial
+ADR-000394,4304 Carroll Bend Blvd,,Cleveland,OH,44159,US,41.54038,-81.71405,residential
+ADR-000395,4255 Umberfield St,,Los Angeles,CA,90018,US,34.06571,-118.25266,residential
+ADR-000396,1886 Vantage Point Rd,Apt 4D,Pittsburgh,PA,15225,US,40.42051,-79.99638,residential
+ADR-000397,4609 Marigold St,,Pittsburgh,PA,15291,US,40.40897,-80.00859,commercial
+ADR-000398,1088 Juniper Hollow Pl,Apt 1D,Chicago,IL,60672,US,41.81929,-87.61039,residential
+ADR-000399,2268 Saffron Hill Ct,,Chicago,IL,60697,US,41.86351,-87.62497,commercial
+ADR-000400,4739 Dovetail Ct,,Seattle,WA,98136,US,47.62613,-122.321,residential
+ADR-000401,1441 Kestrel Run Dr,,Jersey City,NJ,07323,US,40.77111,-74.02339,residential
+ADR-000402,1193 Zephyr Glen Rd,,Brooklyn,NY,11240,US,40.65595,-73.88453,residential
+ADR-000403,1201 Fennimore St,,Brooklyn,NY,11213,US,40.63612,-73.90851,commercial
+ADR-000404,4448 Harrowgate Pl,,Columbus,OH,43230,US,39.96598,-83.0473,residential
+ADR-000405,4142 Carroll Bend Dr,,Columbus,OH,43233,US,39.96052,-83.04202,commercial
+ADR-000406,496 Thistledown Ave,,Los Angeles,CA,90003,US,34.04803,-118.26817,residential
+ADR-000407,1702 Norwood Fen Dr,,Austin,TX,78753,US,30.2293,-97.76377,residential
+ADR-000408,1310 Pemberly St,,Denver,CO,80221,US,39.74345,-104.9899,residential
+ADR-000409,19 Maple Ridge Blvd,,Austin,TX,78709,US,30.26116,-97.73827,residential
+ADR-000410,2214 Elmsworth Rd,Apt 5B,Jersey City,NJ,07392,US,40.75713,-74.09163,residential
+ADR-000411,3120 Willowmere Pl,,Cleveland,OH,44158,US,41.45288,-81.74068,residential
+ADR-000412,1179 Dovetail Blvd,,Cleveland,OH,44158,US,41.4675,-81.74347,commercial
+ADR-000413,4973 Dovetail Way,,Brooklyn,NY,11232,US,40.73698,-74.00071,residential
+ADR-000414,2973 Juniper Hollow Way,,Brooklyn,NY,11247,US,40.70245,-74.00315,commercial
+ADR-000415,2288 Umberfield Blvd,Apt 22E,Chicago,IL,60626,US,41.89424,-87.646,residential
+ADR-000416,2075 Copperleaf St,Apt 12F,Columbus,OH,43219,US,39.96301,-82.99453,residential
+ADR-000417,980 Fennimore Blvd,,Boston,MA,02176,US,42.33281,-71.05891,residential
+ADR-000418,1661 Thistledown Pl,,Boston,MA,02153,US,42.37692,-71.04597,commercial
+ADR-000419,2875 Brindle Pl,,Boston,MA,02123,US,42.41138,-71.11802,commercial
+ADR-000420,794 Bramblewood Dr,,Columbus,OH,43263,US,39.93163,-83.01607,residential
+ADR-000421,3773 Marigold Ln,,Columbus,OH,43244,US,39.93161,-82.96989,commercial
+ADR-000422,2845 Pemberly Ave,Apt 4D,Pittsburgh,PA,15289,US,40.43292,-80.03763,residential
+ADR-000423,3467 Bramblewood Ln,,Pittsburgh,PA,15271,US,40.47989,-79.96023,commercial
+ADR-000424,1533 Wharfside Blvd,,Seattle,WA,98171,US,47.66608,-122.33094,residential
+ADR-000425,3697 Pemberly Ln,Apt 15D,Brooklyn,NY,11205,US,40.66149,-73.90026,residential
+ADR-000426,2686 Oriel Blvd,,Brooklyn,NY,11294,US,40.63849,-73.95958,commercial
+ADR-000427,1992 Carroll Bend Pl,Apt 19D,Seattle,WA,98167,US,47.55575,-122.35106,residential
+ADR-000428,2861 Wharfside Dr,Apt 14A,Boston,MA,02106,US,42.36853,-71.01758,residential
+ADR-000429,164 Elmsworth Dr,,Boston,MA,02115,US,42.33765,-71.08258,commercial
+ADR-000430,1223 Yarrow Dr,,Los Angeles,CA,90006,US,34.07077,-118.20998,residential
+ADR-000431,4038 Harrowgate Dr,,Seattle,WA,98140,US,47.63156,-122.33278,residential
+ADR-000432,632 Pemberly Rd,,Seattle,WA,98193,US,47.57818,-122.31746,commercial
+ADR-000433,4245 Oriel St,Apt 20F,Cleveland,OH,44174,US,41.47758,-81.66129,residential
+ADR-000434,907 Zephyr Glen Ct,,Cleveland,OH,44122,US,41.51963,-81.67282,commercial
+ADR-000435,713 Ivybridge Rd,,Pittsburgh,PA,15235,US,40.3975,-80.05436,residential
+ADR-000436,1423 Saffron Hill Ln,,Pittsburgh,PA,15287,US,40.43483,-80.03103,commercial
+ADR-000437,2772 Willowmere Rd,,Brooklyn,NY,11286,US,40.64286,-73.88512,residential
+ADR-000438,86 Wharfside St,,Brooklyn,NY,11212,US,40.68355,-73.99148,commercial
+ADR-000439,4397 Maple Ridge Ave,,Brooklyn,NY,11251,US,40.64582,-73.90743,residential
+ADR-000440,4136 Zephyr Glen Ln,,Brooklyn,NY,11229,US,40.64482,-73.97937,commercial
+ADR-000441,2100 Umberfield Way,,Columbus,OH,43221,US,39.99463,-82.9988,residential
+ADR-000442,1800 Yarrow Way,,Jersey City,NJ,07348,US,40.69077,-74.05077,residential
+ADR-000443,1103 Yarrow Ln,,Jersey City,NJ,07387,US,40.67101,-74.0087,commercial
+ADR-000444,1378 Pemberly Blvd,,Chicago,IL,60609,US,41.88559,-87.68844,residential
+ADR-000445,4470 Larchmont Rise St,,Chicago,IL,60696,US,41.84787,-87.57999,commercial
+ADR-000446,1393 Dovetail Ct,Apt 17D,Boston,MA,02143,US,42.37625,-71.03964,residential
+ADR-000447,3106 Elmsworth Blvd,Apt 18B,Chicago,IL,60637,US,41.82532,-87.65052,residential
+ADR-000448,922 Pemberly Blvd,,Austin,TX,78730,US,30.28066,-97.69411,residential
+ADR-000449,3827 Juniper Hollow Rd,,Austin,TX,78770,US,30.29582,-97.74801,commercial
+ADR-000450,380 Glenhaven Way,,Brooklyn,NY,11246,US,40.71512,-73.97162,residential
+ADR-000451,350 Bramblewood Pl,,Cleveland,OH,44133,US,41.47034,-81.65484,residential
+ADR-000452,460 Vantage Point Ct,,Cleveland,OH,44112,US,41.45347,-81.73151,commercial
+ADR-000453,4351 Thistledown Way,,Chicago,IL,60635,US,41.82051,-87.66704,residential
+ADR-000454,2745 Dovetail Way,,Chicago,IL,60603,US,41.87148,-87.62228,commercial
+ADR-000455,2815 Saffron Hill Rd,,Chicago,IL,60647,US,41.93057,-87.58658,residential
+ADR-000456,3978 Carroll Bend Way,,Chicago,IL,60637,US,41.82164,-87.6266,commercial
+ADR-000457,4328 Kestrel Run Ave,Apt 23D,Cleveland,OH,44169,US,41.48825,-81.65917,residential
+ADR-000458,475 Umberfield St,,Cleveland,OH,44152,US,41.47157,-81.65408,commercial
+ADR-000459,4943 Saffron Hill St,,Cleveland,OH,44189,US,41.53425,-81.70743,residential
+ADR-000460,4469 Stonebrook Dr,,Cleveland,OH,44109,US,41.45184,-81.74659,commercial
+ADR-000461,4016 Maple Ridge Way,,Boston,MA,02127,US,42.3616,-71.03489,residential
+ADR-000462,2403 Willowmere Pl,,Boston,MA,02128,US,42.31075,-71.06742,commercial
+ADR-000463,4088 Vantage Point Rd,,Austin,TX,78765,US,30.22541,-97.78165,residential
+ADR-000464,1042 Copperleaf Blvd,,Austin,TX,78760,US,30.29463,-97.79527,commercial
+ADR-000465,3797 Larchmont Rise Blvd,,Brooklyn,NY,11290,US,40.63456,-73.92474,residential
+ADR-000466,2272 Harrowgate Pl,,Brooklyn,NY,11259,US,40.64797,-73.98424,commercial
+ADR-000467,2757 Glenhaven St,Apt 18B,Denver,CO,80247,US,39.77736,-104.98491,residential
+ADR-000468,2633 Zephyr Glen Blvd,,Boston,MA,02128,US,42.3464,-71.08234,residential
+ADR-000469,341 Rookwood Ct,,Denver,CO,80271,US,39.75178,-104.98172,residential
+ADR-000470,3539 Saffron Hill Way,Apt 10E,Chicago,IL,60698,US,41.83398,-87.60912,residential
+ADR-000471,4041 Copperleaf Way,,Chicago,IL,60601,US,41.88558,-87.64141,commercial
+ADR-000472,3727 Norwood Fen Ave,Apt 15E,Seattle,WA,98195,US,47.59641,-122.32755,residential
+ADR-000473,3283 Carroll Bend Ln,,Chicago,IL,60692,US,41.88234,-87.64816,residential
+ADR-000474,1058 Larchmont Rise Way,Apt 2B,Columbus,OH,43211,US,40.00823,-83.05109,residential
+ADR-000475,2529 Rookwood Dr,,Pittsburgh,PA,15245,US,40.49873,-79.96773,residential
+ADR-000476,214 Brindle Dr,,Pittsburgh,PA,15250,US,40.41001,-80.00994,commercial
+ADR-000477,3427 Copperleaf Way,Apt 16D,Brooklyn,NY,11277,US,40.71671,-73.94251,residential
+ADR-000478,1758 Marigold Ln,,Los Angeles,CA,90084,US,34.05276,-118.23983,residential
+ADR-000479,3043 Carroll Bend Ln,Apt 12F,Austin,TX,78796,US,30.23822,-97.74997,residential
+ADR-000480,1381 Umberfield Ave,,Chicago,IL,60640,US,41.85855,-87.61187,residential
+ADR-000481,21 Fennimore Pl,,Chicago,IL,60687,US,41.92364,-87.66883,commercial
+ADR-000482,1940 Vantage Point Pl,,Chicago,IL,60670,US,41.92996,-87.62869,residential
+ADR-000483,1776 Kestrel Run Dr,,Chicago,IL,60683,US,41.82379,-87.62672,commercial
+ADR-000484,2528 Juniper Hollow Blvd,Apt 3E,Seattle,WA,98159,US,47.60206,-122.27328,residential
+ADR-000485,3189 Pemberly St,,Seattle,WA,98174,US,47.66538,-122.39133,commercial
+ADR-000486,3684 Oriel Ave,,Cleveland,OH,44122,US,41.47952,-81.75427,residential
+ADR-000487,1129 Harrowgate Ave,,Cleveland,OH,44190,US,41.54431,-81.64456,commercial
+ADR-000488,3333 Ivybridge Pl,Apt 21F,Seattle,WA,98158,US,47.63544,-122.36414,residential
+ADR-000489,2905 Harrowgate Pl,,Seattle,WA,98117,US,47.62081,-122.35838,commercial
+ADR-000490,2296 Maple Ridge Pl,,Pittsburgh,PA,15209,US,40.44784,-80.04204,residential
+ADR-000491,4527 Maple Ridge Blvd,,Pittsburgh,PA,15290,US,40.49919,-79.93809,commercial
+ADR-000492,1184 Marigold Ln,,Austin,TX,78796,US,30.24895,-97.69766,residential
+ADR-000493,676 Willowmere Blvd,,Austin,TX,78753,US,30.31963,-97.78027,commercial
+ADR-000494,140 Zephyr Glen Dr,,Denver,CO,80286,US,39.77113,-104.95258,residential
+ADR-000495,4320 Norwood Fen Ave,,Seattle,WA,98158,US,47.56487,-122.29654,residential
+ADR-000496,4339 Saffron Hill Ct,,Seattle,WA,98199,US,47.64204,-122.29412,commercial
+ADR-000497,2066 Larchmont Rise Pl,,Los Angeles,CA,90030,US,34.07009,-118.19032,residential
+ADR-000498,4627 Maple Ridge Dr,,Pittsburgh,PA,15231,US,40.44848,-79.95971,residential
+ADR-000499,202 Saffron Hill Pl,,Pittsburgh,PA,15276,US,40.44446,-80.04682,commercial
+ADR-000500,1094 Yarrow Dr,,Brooklyn,NY,11262,US,40.68447,-73.91564,residential
+ADR-000501,2223 Fennimore Pl,,Brooklyn,NY,11215,US,40.72496,-73.89621,commercial
+ADR-000502,119 Kestrel Run Blvd,,Cleveland,OH,44119,US,41.44664,-81.72139,residential
+ADR-000503,3446 Yarrow Pl,,Cleveland,OH,44151,US,41.55522,-81.65728,commercial
+ADR-000504,1415 Quarry Lake Dr,,Westerville,OH,43005,US,40.16029,-82.9129,residential
+ADR-000505,2186 Pemberly Rd,Apt 10C,Cleveland,OH,44189,US,41.5482,-81.65547,residential
+ADR-000506,2986 Maple Ridge Ln,,Los Angeles,CA,90040,US,34.07085,-118.28583,residential
+ADR-000507,1405 Rookwood St,Apt 3F,Brooklyn,NY,11277,US,40.71312,-73.95762,residential
+ADR-000508,1073 Pemberly Way,,Brooklyn,NY,11208,US,40.67566,-73.99079,residential
+ADR-000509,2659 Ivybridge St,,Brooklyn,NY,11214,US,40.71141,-73.91798,commercial
+ADR-000510,2345 Rookwood St,,Austin,TX,78747,US,30.25283,-97.78707,residential
+ADR-000511,4750 Thistledown Blvd,,Westerville,OH,43042,US,40.10046,-82.88649,residential
+ADR-000512,3686 Stonebrook Ave,,Westerville,OH,43049,US,40.10098,-82.91823,commercial
+ADR-000513,4053 Juniper Hollow Pl,,Cleveland,OH,44117,US,41.55207,-81.6878,residential
+ADR-000514,1705 Bramblewood Way,,Brooklyn,NY,11262,US,40.63042,-73.9081,residential
+ADR-000515,452 Oriel Way,,Boston,MA,02135,US,42.38152,-71.02496,residential
+ADR-000516,4816 Yarrow Ave,Apt 13D,Los Angeles,CA,90016,US,34.01116,-118.29306,residential
+ADR-000517,3937 Kestrel Run Ct,,Seattle,WA,98199,US,47.65753,-122.35403,residential
+ADR-000518,1883 Norwood Fen Ct,,Columbus,OH,43201,US,40.01004,-83.04213,residential
+ADR-000519,769 Saffron Hill Ln,,Columbus,OH,43232,US,39.99464,-83.02811,commercial
+ADR-000520,377 Zephyr Glen St,Apt 14F,Los Angeles,CA,90074,US,34.0528,-118.26497,residential
+ADR-000521,231 Stonebrook Rd,,Los Angeles,CA,90053,US,34.04271,-118.21473,commercial
+ADR-000522,2915 Rookwood Pl,,Columbus,OH,43219,US,40.00369,-83.02729,residential
+ADR-000523,3565 Glenhaven Way,,Columbus,OH,43260,US,39.95044,-82.95761,commercial
+ADR-000524,2614 Carroll Bend Pl,,Pittsburgh,PA,15207,US,40.4186,-80.01697,residential
+ADR-000525,3113 Maple Ridge Ave,,Pittsburgh,PA,15214,US,40.43307,-79.94717,commercial
+ADR-000526,4862 Glenhaven Dr,,Seattle,WA,98176,US,47.57046,-122.34556,residential
+ADR-000527,1468 Saffron Hill Blvd,,Seattle,WA,98179,US,47.64088,-122.2981,commercial
+ADR-000528,4718 Alder Crest Dr,,Denver,CO,80220,US,39.76035,-104.9558,residential
+ADR-000529,4708 Maple Ridge Ct,,Denver,CO,80295,US,39.72078,-104.9859,commercial
+ADR-000530,748 Larchmont Rise Rd,,Brooklyn,NY,11286,US,40.71789,-73.89322,residential
+ADR-000531,2585 Brindle Way,,Denver,CO,80266,US,39.71547,-105.04918,residential
+ADR-000532,803 Ivybridge Dr,,Denver,CO,80259,US,39.71293,-104.97439,commercial
+ADR-000533,3966 Rookwood Ave,,Columbus,OH,43295,US,39.95018,-82.98972,residential
+ADR-000534,4317 Copperleaf Ln,,Los Angeles,CA,90058,US,34.07123,-118.25366,residential
+ADR-000535,2166 Marigold Way,,Los Angeles,CA,90047,US,34.08232,-118.26453,commercial
+ADR-000536,4555 Yarrow Way,,Denver,CO,80265,US,39.69103,-104.94723,residential
+ADR-000537,3623 Harrowgate Ave,Apt 22E,Columbus,OH,43291,US,39.948,-83.02426,residential
+ADR-000538,583 Saffron Hill Dr,,Columbus,OH,43294,US,39.96608,-83.0235,commercial
+ADR-000539,4975 Brindle St,Apt 11E,Austin,TX,78797,US,30.26206,-97.77012,residential
+ADR-000540,2997 Yarrow Ave,,Brooklyn,NY,11282,US,40.70666,-73.90958,residential
+ADR-000541,1606 Glenhaven Rd,,Brooklyn,NY,11288,US,40.67253,-73.9965,commercial
+ADR-000542,3044 Vantage Point Pl,,Pittsburgh,PA,15294,US,40.49498,-79.94132,residential
+ADR-000543,1255 Fennimore Pl,,Pittsburgh,PA,15243,US,40.48448,-79.98791,commercial
+ADR-000544,2677 Fennimore Ct,,Columbus,OH,43275,US,39.91443,-82.99138,residential
+ADR-000545,3838 Fennimore St,,Columbus,OH,43227,US,39.91852,-83.0033,commercial
+ADR-000546,4008 Juniper Hollow Ct,,Pittsburgh,PA,15205,US,40.39231,-80.03185,residential
+ADR-000547,1284 Saffron Hill Way,,Pittsburgh,PA,15229,US,40.48708,-79.96505,commercial
+ADR-90001,4708 Vantage Point Way,,Columbus,OH,43245,US,39.95591,-82.95785,residential
+ADR-000548,1244 Larchmont Rise Rd,,Columbus,OH,43201,US,40.01122,-82.98476,commercial
+ADR-90002,4530 Elmsworth St,,Boston,MA,02130,US,42.3358,-71.00647,residential
+ADR-000549,4781 Zephyr Glen St,,Boston,MA,02163,US,42.39685,-71.06425,commercial
+ADR-90003,956 Marigold Blvd,,Austin,TX,78734,US,30.22439,-97.78271,residential
+ADR-90004,855 Umberfield Ct,,Pittsburgh,PA,15219,US,40.4713,-79.96164,residential
+ADR-90005,4351 Maple Ridge Way,,Chicago,IL,60649,US,41.89593,-87.63179,residential
+ADR-000550,3369 Zephyr Glen Dr,,Chicago,IL,60699,US,41.86043,-87.64023,commercial
+ADR-90006,1606 Juniper Hollow Blvd,Apt 7A,Denver,CO,80270,US,39.70347,-104.95296,residential
+ADR-000551,2916 Kestrel Run Dr,,Denver,CO,80201,US,39.72022,-104.97832,commercial
+ADR-90007,3529 Pemberly St,,Seattle,WA,98148,US,47.64995,-122.33349,residential
+ADR-90008,4026 Yarrow Ave,,Cleveland,OH,44128,US,41.52424,-81.68763,residential
+ADR-000552,1451 Thistledown Rd,,Cleveland,OH,44122,US,41.44133,-81.63618,commercial
+ADR-90009,32 Rookwood Blvd,,Los Angeles,CA,90070,US,34.03788,-118.22097,residential
+ADR-90010,817 Juniper Hollow Ave,Apt 10C,Columbus,OH,43228,US,39.99464,-83.0571,residential
+ADR-000553,3458 Ivybridge Ct,,Columbus,OH,43255,US,39.93031,-83.03411,commercial
+ADR-90012,311 Carroll Bend St,Apt 11C,Brooklyn,NY,11231,US,40.6377,-73.91951,residential
+ADR-000554,3333 Larchmont Rise Blvd,,Brooklyn,NY,11296,US,40.61897,-73.95918,commercial
+ADR-DROP-WHARFSIDE,88 Wharfside Ave,Unit 2,Jersey City,NJ,07302,US,40.74402,-74.10051,commercial_mail_drop
+ADR-90013,1180 Saffron Hill Way,,Westerville,OH,43081,US,40.09941,-82.96778,residential
+ADR-000555,306 Maple Ridge Rd,,Westerville,OH,43079,US,40.07896,-82.91286,commercial
+ADR-90014,402 Thistledown Ct,,Columbus,OH,43219,US,39.98753,-82.99448,residential
+ADR-000556,3840 Stonebrook St,,Columbus,OH,43291,US,40.02111,-83.01762,commercial
+ADR-90015,77 Rookwood Ln,,Westerville,OH,43082,US,40.08523,-82.87236,residential
+ADR-000557,4898 Dovetail Pl,,Westerville,OH,43060,US,40.16542,-82.88312,commercial
+ADR-90016,2291 Oriel Rd,,Columbus,OH,43224,US,39.99598,-82.9855,residential
+ADR-000558,398 Stonebrook Way,,Columbus,OH,43292,US,39.92166,-82.98693,commercial
+ADR-90017,1240 Maple Ridge Dr,,Westerville,OH,43081,US,40.10136,-82.9588,residential
+ADR-000559,3887 Ivybridge St,,Westerville,OH,43015,US,40.10845,-82.89576,commercial
+ADR-90018,1597 Norwood Fen Blvd,,Boston,MA,02125,US,42.30336,-71.00449,residential
+ADR-000560,2836 Alder Crest Blvd,,Boston,MA,02170,US,42.37856,-71.07133,commercial
+ADR-90019,906 Carroll Bend Ct,,Los Angeles,CA,90037,US,34.06461,-118.2473,residential
+ADR-90020,4719 Vantage Point Pl,Apt 5F,Austin,TX,78758,US,30.2613,-97.73484,residential
+ADR-000561,4122 Kestrel Run Blvd,,Austin,TX,78724,US,30.27681,-97.77535,commercial
+ADR-90021,2003 Thistledown Rd,,Chicago,IL,60640,US,41.8639,-87.65555,residential
+ADR-000562,1411 Vantage Point Ln,,Chicago,IL,60683,US,41.89009,-87.61939,commercial
+ADR-90022,1463 Alder Crest Ave,,Denver,CO,80253,US,39.69886,-104.99973,residential
+ADR-90023,2773 Maple Ridge Dr,Apt 19F,Seattle,WA,98187,US,47.63167,-122.33137,residential
+ADR-90024,1579 Rookwood Way,,Columbus,OH,43289,US,40.00109,-82.94473,residential

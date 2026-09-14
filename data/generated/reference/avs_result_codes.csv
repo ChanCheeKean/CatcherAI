@@ -1,0 +1,9 @@
+code,meaning
+Y,Street address and 5-digit ZIP match
+A,Street address matches; ZIP does not
+Z,5-digit ZIP matches; street address does not
+N,Neither street address nor ZIP match
+U,Address information unavailable (issuer did not respond / non-US)
+R,Retry; system unavailable
+S,AVS not supported by issuer
+G,Global non-AVS participant

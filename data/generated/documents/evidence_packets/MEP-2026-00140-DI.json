@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00140-DI",
+  "case_id": "DSP-2026-00140",
+  "txn_id": "TXN-0007807",
+  "merchant_id": "MER-00173",
+  "source": "dispute_response",
+  "requested_at": "2026-03-13T22:33:00Z",
+  "available_at": "2026-04-09T20:00:00Z",
+  "merchant_statement": "Order placed from a returning customer account with prior undisputed orders.",
+  "order": {
+    "order_id": "ORD-CAB41FD1",
+    "order_date": "2026-01-25",
+    "total": "22.30"
+  },
+  "customer_account": {
+    "login_id": "kiran.jessup75",
+    "email_on_file": "kiran.jessup75@example.net"
+  },
+  "session": {
+    "ip": "198.18.118.6",
+    "device_fingerprint": "fp_cab41fd1596fb7a6a355005f81281b13829f7285"
+  },
+  "shipping_address": "64 Saffron Hill Ave, Chicago, IL 60631"
+}

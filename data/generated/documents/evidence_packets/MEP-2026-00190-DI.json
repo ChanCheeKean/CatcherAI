@@ -1,0 +1,21 @@
+{
+  "packet_id": "MEP-2026-00190-DI",
+  "case_id": "DSP-2026-00190",
+  "txn_id": "TXN-0017487",
+  "merchant_id": "MER-00180",
+  "source": "dispute_response",
+  "requested_at": "2026-03-31T21:11:00Z",
+  "available_at": "2026-04-27T20:00:00Z",
+  "merchant_statement": "Merchant disputes the claim; see attached policy and records.",
+  "order": {
+    "order_id": "ORD-7A6CD123",
+    "order_date": "2026-02-04",
+    "total": "15.99"
+  },
+  "policies_accepted": [
+    {
+      "document": "Terms of Sale",
+      "accepted_at": "2026-02-04T08:15:00Z"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "packet_id": "MEP-2026-00002-OR",
+  "case_id": "DSP-2026-00002",
+  "txn_id": "TXN-0018301",
+  "merchant_id": "MER-00160",
+  "source": "order_insight",
+  "requested_at": "2026-10-11T15:05:00Z",
+  "available_at": "2026-10-18T18:00:00Z",
+  "merchant_statement": "",
+  "order": {
+    "order_id": "ORD-92584376",
+    "order_date": "2026-09-18",
+    "total": "123.37"
+  },
+  "shipments": [
+    {
+      "carrier": "ParcelPath",
+      "tracking_number": "PP99589783595",
+      "events": [
+        {
+          "status": "label_created",
+          "ts": "2026-09-19T16:00:00Z"
+        }
+      ],
+      "proof_of_delivery": null
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+  "$defs": {
+    "Actor": {
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ActorKind"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ],
+      "title": "Actor",
+      "type": "object"
+    },
+    "ActorKind": {
+      "enum": [
+        "graph_node",
+        "agent",
+        "subagent",
+        "tool",
+        "memory",
+        "sandbox",
+        "harness",
+        "evaluator"
+      ],
+      "title": "ActorKind",
+      "type": "string"
+    },
+    "EventUsage": {
+      "properties": {
+        "input_tokens": {
+          "default": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        },
+        "reasoning_tokens": {
+          "default": 0,
+          "title": "Reasoning Tokens",
+          "type": "integer"
+        },
+        "cached_tokens": {
+          "default": 0,
+          "title": "Cached Tokens",
+          "type": "integer"
+        },
+        "cost_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "default": "0",
+          "title": "Cost Usd"
+        },
+        "latency_ms": {
+          "default": 0,
+          "title": "Latency Ms",
+          "type": "integer"
+        }
+      },
+      "title": "EventUsage",
+      "type": "object"
+    },
+    "Redaction": {
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "replacement": {
+          "default": "[REDACTED]",
+          "title": "Replacement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "category"
+      ],
+      "title": "Redaction",
+      "type": "object"
+    },
+    "RuntimeSnapshot": {
+      "properties": {
+        "config_hash": {
+          "title": "Config Hash",
+          "type": "string"
+        },
+        "agent_runtime": {
+          "title": "Agent Runtime",
+          "type": "string"
+        },
+        "model_gateway": {
+          "title": "Model Gateway",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "adapter_versions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Adapter Versions",
+          "type": "object"
+        }
+      },
+      "required": [
+        "config_hash",
+        "agent_runtime",
+        "model_gateway",
+        "provider",
+        "model"
+      ],
+      "title": "RuntimeSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "case_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Case Id"
+    },
+    "seq": {
+      "title": "Seq",
+      "type": "integer"
+    },
+    "span_id": {
+      "title": "Span Id",
+      "type": "string"
+    },
+    "parent_span_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parent Span Id"
+    },
+    "ts_wall": {
+      "format": "date-time",
+      "title": "Ts Wall",
+      "type": "string"
+    },
+    "ts_virtual": {
+      "format": "date-time",
+      "title": "Ts Virtual",
+      "type": "string"
+    },
+    "actor": {
+      "$ref": "#/$defs/Actor"
+    },
+    "type": {
+      "title": "Type",
+      "type": "string"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Refs",
+      "type": "array"
+    },
+    "runtime": {
+      "$ref": "#/$defs/RuntimeSnapshot"
+    },
+    "usage": {
+      "$ref": "#/$defs/EventUsage"
+    },
+    "redactions": {
+      "items": {
+        "$ref": "#/$defs/Redaction"
+      },
+      "title": "Redactions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "event_id",
+    "run_id",
+    "case_id",
+    "seq",
+    "span_id",
+    "parent_span_id",
+    "ts_wall",
+    "ts_virtual",
+    "actor",
+    "type",
+    "summary",
+    "payload",
+    "runtime"
+  ],
+  "title": "EventEnvelope",
+  "type": "object"
+}

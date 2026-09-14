@@ -1,0 +1,22 @@
+{
+  "packet_id": "MEP-09410-OI",
+  "case_id": "DSP-2026-09410",
+  "txn_id": "TXN-0020442",
+  "merchant_id": "MER-90023",
+  "source": "order_insight",
+  "requested_at": "",
+  "available_at": "2026-06-06T16:00:00Z",
+  "shipments": [
+    {
+      "carrier": "ParcelPath",
+      "tracking_number": "PP9401090",
+      "events": [
+        {
+          "ts": "2026-05-11T14:00:00Z",
+          "status": "label_created"
+        }
+      ]
+    }
+  ],
+  "merchant_statement": "Order in production queue."
+}

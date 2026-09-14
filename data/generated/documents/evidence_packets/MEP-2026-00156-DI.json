@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00156-DI",
+  "case_id": "DSP-2026-00156",
+  "txn_id": "TXN-0000744",
+  "merchant_id": "MER-00173",
+  "source": "dispute_response",
+  "requested_at": "2026-04-13T22:46:00Z",
+  "available_at": "2026-05-05T20:00:00Z",
+  "merchant_statement": "Order placed from a returning customer account with prior undisputed orders.",
+  "order": {
+    "order_id": "ORD-8B87ACCC",
+    "order_date": "2026-02-27",
+    "total": "8.66"
+  },
+  "customer_account": {
+    "login_id": "ulla.holloway85",
+    "email_on_file": "ulla.holloway85@example.net"
+  },
+  "session": {
+    "ip": "198.18.187.69",
+    "device_fingerprint": "fp_8b87accca730bff1a12668b4947eedc655cfc0b5"
+  },
+  "shipping_address": "2824 Norwood Fen Dr, Apt 7C, Cleveland, OH 44166"
+}

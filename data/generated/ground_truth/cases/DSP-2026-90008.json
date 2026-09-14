@@ -1,0 +1,175 @@
+{
+  "case_id": "DSP-2026-90008",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C07",
+  "title": "Lost in Conversion",
+  "depth": "L2",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90007",
+  "txn_ids": [
+    "TXN-9000701",
+    "TXN-9000702",
+    "TXN-9000703"
+  ],
+  "summary": "Merchant refunded 100% in EUR; USD shortfall is FX movement (1.1020 → 1.0645). Credit preceded any dispute, so no 13.6 and no FX pre-arb right. Reg Z: no billing error (FX terms disclosed). SOP-007 reverses the issuer's own 3% fee on full refunds.",
+  "expected": {
+    "is_dispute": false,
+    "claim_family": "credit_shortfall_fx",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9000703",
+        "action": "no_dispute",
+        "reason": "merchant credit issued in full in transaction currency before any dispute"
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "no_error_fx_explained_fee_reversed",
+      "credit_amount": "13.89",
+      "credit_type": "foreign_transaction_fee_reversal"
+    },
+    "letters": [
+      "reg_z_no_error_explanation_with_fx_breakdown"
+    ],
+    "adjudication": {
+      "review_panel_required": false
+    }
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Purchase EUR 420.00 @1.1020 = USD 462.84",
+      "evidence": [
+        "TXN-9000701",
+        "reference/fx_rates.csv"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Refund EUR 420.00 @1.0645 = USD 447.09",
+      "evidence": [
+        "TXN-9000703"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Refund posted 2026-10-02, before intake 2026-10-08",
+      "evidence": [
+        "TXN-9000703",
+        "DSP-2026-90008"
+      ]
+    },
+    {
+      "id": "F4",
+      "fact": "Foreign fee 13.89 charged on purchase",
+      "evidence": [
+        "TXN-9000702"
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "X1",
+      "between": [
+        "cardholder: merchant short-changed",
+        "EUR amounts equal"
+      ],
+      "resolution": "exchange-rate movement"
+    }
+  ],
+  "computations": [
+    {
+      "name": "fx_difference",
+      "value": "15.75"
+    },
+    {
+      "name": "fee",
+      "value": "13.89",
+      "rule": "round(462.84*0.03,2)"
+    }
+  ],
+  "must_cite": [
+    "VISA-11.4-AMOUNTS-CREDITS-FX@2026-04-18",
+    "VISA-13.6@2026-04-18",
+    "LFB-SOP-DSP-007@v2",
+    "LFB-CARDHOLDER-AGREEMENT@2025-01"
+  ],
+  "must_not": [
+    "file 13.6",
+    "credit 15.75 as billing error",
+    "blame merchant"
+  ],
+  "components": [
+    "sandbox (FX)",
+    "router",
+    "semantic_retrieval",
+    "internal SOP skill",
+    "contradiction_detection"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "is_dispute",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "path": "cardholder_resolution.credit_amount",
+      "op": "eq",
+      "value": "13.89"
+    }
+  ],
+  "rubric": [
+    "Shows the FX arithmetic in the explanation"
+  ],
+  "budget": {
+    "expected_tool_calls": "5-10"
+  },
+  "required_capabilities": [
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / REPL",
+      "necessity": "primary",
+      "why": "FX arithmetic shows EUR refund was complete; shortfall is rate movement",
+      "trajectory_signals": [
+        "computation {code, inputs, output}"
+      ]
+    },
+    {
+      "capability": "router",
+      "label": "Router",
+      "necessity": "primary",
+      "why": "route to issuer fee SOP instead of a network dispute",
+      "trajectory_signals": [
+        "route_decision {route_id, method: rule|llm, confidence}"
+      ]
+    },
+    {
+      "capability": "memory_semantic",
+      "label": "Memory — semantic / vector",
+      "necessity": "primary",
+      "why": "SOP-DSP-007 and cardholder agreement §9",
+      "trajectory_signals": [
+        "retrieval {query, filters: as_of/status/validity, doc_ids}"
+      ]
+    },
+    {
+      "capability": "memory_persistent",
+      "label": "Memory — persistent (SQLite system of record)",
+      "necessity": "supporting",
+      "why": "fx_rates reference + linked credit/fee transactions",
+      "trajectory_signals": [
+        "tool_call sql_query / get_* with row ids in tool_result"
+      ]
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool / function calling",
+      "necessity": "supporting",
+      "why": "reference lookups",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {status, source_ids}"
+      ]
+    }
+  ]
+}

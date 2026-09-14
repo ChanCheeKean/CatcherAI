@@ -1,0 +1,51 @@
+{
+  "packet_id": "MEP-90009-OI",
+  "case_id": "DSP-2026-90009",
+  "txn_id": "TXN-9000801",
+  "merchant_id": "MER-00164",
+  "source": "order_insight",
+  "requested_at": "",
+  "available_at": "2026-10-21T13:00:00Z",
+  "order": {
+    "order_id": "VC-3389172",
+    "placed_at": "2026-10-09T06:16:40Z",
+    "items": [
+      {
+        "description": "Aerion 16in gaming laptop RTX",
+        "qty": 1,
+        "price": "1240.00"
+      }
+    ]
+  },
+  "customer_account": {
+    "login_id": "guest_checkout",
+    "email": "cn.orders88@example.net",
+    "account_created_at": "2026-10-09T06:11:02Z"
+  },
+  "session": {
+    "ip": "203.0.113.77",
+    "device_fingerprint": "fp_9f3c1e7a9f3c1e7a9f3c1e7a9f3c1e7a9f3c1e7a",
+    "user_agent": "Mozilla/5.0 (X11; Linux x86_64)"
+  },
+  "shipping_address": "4410 Industrial Pkwy Unit 7, Toledo, OH 43604",
+  "billing_address_entered": "1 Main St, Cleveland, OH 44101",
+  "shipments": [
+    {
+      "carrier": "ParcelPath",
+      "tracking_number": "PP44100772913",
+      "events": [
+        {
+          "ts": "2026-10-09T20:00:00Z",
+          "status": "shipped"
+        },
+        {
+          "ts": "2026-10-11T15:20:00Z",
+          "status": "delivered",
+          "address": "4410 Industrial Pkwy Unit 7, Toledo, OH 43604"
+        }
+      ]
+    }
+  ],
+  "prior_transactions": [],
+  "merchant_statement": "Guest checkout; no prior relationship; AVS mismatch accepted by merchant rules."
+}

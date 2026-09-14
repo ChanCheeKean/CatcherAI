@@ -1,0 +1,7 @@
+id: folio_line_analyst
+version: 1
+description: Assesses one folio line against disclosures, guest acknowledgments and the merchant's own records.
+model_role: default
+tools: [compute_folio_lines]
+skills: [lodging-te]
+max_iterations: 3

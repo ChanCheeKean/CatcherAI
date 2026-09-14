@@ -1,0 +1,57 @@
+{
+  "packet_id": "MEP-90006-OI",
+  "case_id": "DSP-2026-90007",
+  "txn_id": "TXN-9000601",
+  "merchant_id": "MER-90006",
+  "source": "order_insight",
+  "requested_at": "2026-10-08T16:00:00Z",
+  "available_at": "2026-10-14T21:00:00Z",
+  "subscription": {
+    "plan": "Lumafit+ Annual",
+    "price": "119.88",
+    "trial_days": 7,
+    "trial_start": "2026-09-22T22:05:00Z",
+    "trial_end": "2026-09-29T22:05:00Z",
+    "first_billing": "2026-09-29T10:10:00Z",
+    "service_period": "2026-09-29 to 2027-09-28",
+    "cancelled_at": "2026-10-04T00:22:00Z",
+    "cancellation_effective": "end of paid term (2027-09-28)"
+  },
+  "checkout_disclosure": {
+    "captured_text": "Start your FREE 7-day trial. Cancel anytime. By continuing you agree to the Terms.",
+    "terms_link": "https://www.lumafit.example/terms",
+    "checkbox": "none"
+  },
+  "emails_sent": [
+    {
+      "ts": "2026-09-22T22:06:00Z",
+      "template": "welcome_trial",
+      "included_price": false,
+      "included_renewal_date": false,
+      "included_cancel_link": false
+    }
+  ],
+  "app_sessions": [
+    {
+      "ts": "2026-09-23T13:10:00Z",
+      "device": "iOS app"
+    },
+    {
+      "ts": "2026-09-25T13:10:00Z",
+      "device": "iOS app"
+    },
+    {
+      "ts": "2026-09-27T13:10:00Z",
+      "device": "iOS app"
+    },
+    {
+      "ts": "2026-09-30T13:10:00Z",
+      "device": "iOS app"
+    }
+  ],
+  "customer_account": {
+    "login_id": "soren.v",
+    "email": "soren.valdivia35@example.com"
+  },
+  "merchant_statement": "Customer agreed to the Terms at checkout, used the service after billing, and cancelled after the transaction date. Annual plans are non-refundable."
+}

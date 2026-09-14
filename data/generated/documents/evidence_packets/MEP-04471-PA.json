@@ -1,0 +1,17 @@
+{
+  "packet_id": "MEP-04471-PA",
+  "case_id": "DSP-2026-04471",
+  "txn_id": "TXN-9001203",
+  "merchant_id": "MER-90013",
+  "source": "pre_arbitration",
+  "requested_at": "2026-05-09T00:00:00Z",
+  "available_at": "2026-05-28T20:00:00Z",
+  "customer_account": {
+    "login_id": "rowan.okonkwobell15"
+  },
+  "session": {
+    "ip": "198.18.201.x"
+  },
+  "shipping_address": "88 Wharfside Ave, Unit 2, Jersey City, NJ 07302",
+  "merchant_statement": "Returning customer account; IP match; AVS Y."
+}

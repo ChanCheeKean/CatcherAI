@@ -1,0 +1,32 @@
+{
+  "packet_id": "MEP-90014-OI",
+  "case_id": "DSP-2026-90014",
+  "txn_id": "TXN-9001401",
+  "merchant_id": "MER-90014",
+  "source": "order_insight",
+  "requested_at": "2026-10-15T13:00:00Z",
+  "available_at": "2026-10-16T17:00:00Z",
+  "shipments": [
+    {
+      "carrier": "ParcelPath",
+      "tracking_number": "PP90140022871",
+      "events": [
+        {
+          "ts": "2026-10-08T13:00:00Z",
+          "status": "shipped"
+        },
+        {
+          "ts": "2026-10-11T19:02:00Z",
+          "status": "delivered",
+          "address": "…Maple Ridge Dr, Westerville OH"
+        }
+      ],
+      "proof_of_delivery": {
+        "address": "…Maple Ridge Dr, Westerville OH",
+        "gps_distance_m": null,
+        "photo_description": "Box leaning against a white door; brass house number 1204 visible."
+      }
+    }
+  ],
+  "merchant_statement": "Carrier confirms delivery."
+}

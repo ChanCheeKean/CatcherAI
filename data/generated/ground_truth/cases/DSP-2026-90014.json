@@ -1,0 +1,136 @@
+{
+  "case_id": "DSP-2026-90014",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C12b",
+  "title": "Wrong House",
+  "depth": "L2",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90017",
+  "txn_ids": [
+    "TXN-9001401"
+  ],
+  "summary": "Same merchant and ZIP as the ring, but POD has a partial address and the photo shows house 1204 vs cardholder 1240. No shared devices/phones with ring members. Valid 13.1.",
+  "expected": {
+    "is_dispute": true,
+    "claim_family": "not_received",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9001401",
+        "action": "file_dispute",
+        "condition": "13.1",
+        "amount": "219.00"
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "provisional_credit_pending_network",
+      "credit_amount": "219.00"
+    },
+    "adjudication": {
+      "review_panel_required": false
+    },
+    "ring_linkage": false
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "POD address partial ('…Maple Ridge Dr'); Visa requires full delivery address",
+      "evidence": [
+        "MEP-90014-OI",
+        "VISA-13.1@2026-04-18"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Photo shows house number 1204; cardholder lives at 1240",
+      "evidence": [
+        "MEP-90014-OI",
+        "addresses ADR-90017"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "No shared device, IP or phone with CUS-90013..90016",
+      "evidence": [
+        "graph"
+      ]
+    }
+  ],
+  "must_cite": [
+    "VISA-13.1@2026-04-18"
+  ],
+  "must_not": [
+    "link to SuspectedRing",
+    "deny on merchant 'delivered' statement"
+  ],
+  "components": [
+    "graph_traversal (negative result)",
+    "contradiction_detection",
+    "fairness guardrail"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "network_actions[0].condition",
+      "op": "eq",
+      "value": "13.1"
+    },
+    {
+      "path": "ring_linkage",
+      "op": "eq",
+      "value": false
+    }
+  ],
+  "rubric": [
+    "States explicitly that no identifier links this customer to the ring"
+  ],
+  "budget": {
+    "expected_tool_calls": "6-12"
+  },
+  "required_capabilities": [
+    {
+      "capability": "memory_graph",
+      "label": "Memory — graph",
+      "necessity": "primary",
+      "why": "negative traversal result: no shared identifiers with the ring",
+      "trajectory_signals": [
+        "graph_query {cypher|pattern, node_ids}",
+        "graph_write {node|edge, status}"
+      ]
+    },
+    {
+      "capability": "write_paths",
+      "label": "Agent write paths (selective write, consolidation, forgetting)",
+      "necessity": "primary",
+      "why": "must not write ring linkage",
+      "trajectory_signals": [
+        "memory_write / memory_supersede / memory_retract / memory_consolidate / memory_purge",
+        "write_rejected {reason}",
+        "automated_action"
+      ]
+    },
+    {
+      "capability": "memory_semantic",
+      "label": "Memory — semantic / vector",
+      "necessity": "supporting",
+      "why": "13.1 full-address requirement",
+      "trajectory_signals": [
+        "retrieval {query, filters: as_of/status/validity, doc_ids}"
+      ]
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool / function calling",
+      "necessity": "supporting",
+      "why": "evidence packet",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {status, source_ids}"
+      ]
+    }
+  ],
+  "memory_ops": {
+    "must_not_write": [
+      "SuspectedRing membership or linkage for CUS-90017"
+    ]
+  }
+}

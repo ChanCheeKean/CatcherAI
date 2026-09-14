@@ -1,0 +1,7 @@
+id: issuer_advocate
+version: 1
+description: Independently challenges the case from the issuer and merchant evidence position.
+model_role: default
+tools: []
+skills: [automated-adjudication]
+max_iterations: 3

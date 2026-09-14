@@ -1,0 +1,360 @@
+{
+  "case_id": "DSP-2026-90012",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C11",
+  "title": "Takeover in a Friendly Mask",
+  "depth": "L4",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90012",
+  "txn_ids": [
+    "TXN-9001204"
+  ],
+  "summary": "Merchant asserts CE 3.0 friendly fraud; issuer data shows SIM-swap-style ATO (phone changed via IVR, VPN logins, SMS OTP reset). IP evidence is a truncated /24 (fails CE format), ship-to differs from priors and is a drop address shared with prior denied case DSP-2026-04471 and two other ATO disputes. Memory note MEM-0142 is wrong.",
+  "expected": {
+    "is_dispute": true,
+    "claim_family": "fraud_cnp_account_takeover",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9001204",
+        "action": "file_dispute",
+        "condition": "10.4",
+        "amount": "1389.00",
+        "prerequisite": "fraud_reported"
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "credited",
+      "credit_amount": "1389.00",
+      "liability_amount": "0.00"
+    },
+    "account_actions": [
+      "fraud_report_tc40",
+      "card_reissue",
+      "revert_phone_change_and_secure_online_banking"
+    ],
+    "adjudication": {
+      "review_panel_required": true,
+      "reason": "reopening a closed case (SOP-DSP-003 §2.2)",
+      "min_confidence": 0.75,
+      "conservative_default_applied": false,
+      "flip_fact": "evidence the customer made the phone-number change and received the goods"
+    },
+    "automated_actions": [
+      {
+        "action": "lock_digital_banking_pending_step_up"
+      },
+      {
+        "action": "revert_unverified_phone_change"
+      },
+      {
+        "action": "reopen_case",
+        "case_id": "DSP-2026-04471",
+        "reason": "prior denial contradicted by account-takeover indicators and shared drop address"
+      },
+      {
+        "action": "credit_reopened_case",
+        "case_id": "DSP-2026-04471",
+        "amount": "612.00",
+        "note": "plus related finance charges; no network action: transaction already disputed once and Visa time limit passed"
+      },
+      {
+        "action": "watchlist_add",
+        "list": "ship_to_addresses",
+        "subject_id": "ADR-DROP-WHARFSIDE",
+        "evidence": [
+          "DSP-2026-04471",
+          "DSP-2026-09301",
+          "DSP-2026-09302",
+          "DSP-2026-90012"
+        ]
+      }
+    ],
+    "ce3_assessment": {
+      "met": false,
+      "reasons": [
+        "IP provided as 198.18.201.x (not full clear-text public IP)",
+        "delivery address differs from prior transactions",
+        "device fingerprint new (first seen 2026-10-14)"
+      ]
+    }
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Phone number changed via IVR 2026-10-12; customer reports no service since Monday evening",
+      "evidence": [
+        "account_events phone_changed",
+        "COM intake"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "3 failed logins from VPN IP then SMS-OTP password reset 01:54 ET",
+      "evidence": [
+        "account_events"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Merchant account: new device, password reset, email change, new ship-to within 45 min before order",
+      "evidence": [
+        "MEP-90012-OI.account_activity_last_24h"
+      ]
+    },
+    {
+      "id": "F4",
+      "fact": "Ship-to 88 Wharfside Ave Unit 2 also used in DSP-2026-04471, DSP-2026-09301, DSP-2026-09302",
+      "evidence": [
+        "graph ADR-DROP-WHARFSIDE"
+      ]
+    },
+    {
+      "id": "F5",
+      "fact": "Merchant IP evidence truncated to /24; IP range is CGNAT",
+      "evidence": [
+        "MEP-90012-OI.session",
+        "reference/ip_intel.csv"
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "label": "first-party misuse",
+      "for_": [
+        "merchant CE claim",
+        "MEM-0142",
+        "prior denial"
+      ],
+      "against": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5"
+      ]
+    },
+    {
+      "id": "H2",
+      "label": "account takeover",
+      "for_": [
+        "F1",
+        "F2",
+        "F3",
+        "F4"
+      ],
+      "against": [
+        "login ID matches"
+      ]
+    }
+  ],
+  "contradictions": [
+    {
+      "id": "X1",
+      "between": [
+        "merchant: CE met",
+        "VISA-10.4 data element format rules"
+      ],
+      "resolution": "not met"
+    },
+    {
+      "id": "X2",
+      "between": [
+        "MEM-0142",
+        "current evidence"
+      ],
+      "resolution": "retract memory"
+    },
+    {
+      "id": "X3",
+      "between": [
+        "merchant: account verified",
+        "same packet: account changes minutes before"
+      ],
+      "resolution": "ATO"
+    }
+  ],
+  "computations": [
+    {
+      "name": "old_txn_visa_time_limit",
+      "value": "2026-09-01",
+      "rule": "120 days from processing date of TXN-9001203 — passed before AS_OF"
+    }
+  ],
+  "must_cite": [
+    "VISA-10.4@2026-04-18",
+    "VISA-11.2-LIFECYCLE@2026-04-18",
+    "REGZ-1026.12",
+    "LFB-SOP-DSP-003@v6",
+    "LFB-SOP-DSP-005@v1"
+  ],
+  "must_not": [
+    "deny based on merchant CE claim",
+    "rely on MEM-0142",
+    "file a second network dispute on TXN-9001203",
+    "leave MEM-0142 active",
+    "wait for a human"
+  ],
+  "memory_ops": {
+    "read": [
+      "MEM-0142"
+    ],
+    "retract": [
+      {
+        "note_id": "MEM-0142",
+        "reason": "contradicted by ATO evidence and shared drop address"
+      }
+    ],
+    "write": [
+      {
+        "scope": "customer",
+        "subject_id": "CUS-90012",
+        "type": "correction"
+      },
+      {
+        "scope": "graph",
+        "edge": "SHIPPED_TO",
+        "subject_id": "ADR-DROP-WHARFSIDE",
+        "flag": "suspected_drop_address"
+      }
+    ]
+  },
+  "components": [
+    "competing_hypotheses",
+    "contradiction_detection",
+    "graph_traversal",
+    "memory_retraction",
+    "automated review panel (reopen)",
+    "automated controls (account security, watchlist)",
+    "subagents (security events, merchant evidence, graph)",
+    "policy precision (data element format)"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "network_actions[0].condition",
+      "op": "eq",
+      "value": "10.4"
+    },
+    {
+      "path": "cardholder_resolution.credit_amount",
+      "op": "eq",
+      "value": "1389.00"
+    },
+    {
+      "path": "automated_actions[?action=='reopen_case'].case_id",
+      "op": "eq",
+      "value": "DSP-2026-04471"
+    },
+    {
+      "path": "automated_actions[?action=='credit_reopened_case'].amount",
+      "op": "eq",
+      "value": "612.00"
+    },
+    {
+      "path": "memory_ops[?note_id=='MEM-0142'].op",
+      "op": "eq",
+      "value": "retract"
+    }
+  ],
+  "rubric": [
+    "Explicitly revisits and overturns the initial first-party-misuse hypothesis with cited evidence"
+  ],
+  "budget": {
+    "expected_tool_calls": "15-30"
+  },
+  "required_capabilities": [
+    {
+      "capability": "subagents",
+      "label": "Subagents",
+      "necessity": "primary",
+      "why": "security-events analyst, merchant-evidence analyst, graph analyst; panel for reopening",
+      "trajectory_signals": [
+        "subagent_started {name, parent_span_id}",
+        "subagent_finished {result_summary}",
+        "panel_position / adjudication"
+      ]
+    },
+    {
+      "capability": "memory_graph",
+      "label": "Memory — graph",
+      "necessity": "primary",
+      "why": "drop address → 4 disputed transactions → prior denied case",
+      "trajectory_signals": [
+        "graph_query {cypher|pattern, node_ids}",
+        "graph_write {node|edge, status}"
+      ]
+    },
+    {
+      "capability": "read_paths",
+      "label": "Agent read paths (selective read)",
+      "necessity": "primary",
+      "why": "MEM-0142 read as a lead and rejected after verification",
+      "trajectory_signals": [
+        "memory_read {filters}",
+        "memory_verified / memory_rejected {note_id, reason}"
+      ]
+    },
+    {
+      "capability": "write_paths",
+      "label": "Agent write paths (selective write, consolidation, forgetting)",
+      "necessity": "primary",
+      "why": "retract MEM-0142 + correction; reopen DSP-2026-04471; watchlist; account security actions",
+      "trajectory_signals": [
+        "memory_write / memory_supersede / memory_retract / memory_consolidate / memory_purge",
+        "write_rejected {reason}",
+        "automated_action"
+      ]
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "primary",
+      "why": "overturns the initial first-party-misuse hypothesis",
+      "trajectory_signals": [
+        "plan_created",
+        "plan_updated (agent-initiated)",
+        "hypothesis_updated"
+      ]
+    },
+    {
+      "capability": "agent_graph",
+      "label": "Agent graph engineering",
+      "necessity": "primary",
+      "why": "review-panel node for reopening",
+      "trajectory_signals": [
+        "node_entered / node_exited",
+        "edge_taken {from, to} incl. back-edges"
+      ]
+    },
+    {
+      "capability": "memory_persistent",
+      "label": "Memory — persistent (SQLite system of record)",
+      "necessity": "primary",
+      "why": "security event sequence (phone change → VPN logins → reset)",
+      "trajectory_signals": [
+        "tool_call sql_query / get_* with row ids in tool_result"
+      ]
+    },
+    {
+      "capability": "loop_termination",
+      "label": "Loop engineering (real termination conditions)",
+      "necessity": "supporting",
+      "why": "long investigation within budget",
+      "trajectory_signals": [
+        "termination {reason}",
+        "wait_suspended {until, latest_safe_decision}",
+        "wait_resumed"
+      ]
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "supporting",
+      "why": "pb-fraud-cnp",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ]
+    }
+  ]
+}

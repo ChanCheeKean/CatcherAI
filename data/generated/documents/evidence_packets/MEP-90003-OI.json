@@ -1,0 +1,57 @@
+{
+  "packet_id": "MEP-90003-OI",
+  "case_id": "DSP-2026-90003",
+  "txn_id": "TXN-9000302",
+  "merchant_id": "MER-90003",
+  "source": "order_insight",
+  "requested_at": "",
+  "available_at": "2026-10-21T15:00:00Z",
+  "order": {
+    "order_id": "GS-40112",
+    "placed_at": "2026-10-11T15:01:40Z",
+    "items": [
+      {
+        "sku": "MS-STD-LIC",
+        "description": "Morrow Serif Standard Desktop License",
+        "price": "12.49"
+      },
+      {
+        "sku": "MS-PRO-WEB",
+        "description": "Morrow Serif Pro Webfont Bundle",
+        "price": "19.99"
+      }
+    ]
+  },
+  "customer_account": {
+    "login_id": "icoldiron",
+    "email": "idris.coldiron@example.com"
+  },
+  "digital_delivery": [
+    {
+      "ts": "2026-10-11T15:03:12Z",
+      "sku": "MS-STD-LIC",
+      "event": "download_attempt",
+      "result": "HTTP 503"
+    },
+    {
+      "ts": "2026-10-11T15:10:05Z",
+      "sku": "MS-PRO-WEB",
+      "event": "download_attempt",
+      "result": "HTTP 503"
+    },
+    {
+      "ts": "2026-10-14T00:44:51Z",
+      "sku": "MS-PRO-WEB",
+      "event": "download_attempt",
+      "result": "HTTP 503"
+    },
+    {
+      "ts": "",
+      "sku": "both",
+      "event": "license_activation",
+      "result": "status=pending_activation_error"
+    }
+  ],
+  "successful_downloads": 0,
+  "merchant_statement": "Customers can re-download purchases from their account at any time."
+}

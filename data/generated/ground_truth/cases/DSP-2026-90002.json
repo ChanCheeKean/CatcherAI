@@ -1,0 +1,166 @@
+{
+  "case_id": "DSP-2026-90002",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C02",
+  "title": "Coffee by Another Name",
+  "depth": "L1",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90002",
+  "txn_ids": [
+    "TXN-9000201"
+  ],
+  "summary": "Unrecognized card-present charge is the cardholder's regular café under a new facilitator descriptor.",
+  "expected": {
+    "is_dispute": false,
+    "claim_family": "descriptor_confusion",
+    "network_actions": [],
+    "cardholder_resolution": {
+      "outcome": "withdrawn_after_clarification",
+      "credit_amount": "0.00"
+    },
+    "account_actions_forbidden": [
+      "card_reissue",
+      "fraud_report"
+    ],
+    "adjudication": {
+      "review_panel_required": false
+    }
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "16 prior card-present purchases at MER-90002 (14 under old descriptor)",
+      "evidence": [
+        "transactions MER-90002"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Descriptor changed 2026-09-03 with Tapr migration",
+      "evidence": [
+        "merchant_descriptors MER-90002",
+        "WEB-04114"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Contactless chip read, card present; no fraud pattern",
+      "evidence": [
+        "TXN-9000201"
+      ]
+    }
+  ],
+  "must_not": [
+    "file 10.3 dispute",
+    "report fraud / TC40",
+    "reissue card",
+    "continue investigating after withdrawal"
+  ],
+  "components": [
+    "router",
+    "tool_calling",
+    "persistent_memory",
+    "graph_traversal (merchant descriptors)",
+    "research",
+    "user_simulation",
+    "loop_termination"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "is_dispute",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "path": "cardholder_resolution.outcome",
+      "op": "eq",
+      "value": "withdrawn_after_clarification"
+    },
+    {
+      "path": "account_actions",
+      "op": "not_contains",
+      "value": "card_reissue"
+    }
+  ],
+  "rubric": [
+    "Asks a specific clarifying question naming the merchant's old name/location",
+    "Closes promptly"
+  ],
+  "budget": {
+    "expected_tool_calls": "3-6",
+    "early_termination": true
+  },
+  "required_capabilities": [
+    {
+      "capability": "router",
+      "label": "Router",
+      "necessity": "primary",
+      "why": "recognize a non-dispute (descriptor confusion) instead of a fraud workflow",
+      "trajectory_signals": [
+        "route_decision {route_id, method: rule|llm, confidence}"
+      ]
+    },
+    {
+      "capability": "memory_graph",
+      "label": "Memory — graph",
+      "necessity": "primary",
+      "why": "descriptor history → merchant → 16 prior visits by the same card",
+      "trajectory_signals": [
+        "graph_query {cypher|pattern, node_ids}",
+        "graph_write {node|edge, status}"
+      ]
+    },
+    {
+      "capability": "harness",
+      "label": "Harness",
+      "necessity": "primary",
+      "why": "simulated cardholder reply arrives after ~4h on the virtual clock",
+      "trajectory_signals": [
+        "clock_advanced",
+        "evidence_arrived {packet_id}",
+        "persona_reply",
+        "eval_scored"
+      ]
+    },
+    {
+      "capability": "loop_termination",
+      "label": "Loop engineering (real termination conditions)",
+      "necessity": "primary",
+      "why": "terminate on withdrawal within ≤6 tool calls",
+      "trajectory_signals": [
+        "termination {reason}",
+        "wait_suspended {until, latest_safe_decision}",
+        "wait_resumed"
+      ]
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool / function calling",
+      "necessity": "primary",
+      "why": "clarification message + descriptor directory lookup",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {status, source_ids}"
+      ]
+    },
+    {
+      "capability": "write_paths",
+      "label": "Agent write paths (selective write, consolidation, forgetting)",
+      "necessity": "primary",
+      "why": "selective write: no fraud report, no card reissue, no customer risk note",
+      "trajectory_signals": [
+        "memory_write / memory_supersede / memory_retract / memory_consolidate / memory_purge",
+        "write_rejected {reason}",
+        "automated_action"
+      ]
+    }
+  ],
+  "memory_ops": {
+    "must_not_write": [
+      "fraud report",
+      "card reissue",
+      "customer risk or fraud note"
+    ]
+  }
+}

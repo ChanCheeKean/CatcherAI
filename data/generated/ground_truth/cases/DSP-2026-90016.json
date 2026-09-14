@@ -1,0 +1,175 @@
+{
+  "case_id": "DSP-2026-90016",
+  "as_of": "2026-10-21T13:00:00Z",
+  "schema_version": "1.0",
+  "code": "C14",
+  "title": "Three Time Zones",
+  "depth": "L2",
+  "regime": "REG_Z",
+  "customer_id": "CUS-90019",
+  "txn_ids": [
+    "TXN-9001601"
+  ],
+  "summary": "Cardholder's call at 2:41 PM PT on Oct 8 = 5:41 PM ET, before the 6:00 PM hotel-local deadline. Hotel also billed more than one night for a no-show, independently improper. Precedent PRE-0019 looks the same but the call was late.",
+  "expected": {
+    "is_dispute": true,
+    "claim_family": "cancelled_guaranteed_reservation",
+    "network_actions": [
+      {
+        "txn_id": "TXN-9001601",
+        "action": "file_dispute",
+        "condition": "13.7",
+        "amount": "608.18",
+        "certification": [
+          "cardholder properly cancelled on 2026-10-08 17:41 ET",
+          "no-show billed for more than one night"
+        ]
+      }
+    ],
+    "cardholder_resolution": {
+      "outcome": "provisional_credit_pending_network",
+      "credit_amount": "608.18"
+    },
+    "fallback": {
+      "minimum_valid_amount": "304.09",
+      "basis": "no-show billed for more than one day's accommodation"
+    },
+    "adjudication": {
+      "review_panel_required": false
+    }
+  },
+  "key_facts": [
+    {
+      "id": "F1",
+      "fact": "Deadline 2026-10-08 18:00 America/New_York",
+      "evidence": [
+        "COM attachment harborvine_confirmation.eml",
+        "MEP-90016-OI"
+      ]
+    },
+    {
+      "id": "F2",
+      "fact": "Call 2026-10-08 14:41 America/Los_Angeles = 17:41 America/New_York, 4 min to hotel number",
+      "evidence": [
+        "COM attachment phone_call_log.png",
+        "merchants MER-90017.phone"
+      ]
+    },
+    {
+      "id": "F3",
+      "fact": "Hotel does not log front-desk calls",
+      "evidence": [
+        "MEP-90016-OI.call_center_log"
+      ]
+    },
+    {
+      "id": "F4",
+      "fact": "No-show charged for 2 nights",
+      "evidence": [
+        "MEP-90016-OI.charge"
+      ]
+    }
+  ],
+  "computations": [
+    {
+      "name": "call_time_hotel_local",
+      "value": "2026-10-08T17:41:00-04:00"
+    },
+    {
+      "name": "cancelled_before_deadline",
+      "value": true
+    },
+    {
+      "name": "one_night_with_tax",
+      "value": "304.09",
+      "rule": "265*1.1475 half-up"
+    }
+  ],
+  "must_cite": [
+    "VISA-13.7@2026-04-18"
+  ],
+  "must_not": [
+    "conclude the call was late",
+    "copy PRE-0019 partial outcome",
+    "require a cancellation code as a condition"
+  ],
+  "precedents": {
+    "distinguish": [
+      "PRE-0019"
+    ]
+  },
+  "components": [
+    "sandbox (timezones, tax)",
+    "semantic_retrieval (precedent)",
+    "verifier",
+    "skills (T&E lodging)"
+  ],
+  "deterministic_checks": [
+    {
+      "path": "network_actions[0].condition",
+      "op": "eq",
+      "value": "13.7"
+    },
+    {
+      "path": "network_actions[0].amount",
+      "op": "eq",
+      "value": "608.18"
+    }
+  ],
+  "rubric": [
+    "States both the time-zone conversion and the more-than-one-night rule",
+    "Explains why PRE-0019 differs"
+  ],
+  "budget": {
+    "expected_tool_calls": "6-14"
+  },
+  "required_capabilities": [
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / REPL",
+      "necessity": "primary",
+      "why": "14:41 America/Los_Angeles = 17:41 America/New_York; one night + tax = 304.09",
+      "trajectory_signals": [
+        "computation {code, inputs, output}"
+      ]
+    },
+    {
+      "capability": "memory_semantic",
+      "label": "Memory — semantic / vector",
+      "necessity": "primary",
+      "why": "find PRE-0019 and 13.7 no-show rules",
+      "trajectory_signals": [
+        "retrieval {query, filters: as_of/status/validity, doc_ids}"
+      ]
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "why": "pb-lodging-te",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ]
+    },
+    {
+      "capability": "read_paths",
+      "label": "Agent read paths (selective read)",
+      "necessity": "supporting",
+      "why": "MEM-0221 lesson",
+      "trajectory_signals": [
+        "memory_read {filters}",
+        "memory_verified / memory_rejected {note_id, reason}"
+      ]
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool / function calling",
+      "necessity": "supporting",
+      "why": "evidence request",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {status, source_ids}"
+      ]
+    }
+  ]
+}

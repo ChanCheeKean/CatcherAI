@@ -1,0 +1,24 @@
+{
+  "packet_id": "MEP-2026-00212-DI",
+  "case_id": "DSP-2026-00212",
+  "txn_id": "TXN-0002983",
+  "merchant_id": "MER-00159",
+  "source": "dispute_response",
+  "requested_at": "2026-01-11T16:40:00Z",
+  "available_at": "2026-02-14T21:00:00Z",
+  "merchant_statement": "Order placed from a returning customer account with prior undisputed orders.",
+  "order": {
+    "order_id": "ORD-BB95D9A4",
+    "order_date": "2025-12-05",
+    "total": "23.16"
+  },
+  "customer_account": {
+    "login_id": "nico.farrowby94",
+    "email_on_file": "nico.farrowby94@example.org"
+  },
+  "session": {
+    "ip": "198.18.14.200",
+    "device_fingerprint": "fp_bb95d9a4e03901063122dc8424345cca22a78bcb"
+  },
+  "shipping_address": "1701 Oriel Rd, Apt 13B, Austin, TX 78729"
+}

@@ -1,0 +1,2 @@
+token_id,card_id,token_requestor_type,token_requestor_name,provisioned_at,device_id,status
+TKN-90018-TM,CRD-90018,agentic_payment_provider,TravelMind,2026-09-14T23:02:00Z,DEV-90018-PH,active

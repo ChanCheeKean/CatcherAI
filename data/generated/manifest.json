@@ -1,0 +1,139 @@
+{
+  "dataset": "CatcherAI synthetic card-dispute ecosystem",
+  "seed": 20261021,
+  "as_of": "2026-10-21T13:00:00+00:00",
+  "counts": {
+    "account_events": 8710,
+    "account_holders": 434,
+    "accounts": 406,
+    "addresses": 586,
+    "cards": 434,
+    "communications": 283,
+    "customers": 381,
+    "devices": 665,
+    "dispute_events": 1307,
+    "dispute_transactions": 333,
+    "disputes": 308,
+    "evidence_packets": 82,
+    "ip_intel": 416,
+    "merchant_descriptors": 254,
+    "merchants": 229,
+    "statements": 5264,
+    "tokens": 1,
+    "transactions": 24158,
+    "evidence_packets_json": 82,
+    "research_docs": 19,
+    "precedents": 39,
+    "memory_notes": 25,
+    "graph_nodes": 25907,
+    "graph_edges": 49328,
+    "hero_cases": 21
+  },
+  "hero_cases": {
+    "DSP-2026-90001": {
+      "code": "C01",
+      "title": "Went Dark",
+      "depth": "L2"
+    },
+    "DSP-2026-90002": {
+      "code": "C02",
+      "title": "Coffee by Another Name",
+      "depth": "L1"
+    },
+    "DSP-2026-90003": {
+      "code": "C03",
+      "title": "The Stale Threshold",
+      "depth": "L1/L2"
+    },
+    "DSP-2026-90005": {
+      "code": "C04",
+      "title": "Split, Not Double",
+      "depth": "L2"
+    },
+    "DSP-2026-90006": {
+      "code": "C05",
+      "title": "The Folio",
+      "depth": "L3"
+    },
+    "DSP-2026-90007": {
+      "code": "C06",
+      "title": "Trial Trap",
+      "depth": "L3"
+    },
+    "DSP-2026-90008": {
+      "code": "C07",
+      "title": "Lost in Conversion",
+      "depth": "L2"
+    },
+    "DSP-2026-90009": {
+      "code": "C08",
+      "title": "Pump Six",
+      "depth": "L3"
+    },
+    "DSP-2026-90010": {
+      "code": "C09",
+      "title": "The Clock on CE 3.0",
+      "depth": "L3"
+    },
+    "DSP-2026-90011": {
+      "code": "C10",
+      "title": "The Family Tablet",
+      "depth": "L4"
+    },
+    "DSP-2026-90012": {
+      "code": "C11",
+      "title": "Takeover in a Friendly Mask",
+      "depth": "L4"
+    },
+    "DSP-2026-90013": {
+      "code": "C12",
+      "title": "Porch Ring",
+      "depth": "L4"
+    },
+    "DSP-2026-90014": {
+      "code": "C12b",
+      "title": "Wrong House",
+      "depth": "L2"
+    },
+    "DSP-2026-90015": {
+      "code": "C13",
+      "title": "The Agent Booked It",
+      "depth": "L4"
+    },
+    "DSP-2026-90016": {
+      "code": "C14",
+      "title": "Three Time Zones",
+      "depth": "L2"
+    },
+    "DSP-2026-90017": {
+      "code": "C15",
+      "title": "Membership Mid-Flight",
+      "depth": "L3"
+    },
+    "DSP-2026-90018": {
+      "code": "C15",
+      "title": null,
+      "depth": null
+    },
+    "DSP-2026-90019": {
+      "code": "C16",
+      "title": "The Listing Changed",
+      "depth": "L2"
+    },
+    "DSP-2026-90020": {
+      "code": "C17",
+      "title": "Too Late, Still Helpful",
+      "depth": "L2"
+    },
+    "DSP-2026-90021": {
+      "code": "C18",
+      "title": "Refund Crossed in the Mail",
+      "depth": "L1/L2"
+    },
+    "DSP-2026-90022": {
+      "code": "C19",
+      "title": "Yesterday's Reputation",
+      "depth": "L2"
+    }
+  }
+}

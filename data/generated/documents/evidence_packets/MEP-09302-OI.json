@@ -1,0 +1,15 @@
+{
+  "packet_id": "MEP-09302-OI",
+  "case_id": "DSP-2026-09302",
+  "txn_id": "TXN-0019903",
+  "merchant_id": "MER-00168",
+  "source": "order_insight",
+  "requested_at": "",
+  "available_at": "2026-10-10T16:00:00Z",
+  "shipping_address": "88 Wharfside Ave, Unit 2, Jersey City, NJ 07302",
+  "customer_account": {
+    "login_id": "(existing account)",
+    "email_changed_recently": true
+  },
+  "merchant_statement": "Order shipped to address on account."
+}

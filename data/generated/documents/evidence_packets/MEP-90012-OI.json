@@ -1,0 +1,101 @@
+{
+  "packet_id": "MEP-90012-OI",
+  "case_id": "DSP-2026-90012",
+  "txn_id": "TXN-9001204",
+  "merchant_id": "MER-90012",
+  "source": "order_insight",
+  "requested_at": "2026-10-15T15:00:00Z",
+  "available_at": "2026-10-16T19:30:00Z",
+  "order": {
+    "order_id": "OA-2231876",
+    "placed_at": "2026-10-14T06:40:51Z",
+    "items": [
+      {
+        "description": "Halcyon ANC Pro headphones",
+        "price": "549.00"
+      },
+      {
+        "description": "Monolith 360 smart speaker (pair)",
+        "price": "840.00"
+      }
+    ]
+  },
+  "customer_account": {
+    "login_id": "rowan.okonkwobell15",
+    "account_created_at": "2024-11-02T15:00:00Z",
+    "account_status": "verified"
+  },
+  "account_activity_last_24h": [
+    {
+      "ts": "2026-10-14T05:57:40Z",
+      "event": "login_new_device",
+      "device_fingerprint": "fp_5ba7e11e5ba7e11e5ba7e11e5ba7e11e5ba7e11e"
+    },
+    {
+      "ts": "2026-10-14T05:58:12Z",
+      "event": "password_reset"
+    },
+    {
+      "ts": "2026-10-14T06:05:31Z",
+      "event": "email_changed",
+      "new_email": "r.okonkwo.bell.alerts@example.org"
+    },
+    {
+      "ts": "2026-10-14T06:39:02Z",
+      "event": "shipping_address_added",
+      "address": "88 Wharfside Ave, Unit 2, Jersey City, NJ 07302"
+    }
+  ],
+  "session": {
+    "ip_match": "198.18.201.x",
+    "ip_note": "matches prior orders (subnet)",
+    "device_fingerprint": "fp_5ba7e11e5ba7e11e5ba7e11e5ba7e11e5ba7e11e"
+  },
+  "shipping_address": "88 Wharfside Ave, Unit 2, Jersey City, NJ 07302",
+  "prior_transactions": [
+    {
+      "txn_date": "2026-01-19",
+      "amount": "89.00",
+      "login_id": "rowan.okonkwobell15",
+      "ip": "198.18.201.7",
+      "device_fingerprint": "fp_31f0e9053ca198027549cfde2c52c29158f27de7",
+      "delivery_address": "311 Carroll Bend St, Apt 11C, Brooklyn, NY 11231",
+      "disputed": false
+    },
+    {
+      "txn_date": "2026-04-22",
+      "amount": "149.00",
+      "login_id": "rowan.okonkwobell15",
+      "ip": "198.18.201.7",
+      "device_fingerprint": "fp_de05fbcf723adc85cc5b5f314153ef685702d035",
+      "delivery_address": "311 Carroll Bend St, Apt 11C, Brooklyn, NY 11231",
+      "disputed": false
+    }
+  ],
+  "compelling_evidence_claim": {
+    "framework": "Visa CE 3.0",
+    "matching_elements": [
+      "login_id",
+      "ip_address"
+    ],
+    "merchant_assertion": "Returning verified customer; CE 3.0 criteria met; first-party misuse suspected"
+  },
+  "shipments": [
+    {
+      "carrier": "Swiftline Freight",
+      "tracking_number": "SW772019341",
+      "events": [
+        {
+          "ts": "2026-10-14T19:00:00Z",
+          "status": "shipped"
+        },
+        {
+          "ts": "2026-10-16T16:31:00Z",
+          "status": "delivered",
+          "address": "88 Wharfside Ave, Unit 2, Jersey City, NJ 07302"
+        }
+      ]
+    }
+  ],
+  "merchant_statement": "Order placed through the cardholder's own verified account from a matching IP."
+}
