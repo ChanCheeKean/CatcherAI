@@ -2,9 +2,10 @@
 
 Last updated: 2026-09-14  
 Repository: `/Users/kean/Dev/CatcherAI`  
-Branch / starting commit: `main` / `795e5ff`  
-Current phase: frontend/API Stage 0 design complete; no frontend or API implementation yet  
-Next stage: Stage 1 — read-only FastAPI foundation
+Branch / starting commit: `main` / `795e5ff` (still uncommitted; see below)  
+Current phase: Stage 1 (read-only FastAPI foundation) COMPLETE; no frontend yet, no execution
+manager or live stream yet  
+Next stage: Stage 2 — execution manager and live SSE stream
 
 ## Current objective
 
@@ -23,20 +24,24 @@ Read these files completely, in order, before editing:
 
 1. `docs/prompts/03-observability-console-kickoff.md` — implementation rules for the new initiative.
 2. `docs/design/07-observability-console.md` — authoritative UX, API/SSE contract, architecture,
-   source layout, six stages and acceptance gates.
-3. `README.md` — current working commands and backend capabilities.
+   source layout, six stages and acceptance gates (Stage 1's entry now reflects what was built).
+3. `README.md` — current working commands, including the new "Dispute Observatory API" section.
 4. `docs/design/05-agent-architecture.md` — runtime boundaries and automation constraints.
 5. `docs/design/03-data-dictionary.md` — data stores, joins and private-data boundaries.
 6. `schemas/trajectory-event.schema.json` and `src/domain/events.py` — canonical frontend event.
 7. `src/observability/emitter.py`, `src/replay.py`, `src/decisions.py` — event persistence, replay,
    blobs, hash chains and decision provenance.
-8. `src/runtime/langgraph_runtime.py`, `src/bootstrap.py`, `src/cli.py` — lifecycle methods the API
-   must wrap rather than duplicate.
-9. For historical implementation context, `docs/prompts/02-implementation-kickoff.md`,
-   `docs/design/06-eval-results.md` and the remaining design/research documents.
+8. `src/runtime/langgraph_runtime.py`, `src/bootstrap.py`, `src/cli.py` — lifecycle methods Stage 2's
+   execution manager must wrap rather than duplicate (`start`/`result`/`resume`/`cancel`/`events`).
+9. `src/api/app.py`, `src/api/dependencies.py`, `src/api/read_models.py` — the Stage 1 foundation
+   Stage 2 extends: read this before adding `RunManager`, start/cancel/rerun endpoints or SSE, so
+   the isolated-store registry replaces the single-`db_path` shortcut cleanly instead of alongside it.
+10. For historical implementation context, `docs/prompts/02-implementation-kickoff.md`,
+    `docs/design/06-eval-results.md` and the remaining design/research documents.
 
-Do not begin Stage 2 or scaffold the frontend during Stage 1. First make the read-only API contract
-solid and tested.
+Do not begin Stage 3 (frontend) or add execution/SSE code casually — Stage 2's own acceptance gate
+(concurrency-safe start/cancel/rerun, gap-free reconnectable SSE, pristine-store isolation tests)
+must pass first.
 
 ## Product and UX decision
 
@@ -118,7 +123,9 @@ Full endpoint tables and response behavior are in `docs/design/07-observability-
 - Domain policy, routing, governance, actions and memory-write decisions stay outside `src/api/` and
   `frontend/`.
 - Keep Python flat under `src/`; do not recreate a product-named package wrapper.
-- Preserve the dirty worktree. Do not reset or commit unless the user asks.
+- Commit and push at the end of every completed stage (standing authorization; see "Mandatory
+  handoff maintenance" below). Never use destructive git operations (reset, force-push, history
+  rewrite) unless the user explicitly asks for those specifically.
 - Production security/infrastructure is out of scope, but basic boundary correctness—especially no
   secret/private-fixture exposure—is required for a functional UI.
 
@@ -136,29 +143,94 @@ Delivered:
 
 No runtime, dependency or frontend source changes were made in Stage 0.
 
-### Stage 1 — Read-only API foundation: NEXT
+### Stage 1 — Read-only API foundation: COMPLETE
 
-Deliver only:
+Delivered exactly the planned scope, nothing more:
 
-- `src/api/` FastAPI app factory, dependencies, stable DTOs, read models and error envelope.
-- Health/meta/routes/agents/skills/workflow/event-schema endpoints.
-- Paged case list/detail, historical runs, paged/filtered events and decision/provenance endpoints.
-- OpenAPI generation and copied-store API tests.
+- `src/api/app.py` — FastAPI app factory (`create_app(root, db_path=None)`); module-level `app`
+  for `uvicorn api.app:app --app-dir src`.
+- `src/api/dependencies.py` — request-scoped dependencies for the root path, the configured
+  `db_path`, a read-only sqlite connection, and cached `ModelsConfig`/`RoutesConfig`/
+  `ScenarioConfig` loaded once at app-creation time.
+- `src/api/errors.py` — one `ApiError` exception mapped to the one error envelope
+  (`{"error": {"code", "message", "details"}}`) via a FastAPI exception handler.
+- `src/api/models.py` — stable response DTOs. Reuses the existing canonical `EventEnvelope`
+  (`domain.events`) and raw `DecisionRecord` JSON rather than re-deriving frontend-facing shapes
+  for those two, per the design's "never expose sqlite rows ad hoc" rule.
+- `src/api/read_models.py` — all SQL. Every query opens `sqlite3.connect(..., mode=ro)`; queries
+  are plain, parameterized, and never touch `ground_truth/**` or `simulation/**` (those tables
+  aren't even loaded into `catcher.sqlite` — see `data/generator/load_sqlite.py`). Run status is
+  *derived*, not stored: see the note below.
+- `src/api/workflow_graph.py` — a small hand-maintained static description of the LangGraph node/
+  edge wiring in `runtime.langgraph_runtime.LangGraphRuntime._build_graph`, for `/meta/workflow`.
+  It is not introspected from the graph object because the node functions there are per-run
+  closures; if that wiring changes, this file needs a matching edit (called out in its docstring).
+- `src/api/routers/{meta,cases,runs}.py` — the endpoints below.
+- `schemas/openapi.json` — generated OpenAPI document (regenerate command in `README.md`).
+- `tests/test_api.py` — 8 new tests using the existing `project_root`/`scenario_db`/`runtime`/
+  `make_runtime` fixtures from `tests/conftest.py`, so every API test runs against a
+  `tmp_path`-copied store, never the pristine `data/generated/catcher.sqlite`.
 
-Acceptance:
+Endpoints (all under `/api/v1`, all read-only, all returning the one error envelope on failure):
 
-- Existing 79 tests remain green.
-- New tests cover pagination, filters, provenance, missing IDs and private-data denial.
-- `curl` can list cases, inspect a historical run and replay ordered events.
-- No execution manager, SSE stream or frontend code is required yet.
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/health` | store reachability, `scenario_db_path`, `graph_available` (ladybug importable) |
+| GET | `/meta` | adapter availability (never the key value), model, virtual clock, feature flags |
+| GET | `/meta/routes` | `config/routes.yaml`, sorted by priority |
+| GET | `/meta/agents` | `config/agents/*.yaml` |
+| GET | `/meta/skills` | `skills/*/SKILL.md` front matter (the repo-root `skills/` dir the runtime actually loads from — not `data/corpus/skills`) |
+| GET | `/meta/workflow` | static `{nodes, edges}` for the React Flow canvas |
+| GET | `/schema/events` | `domain.events.event_json_schema()` |
+| GET | `/cases` | filters `regime`/`status`/`stage`/`claim_family`/`q`; `limit`+`cursor` paging |
+| GET | `/cases/{case_id}` | case + disputed transactions + communications summary + `latest_runs` |
+| GET | `/runs` | filters `case_id`/`status`; `limit`+`cursor` paging |
+| GET | `/runs/{run_id}` | derived status, event/wait/decision-availability summary |
+| GET | `/runs/{run_id}/events` | filters `after_seq`/`type`/`actor`/`ref`; returns `{items, next_after_seq, limit}` |
+| GET | `/runs/{run_id}/decision` | full `DecisionRecord` JSON + field-level `event_seqs`/`source_ids` provenance |
 
-Safest first implementation steps:
+Deliberate Stage-1-only decision, to be revisited in Stage 2: `create_app` takes one `db_path` for
+the whole process (defaulting to `data/generated/catcher.sqlite`), not a run registry mapping many
+run IDs to many isolated stores. That is enough to satisfy the Stage 1 acceptance gate ("inspect a
+historical run") because nothing writes new runs through the API yet; Stage 2's `RunManager`
+supersedes this with the planned `run_id -> isolated db path` registry so the UI can hold many
+concurrent/historical runs across many copied stores at once.
 
-1. Verify current FastAPI/Pydantic testing APIs from official docs.
-2. Add backend optional/development dependencies intentionally in `pyproject.toml`.
-3. Define DTOs before routers; keep SQLite row conversion in `read_models.py`.
-4. Build the app with injected root/default DB so tests never touch the pristine store.
-5. Add `/api/v1/health`, then metadata, then cases/runs/events/decision.
+Non-obvious implementation note for whoever builds Stage 2: a run's `status` is derived by finding
+the **latest `error` or `termination` event**, not simply by reading the highest-`seq` row. The
+`terminate` graph node emits `termination` (with `payload.final_status`) and then a trailing
+`run_completed` event, and `_drive()`'s checkpointer wrapper commits one more `checkpoint_saved`
+event after the graph finishes — so the literal last row for a decided run is `checkpoint_saved`,
+not `termination`. `read_models._derive_status` accounts for this; keep that in mind if Stage 2
+adds a live "running" status computed the same way from an in-flight store.
+
+Verified commands and results:
+
+```bash
+uv sync --extra dev --extra graph --extra api        # installs fastapi, uvicorn, sse-starlette, httpx
+uv run pytest                                          # 86 passed, 1 skipped, 1 warning (was 78/1)
+uv run ruff check src tests                            # All checks passed!
+uv run ruff format --check src tests                   # 94 files already formatted
+uv run uvicorn api.app:app --app-dir src --reload      # http://127.0.0.1:8000/api/v1/health
+```
+
+`curl` acceptance (verified manually against a copied store with one completed `DSP-2026-90002`
+run, via a temporary `uvicorn` process — not a committed script): `GET /api/v1/health`,
+`GET /api/v1/cases?limit=2`, `GET /api/v1/runs/{run_id}`, `GET /api/v1/runs/{run_id}/events?limit=3`
+and `GET /api/v1/runs/{run_id}/decision` all returned correct, well-formed JSON; the pristine
+`data/generated/catcher.sqlite` was confirmed unmodified afterward (`git status` clean on it, and
+it still has no `run_events`/`decision_records` tables).
+
+Known limitations carried into Stage 2 (honest, not blocking):
+
+- No execution manager: the API cannot start, cancel or rerun a case yet, and there is exactly one
+  configured store per running API process.
+- No SSE stream: `/runs/{run_id}/events` is a paged REST snapshot only.
+- `/cases` cannot filter or sort by deadline, because deadlines are deliberately not stored in the
+  dataset (computed only during a run's `compute_clocks` node). This is unchanged from the
+  original design decision documented in the data dictionary, not a new gap.
+- `/health`'s `graph_available` reports whether the `ladybug` package is importable, not whether a
+  specific store's graph file loaded successfully; the runtime always has a NetworkX fallback.
 
 ### Stage 2 — Execution manager and live stream
 
@@ -228,25 +300,34 @@ Material backend entry points:
 
 ## Last verified baseline
 
-Verified before this design-only stage:
+Verified at the end of Stage 1 (this stage):
 
-- `uv run pytest -q` — 79 collected: **78 passed, 1 skipped**. The default skip is the opt-in live
-  OpenAI smoke.
-- All 20 routes passed three presentation perturbations: 20 baselines + 60 variants.
-- Full fake evaluation: **21/21 passed**, including Q01.
-- Q01: Kendall τ 1.0, top-15 overlap 15/15, deadline accuracy 1.0, coverage 95/95.
-- `python3 data/generator/validate.py` — **PASS 401 FAIL 0**.
-- `uv run ruff check src tests` and `uv run ruff format --check src tests` — passed.
-- Opt-in real Responses contract smoke — **1 passed**.
-- Live OpenAI C02 evaluation — **1/1 passed**, 4,517 ms recorded API latency.
-- Wheel built and inspected: `card_dispute_agent-0.1.0-py3-none-any.whl`, 72 files, flat source,
-  no old product-named package path.
+- `uv sync --extra dev --extra graph --extra api` — resolves cleanly; adds `fastapi`, `uvicorn`,
+  `sse-starlette` (runtime `api` extra) and `httpx` (test-only, for `fastapi.testclient`).
+- `uv run pytest` — **86 passed, 1 skipped**, 1 deprecation warning from `starlette.testclient`
+  (an upstream `anyio` alias notice, not our code). The 8 new tests live in `tests/test_api.py`;
+  the prior 78/1 backend baseline is unchanged and still green.
+- `uv run ruff check src tests` — all checks passed. `uv run ruff format --check src tests` — all
+  94 files already formatted.
+- Live `curl` acceptance against a temporary `uvicorn` process, described above under Stage 1.
+- Pristine `data/generated/catcher.sqlite` confirmed unmodified by any API read (no `run_events` or
+  `decision_records` table present in it; the API only ever opens `mode=ro` connections and Stage 1
+  has no write path at all).
+
+Not re-verified this stage (unchanged since the prior baseline, still assumed good):
+
+- All 20 routes × 3 presentation perturbations, full fake evaluation (21/21), Q01 metrics,
+  `data/generator/validate.py` (401/401), the real-OpenAI smoke tests, and the built wheel. Rerun
+  these before a demo if the runtime/domain code changes; Stage 1 touched only `src/api/` and
+  added `tests/test_api.py`.
 
 The `.env` contains the user's OpenAI key. Never print, copy, commit or send its value to the browser.
 
 ## Known limitations relevant to the console
 
-- No HTTP API or frontend exists yet.
+- A read-only HTTP API exists (`src/api/`); there is still no frontend, no execution manager and
+  no live stream. See "Known limitations carried into Stage 2" under the Stage 1 entry above for
+  the API's own honest gaps (single configured store, no deadline filter, REST-only events).
 - `LangGraphRuntime` keeps active tasks/emitters in-process; Stage 2 needs a RunManager and durable
   store registry around it.
 - `EventEmitter.subscribe()` handles active in-process subscribers, but reconnect/reload semantics are
@@ -262,9 +343,17 @@ The `.env` contains the user's OpenAI key. Never print, copy, commit or send its
 
 ## Dirty worktree and commit state
 
-The worktree was intentionally uncommitted from starting commit `795e5ff` during the design stage.
-The user has now explicitly authorized committing and pushing this complete snapshot. Keep `.env`
-and generated runtime/evaluation artifacts ignored when preparing the commit.
+Standing rule from the user (2026-09-14, Stage 1 wrap-up): commit and push at the end of every
+completed stage, without needing to ask each time. This is a durable authorization for this
+repository, not a one-off — it replaces the earlier per-session "do not commit unless asked"
+caution for the specific act of closing out a stage. Still never use destructive git operations
+(force-push, history rewrite, `reset --hard`, etc.) without an explicit in-session instruction, and
+always keep `.env` and generated runtime/evaluation artifacts out of any commit.
+
+Stage 0 and Stage 1 were completed before this standing rule existed and were committed together
+retroactively once the user gave it. From Stage 2 onward, each stage should land as its own commit
+(or commits) pushed to `main` right after its handoff update, per the "Mandatory handoff
+maintenance" checklist above.
 
 Do not use destructive reset/checkout commands. Work around unrelated changes and inspect before
 editing.
@@ -279,8 +368,12 @@ Before reporting any stage complete:
 4. Record exact backend/frontend/test/build/eval commands and results.
 5. Record every red test, shortcut, changed decision and unresolved question honestly.
 6. Update the design and README when implemented behavior changes.
-7. Preserve the dirty-worktree and commit status.
-8. Append a dated entry to the stage history.
+7. Append a dated entry to the stage history.
+8. Commit every file changed in the stage (including this handoff) and push to the remote. This
+   supersedes the general "never commit unless asked" default for this repository specifically:
+   the user has given standing authorization to commit and push at the end of every completed
+   stage, so no per-stage confirmation is needed for that commit/push — only for anything outside
+   normal stage completion (force-push, history rewrite, unrelated destructive operations, etc.).
 
 ## Stage history
 
@@ -302,3 +395,24 @@ Before reporting any stage complete:
 - Split implementation into six gated stages and set Stage 1 read-only API as the next task.
 - This was a documentation-only stage; no dependencies or executable source were changed and no
   commit was requested or created.
+
+### 2026-09-14 — Dispute Observatory Stage 1 read-only API complete
+
+- Built `src/api/` (app factory, error envelope, DTOs, sqlite read models, static workflow-graph
+  description, `meta`/`cases`/`runs` routers) as a pure presentation adapter: `mode=ro` sqlite
+  connections only, no writes, no dependency on `LangGraphRuntime` or the agent tool executor.
+- Added the `api` optional dependency group (`fastapi`, `uvicorn`, `sse-starlette`) and `httpx` to
+  `dev`; generated and checked in `schemas/openapi.json`.
+- Added `tests/test_api.py` (8 tests) covering pagination, filters, decision provenance, 404s for
+  unknown case/run/decision, a suspended-run's wait payload, and that neither `OPENAI_API_KEY` nor
+  the prohibited `birth_year` field ever appears in a response.
+- Found and fixed a real bug during manual verification: naively deriving run status from the
+  highest-`seq` event row reports `running` for an already-decided run, because `checkpoint_saved`
+  commits after `terminate`'s `termination`/`run_completed` events. Fixed by deriving status from
+  the latest `error`/`termination` event specifically; documented in both this file and the code.
+- Verified end-to-end with a live `uvicorn` process and `curl`, and confirmed the pristine
+  `data/generated/catcher.sqlite` was left unmodified.
+- Final baseline: 86 passed / 1 skipped tests (was 78/1), ruff check and format both clean.
+- Updated `README.md` (new "Dispute Observatory API" section) and
+  `docs/design/07-observability-console.md` (Stage 1 marked complete with what was actually built).
+- No commit was requested or created; the worktree remains uncommitted from `795e5ff`.

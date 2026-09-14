@@ -111,6 +111,33 @@ variants that rename merchants, the agentic provider and customers and reword in
 It compares decision semantics and verifies each event hash chain, catching logic that accidentally
 depends on an authored display name rather than operational data.
 
+### Dispute Observatory API (read-only, Stage 1)
+
+A FastAPI presentation adapter (`src/api/`) exposes the same SQLite trajectory store read-only,
+for the planned frontend console. It never runs a case itself and never mutates the store it reads;
+point it at a copy (as `catcher run --db` does) to browse a store that already has runs in it.
+
+```bash
+uv sync --extra dev --extra graph --extra api
+uv run uvicorn api.app:app --app-dir src --reload   # http://127.0.0.1:8000/api/v1/health
+
+# Regenerate the checked-in OpenAPI document after changing src/api/
+uv run python -c "
+import json, sys; sys.path.insert(0, 'src')
+from pathlib import Path
+from api.app import create_app
+json.dump(create_app(Path('.').resolve()).openapi(), open('schemas/openapi.json', 'w'), indent=2)
+"
+```
+
+Endpoints: `/api/v1/health`, `/meta`, `/meta/routes`, `/meta/agents`, `/meta/skills`,
+`/meta/workflow`, `/schema/events`, `/cases` (paged/filterable), `/cases/{case_id}`,
+`/runs` (paged/filterable by `case_id`/`status`), `/runs/{run_id}`,
+`/runs/{run_id}/events` (paged/filtered by `after_seq`/`type`/`actor`/`ref`), and
+`/runs/{run_id}/decision`. There is no execution manager or live stream yet — see
+[`docs/design/07-observability-console.md`](docs/design/07-observability-console.md) for the full
+staged plan, and `handoff.md` for exact current status.
+
 ### How the runtime is organized
 
 - `runtime/langgraph_runtime.py` is one route-independent graph: `run_start → load_case → route → compute_clocks → investigate → assess_progress ⟲ {gather_evidence | ask_cardholder → await_external_event → apply_external_event | run_specialists | analyze_track (Send fan-out) → merge_tracks} → verify ⟲ replan → propose_decision → governance_gate → review_panel? → record_decision → execute_actions → memory_maintenance → terminate`.

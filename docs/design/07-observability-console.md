@@ -389,20 +389,40 @@ Pair exchanges by IDs/spans, not adjacency:
 Every stage ends with tests, updated docs and a rewritten current-status section in `handoff.md`.
 Do not combine stages until the prior acceptance gate passes.
 
-### Stage 1 — Read-only API foundation
+### Stage 1 — Read-only API foundation: COMPLETE (2026-09-14)
 
-Deliver:
+Delivered:
 
-- FastAPI app factory, configuration, error envelope and `/api/v1/health`.
-- DTO/read-model layer for cases, runs, events, decisions, metadata and event schema.
-- Read-only metadata, case, run, event and decision endpoints.
-- OpenAPI generation and API tests against a copied scenario store.
+- FastAPI app factory (`src/api/app.py`), one error envelope (`src/api/errors.py`) and
+  `/api/v1/health`.
+- DTO/read-model layer (`src/api/models.py`, `src/api/read_models.py`) for cases, runs, events,
+  decisions, metadata and the event schema, reading `run_events`/`decision_records` directly and
+  reusing the canonical `EventEnvelope`/`DecisionRecord` Pydantic models rather than re-deriving
+  frontend-facing shapes.
+- Read-only `/meta`, `/meta/routes`, `/meta/agents`, `/meta/skills`, `/meta/workflow`,
+  `/schema/events`, `/cases`, `/cases/{case_id}`, `/runs`, `/runs/{run_id}`,
+  `/runs/{run_id}/events`, `/runs/{run_id}/decision`.
+- OpenAPI generation (`schemas/openapi.json`) and 8 new API tests against a copied scenario store.
 
-Acceptance:
+Stage-1-specific decision (see handoff for the honest limitation this implies): the app factory
+takes one configured `db_path` rather than a run registry. There is no execution manager yet, so
+every endpoint reads whichever single SQLite store the process was started against — matching the
+Stage 1 acceptance gate ("inspect a prior run"), not yet the multi-run registry Stage 2 adds.
 
-- Existing 79-test backend suite stays green.
-- New tests prove pagination, filters, decision provenance, unknown IDs and forbidden private data.
-- `curl` can list cases, inspect a prior run and replay its ordered events.
+A run's status is derived, not stored: `_derive_status` in `read_models.py` looks for the latest
+`error` or `termination` event (not simply the highest `seq`) because `terminate` emits a trailing
+`run_completed` event and the checkpointer wrapper commits `checkpoint_saved` after that — the
+naive "read the last row" approach reports `running` for an already-decided run.
+
+Acceptance — met:
+
+- Existing 78-passed/1-skipped backend suite stays green (86 passed/1 skipped with the new API
+  tests added).
+- New tests prove pagination, filters (regime/status/stage/claim_family/q, after_seq/type/actor),
+  decision provenance, unknown case/run/decision 404s, a suspended-run wait payload, and that
+  `OPENAI_API_KEY` and the prohibited `birth_year` field never appear in a response body.
+- `curl` against a live `uvicorn` process lists cases, inspects a historical run and replays its
+  ordered events (verified manually; see handoff for the exact commands and output).
 
 ### Stage 2 — Execution manager and live stream
 
