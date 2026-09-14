@@ -619,7 +619,7 @@ source/blob resolvers. Graph Lab loads only the generated operational graph at d
 hard cap); it never manufactures inferred entities. See `handoff.md` for exact tests, acceptance
 case evidence and limitations.
 
-### Stage 5 — Evaluation and interaction polish
+### Stage 5 — Evaluation and interaction polish: COMPLETE (2026-09-15)
 
 Deliver:
 
@@ -634,6 +634,16 @@ Acceptance:
 - Capability cells navigate to real proving events.
 - Seeking/replaying produces the same final projection hash as a live-follow run.
 - Q01 remains responsive with approximately 1,000 events.
+
+Delivered: bounded evaluation report read models strip attempt-store paths and construct proving
+links only from canonical events in each report's sibling SQLite store. The UI adds the report and
+capability matrix view, URL-linked proof selection, deterministic prefix replay with seek/step/
+speed/filter/bookmark controls, event deep links, a command palette, mobile navigation and a Q01
+deadline board keyed to virtual time. `projectRunAt` and `projectionHash` test live-follow/replay
+equivalence over 1,000 events. Run, graph and evaluation routes are lazy-loaded; timeline/swimlane
+DOM rendering is capped to 350 matching events, eliminating the prior >500 KB entry-chunk warning.
+The optional UI-triggered evaluator was deliberately not added: reading durable reports meets the
+required scope and avoids introducing another long-running task manager before the integrated stage.
 
 ### Stage 6 — Integrated launcher and final verification
 

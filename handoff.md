@@ -3,8 +3,8 @@
 Last updated: 2026-09-15  
 Repository: `/Users/kean/Dev/CatcherAI`  
 Branch / starting commit: `main` / `63e521b`  
-Current phase: Stage 4 (advanced observability) COMPLETE
-Next stage: Stage 5 — evaluation and interaction polish
+Current phase: Stage 5 (evaluation and interaction polish) COMPLETE
+Next stage: Stage 6 — integrated launcher and final verification
 
 ## Current objective
 
@@ -42,10 +42,8 @@ Read these files completely, in order, before editing:
 10. For historical implementation context, `docs/prompts/02-implementation-kickoff.md`,
     `docs/design/06-eval-results.md` and the remaining design/research documents.
 
-Stage 4's acceptance gate is met; see its stage-history entry for exact evidence. Stage 5 adds
-evaluation/capability navigation, replay controls, deep links, queue visualization and performance
-polish. Continue extending the existing `frontend/src/` feature structure and deterministic
-`RunProjection`; do not move replay or evaluation semantics into React components.
+Stage 5's acceptance gate is met; see its stage-history entry for exact evidence. Stage 6 adds the
+combined launcher, committed browser E2E path, final documentation and full-system verification.
 
 ## Product and UX decision
 
@@ -326,7 +324,7 @@ honest known limitations carried into Stage 4.
 - Memory Explorer and bounded Graph Lab, API and UI.
 - Demonstrate C06 replan, C11 subagents/reopen, C13 wait/policy gap and C12/C12b graph contrast.
 
-### Stage 5 — Evaluation and interaction polish (NEXT)
+### Stage 5 — Evaluation and interaction polish: COMPLETE
 
 - Capability matrix and proving-event navigation.
 - Replay seek/speed/filter/bookmark controls, deep links and command palette.
@@ -376,23 +374,21 @@ Material backend entry points:
 
 ## Last verified baseline
 
-Verified after Stage 3 (see stage history below; this is the current baseline — earlier baselines
+Verified after Stage 5 (see stage history below; this is the current baseline — earlier baselines
 are kept below for history):
 
-- Backend unchanged by Stage 3 except the two-file thread-affinity fix in `src/api/dependencies.py`/
-  `src/api/routers/cases.py` (see that stage's history entry): `uv run pytest` — **94 passed, 1
-  skipped** (same count), `uv run ruff check src tests` / `uv run ruff format --check src tests` —
-  both clean.
-- Frontend (`frontend/`): `npx tsc -b` clean; `npm run test` (Vitest) — **5 passed**; `npx oxlint` —
-  0 errors, 3 warnings (react-refresh export-shape notices and one intentional
-  set-state-in-effect); `npm run build` — clean, 370 KB JS / 14 KB CSS (gzip 115 KB / 4 KB).
-- Live manual verification: `uv run uvicorn api.app:app --app-dir src --port 8000` +
-  `npm run dev` (Vite on `[::1]:5173`, proxying `/api`), driven with a throwaway Playwright script
-  (not committed — Stage 6 owns the committed E2E test): launched C02 (`DSP-2026-90002`, fake
-  adapter) from Mission Control, timeline reached 132 live events with zero browser console errors,
-  run reached `Decided` with the cardholder/network decision panel visible, all without a reload.
-  Also exercised the Q01 queue launcher and a 390px mobile viewport. Screenshots were taken to
-  self-review the visual design (not committed as repo artifacts).
+- Backend: `uv run pytest` — **98 passed, 1 skipped**; `uv run ruff check src tests` and
+  `uv run ruff format --check src tests` clean. Evaluation API tests cover path stripping,
+  traversal rejection and proving-event resolution from an isolated attempt store.
+- Frontend: `npx tsc -b` clean; Vitest — **9 passed**; oxlint 0 errors / 3 pre-existing warnings;
+  production build clean. Route splitting reduced the main entry to 372 KB and moved React Flow
+  to a 178 KB shared chunk; run/evaluation/graph feature chunks are 25/5/3 KB respectively, with
+  no Vite >500 KB warning.
+- Replay equivalence is exercised with a synthetic 1,000-event trace: final seek projection hash
+  equals live-follow projection hash. Capability-cell interaction is covered by a DOM test that
+  resolves the selected cell to its real sequence/type/summary.
+- Full fake evaluation over 20 hero cases plus Q01: **21/21 passed**. Dataset validation:
+  **PASS 401 / FAIL 0**.
 
 Verified after the post-Stage-2 cleanup pass (prior baseline, kept for history):
 
@@ -433,14 +429,13 @@ The `.env` contains the user's OpenAI key. Never print, copy, commit or send its
 
 ## Known limitations relevant to the console
 
-- The frontend now covers Mission Control and a basic live Run Observatory (`frontend/`); it does
-  not yet cover the workflow graph, swimlanes, Reasoning Artifacts, the full Decision & Provenance
-  explorer, Memory Explorer or Graph Lab — all Stage 4/5. See "Known limitations carried into
-  Stage 4" under the Stage 3 entry below for this frontend slice's own honest gaps (hand-mirrored
-  types instead of a generated client, polled rather than streamed run-status badge/nav list, no
-  committed E2E test yet). See "Known limitations carried into Stage 3" under the Stage 2 entry
-  above for the execution layer's own honest gaps (cancel/liveness is per-process, no queue-ranking
-  persistence, no resume endpoint, no memory/graph/source routers yet — all still true).
+- The frontend type layer remains hand-mirrored from Python/OpenAPI. Recent-run navigation still
+  polls and the desktop inspector remains hidden on narrow viewports; the new mobile navigation
+  makes every primary workspace reachable, but event detail is still desktop-first.
+- Queue rankings remain in process memory; after an API restart, the Q01 board falls back to the
+  persisted `portfolio_ranked.top` subset rather than the full ranking. Evaluation reports are
+  read-only by design; the optional UI trigger for a bounded fake evaluation was not implemented.
+- A committed Playwright path and the combined launcher remain Stage 6 deliverables.
 - `LangGraphRuntime` still keeps active tasks/emitters in-process by design; `RunManager` wraps it
   with a durable store registry but does not (and per the architecture doc should not) make a run
   controllable or its liveness knowable from a different API process.
@@ -601,6 +596,42 @@ Before reporting any stage complete:
   retrieval activity is run-scoped in the Memory & Graph tab; React Flow should be route-split
   during Stage 5 performance polish; recent-run status still polls and the desktop inspector/nav
   remain hidden below `lg`; committed Playwright coverage remains Stage 6.
+- Updated README, the authoritative design, OpenAPI and this handoff; committed and pushed per the
+  standing stage-completion authorization.
+
+### 2026-09-15 — Dispute Observatory Stage 5 evaluation and interaction polish complete
+
+- Added `GET /api/v1/evaluation/reports` and `/evaluation/reports/{report_id}` with stable DTOs and
+  a bounded read model. Report/attempt database paths never cross the API; report IDs resolve only
+  below `data/generated/eval/`, attempt stores must be siblings of their report, and proving links
+  are selected from actual canonical event rows. Evaluator-only ground truth remains unreachable.
+- Added the Evaluation workspace with report selection, pass/stability/reconciliation metrics, a
+  capability-by-case matrix and URL-deep-linked proving-event selection. The optional long-running
+  fake-evaluation trigger was deliberately omitted; durable report viewing is the required scope.
+- Added deterministic replay prefix reduction (`projectRunAt`) and stable projection fingerprints,
+  live-follow/pause/step/seek, 0.5×/1×/2×/instant playback, event/actor/text filters, bookmarks and
+  URL-deep-linked view/cursor/event selection. Seeking before `decision_recorded` or
+  `portfolio_ranked` no longer leaks those future panels into the reconstructed view.
+- Added a Q01 deadline board with virtual-time-relative pressure, expired-right indicators and a
+  persisted top-ranking fallback after API restart. Added Ctrl/Cmd+K navigation and narrow-screen
+  primary navigation.
+- Route-split the React Flow-heavy run and graph workspaces plus evaluation. Timeline/swimlane DOM
+  rendering is capped to the latest 350 matching events while the full canonical prefix remains in
+  the projection, keeping the 958-event Q01 trace responsive without dropping data.
+- Tests: new backend coverage for evaluation path boundaries/sanitization/event proof; frontend DOM
+  coverage for capability navigation; projection coverage for a 1,000-event live/replay hash match.
+  Final verification: `uv run pytest` **98 passed, 1 skipped**; ruff check/format clean; frontend
+  `npx tsc -b` clean, Vitest **9 passed**, oxlint 0 errors / 3 pre-existing warnings, production
+  build clean with no >500 KB warning (372 KB entry, 178 KB shared React Flow chunk, 25 KB run,
+  5 KB evaluation and 3 KB graph feature chunks). `catcher eval` over all 20 hero cases plus Q01
+  passed **21/21** with the fake adapter; `data/generator/validate.py` passed **401/401** checks.
+- One verification command mistakenly invoked `npx tsc -b` from the repository root; `npx` fetched
+  the unrelated deprecated `tsc@2.0.4` runner and exited 1 before compiling anything. No repository
+  files changed. The exact frontend sequence was immediately rerun from `frontend/` and passed.
+- Known limitations carried into Stage 6: frontend DTOs remain hand-maintained; recent-run status
+  still polls; event detail remains desktop-first; full queue ranking is process-local (the board
+  falls back to the persisted top subset after restart); no combined launcher or committed browser
+  E2E test yet.
 - Updated README, the authoritative design, OpenAPI and this handoff; committed and pushed per the
   standing stage-completion authorization.
 

@@ -90,3 +90,7 @@ body {
 .observatory-node.is-active { border-color: var(--color-cyan) !important; color: var(--color-cyan) !important; box-shadow: 0 0 18px color-mix(in srgb, var(--color-cyan) 25%, transparent); }
 .react-flow__edge.is-back-edge path { stroke-dasharray: 5 4; }
 .react-flow__controls button { background: var(--color-surface-2); border-color: var(--color-border); fill: var(--color-ink-muted); }
+
+.replay-button { border: 1px solid var(--color-border); border-radius: 5px; padding: 0.3rem 0.55rem; font-size: 0.75rem; color: var(--color-ink-muted); }
+.replay-button:hover { border-color: var(--color-border-strong); color: var(--color-ink); }
+.replay-input { border: 1px solid var(--color-border); border-radius: 5px; background: var(--color-canvas); padding: 0.3rem 0.5rem; font: 0.75rem var(--font-mono); color: var(--color-ink); }

@@ -11,7 +11,7 @@ const DOT: Record<ReturnType<typeof eventAccent>, string> = {
   slate: 'bg-slate',
 }
 
-export function EventTimeline({ events }: { events: EventEnvelope[] }) {
+export function EventTimeline({ events, onSelect }: { events: EventEnvelope[]; onSelect?: (event: EventEnvelope) => void }) {
   const { selected, select } = useInspector()
 
   if (events.length === 0) {
@@ -26,7 +26,7 @@ export function EventTimeline({ events }: { events: EventEnvelope[] }) {
           <li key={event.event_id}>
             <button
               type="button"
-              onClick={() => select(event)}
+              onClick={() => { select(event); onSelect?.(event) }}
               aria-pressed={isSelected}
               className={`flex w-full items-start gap-3 border-b border-border px-4 py-2 text-left transition-colors hover:bg-surface-2 ${
                 isSelected ? 'bg-surface-2' : ''

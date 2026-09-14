@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { EventEnvelope } from '../api/types'
-import { projectRun } from './runProjection'
+import { projectRun, projectRunAt, projectionHash } from './runProjection'
 
 function event(seq: number, type: string, payload: Record<string, unknown>): EventEnvelope {
   return {
@@ -40,4 +40,12 @@ describe('projectRun advanced observability', () => {
     expect(projection.terminal).toBe(false)
     expect(projection.waits).toBe(1)
   })
+})
+
+it('replaying a large trace reaches the same final projection hash as live follow', () => {
+  const events = Array.from({ length: 1000 }, (_, index) => event(index + 1, index % 5 === 0 ? 'tool_call' : 'checkpoint_saved', index % 5 === 0 ? { call_id: `call-${index}` } : {}))
+  const live = projectRun(events)
+  const replayed = projectRunAt(events, 1000)
+  expect(projectionHash(replayed)).toBe(projectionHash(live))
+  expect(replayed.eventCount).toBe(1000)
 })

@@ -1340,6 +1340,73 @@
           }
         }
       }
+    },
+    "/api/v1/evaluation/reports": {
+      "get": {
+        "tags": [
+          "evaluation"
+        ],
+        "summary": "Reports",
+        "operationId": "reports_api_v1_evaluation_reports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EvaluationReportSummary"
+                  },
+                  "type": "array",
+                  "title": "Response Reports Api V1 Evaluation Reports Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/evaluation/reports/{report_id}": {
+      "get": {
+        "tags": [
+          "evaluation"
+        ],
+        "summary": "Report",
+        "operationId": "report_api_v1_evaluation_reports__report_id__get",
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Report Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationReportDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1806,6 +1873,198 @@
           "field_provenance"
         ],
         "title": "DecisionResponse"
+      },
+      "EvaluationAttemptSummary": {
+        "properties": {
+          "run_index": {
+            "type": "integer",
+            "title": "Run Index"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "case_id": {
+            "type": "string",
+            "title": "Case Id"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "trajectory_complete": {
+            "type": "boolean",
+            "title": "Trajectory Complete"
+          },
+          "metrics": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metrics"
+          },
+          "capabilities": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Capabilities"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_index",
+          "run_id",
+          "case_id",
+          "passed",
+          "trajectory_complete",
+          "metrics",
+          "capabilities"
+        ],
+        "title": "EvaluationAttemptSummary"
+      },
+      "EvaluationProvingEvent": {
+        "properties": {
+          "capability": {
+            "type": "string",
+            "title": "Capability"
+          },
+          "case_id": {
+            "type": "string",
+            "title": "Case Id"
+          },
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "ts_virtual": {
+            "type": "string",
+            "title": "Ts Virtual"
+          }
+        },
+        "type": "object",
+        "required": [
+          "capability",
+          "case_id",
+          "run_id",
+          "seq",
+          "type",
+          "summary",
+          "ts_virtual"
+        ],
+        "title": "EvaluationProvingEvent"
+      },
+      "EvaluationReportDetail": {
+        "properties": {
+          "report_id": {
+            "type": "string",
+            "title": "Report Id"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EvaluationReportSummary"
+          },
+          "reliability": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Reliability"
+          },
+          "capability_matrix": {
+            "additionalProperties": {
+              "additionalProperties": {
+                "type": "boolean"
+              },
+              "type": "object"
+            },
+            "type": "object",
+            "title": "Capability Matrix"
+          },
+          "attempts": {
+            "items": {
+              "$ref": "#/components/schemas/EvaluationAttemptSummary"
+            },
+            "type": "array",
+            "title": "Attempts"
+          },
+          "proving_events": {
+            "items": {
+              "$ref": "#/components/schemas/EvaluationProvingEvent"
+            },
+            "type": "array",
+            "title": "Proving Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "report_id",
+          "summary",
+          "reliability",
+          "capability_matrix",
+          "attempts",
+          "proving_events"
+        ],
+        "title": "EvaluationReportDetail"
+      },
+      "EvaluationReportSummary": {
+        "properties": {
+          "report_id": {
+            "type": "string",
+            "title": "Report Id"
+          },
+          "modified_at": {
+            "type": "string",
+            "title": "Modified At"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "passed": {
+            "type": "integer",
+            "title": "Passed"
+          },
+          "cases": {
+            "type": "integer",
+            "title": "Cases"
+          },
+          "pass_rate": {
+            "type": "number",
+            "title": "Pass Rate"
+          },
+          "stable_cases": {
+            "type": "integer",
+            "title": "Stable Cases"
+          },
+          "reconciled_attempts": {
+            "type": "integer",
+            "title": "Reconciled Attempts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "report_id",
+          "modified_at",
+          "attempts",
+          "passed",
+          "cases",
+          "pass_rate",
+          "stable_cases",
+          "reconciled_attempts"
+        ],
+        "title": "EvaluationReportSummary"
       },
       "EventEnvelope": {
         "properties": {

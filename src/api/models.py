@@ -262,3 +262,43 @@ class BlobResponse(BaseModel):
     media_type: str
     size_bytes: int
     content: Any
+
+
+class EvaluationReportSummary(BaseModel):
+    report_id: str
+    modified_at: str
+    attempts: int
+    passed: int
+    cases: int
+    pass_rate: float
+    stable_cases: int
+    reconciled_attempts: int
+
+
+class EvaluationProvingEvent(BaseModel):
+    capability: str
+    case_id: str
+    run_id: str
+    seq: int
+    type: str
+    summary: str
+    ts_virtual: str
+
+
+class EvaluationAttemptSummary(BaseModel):
+    run_index: int
+    run_id: str
+    case_id: str
+    passed: bool
+    trajectory_complete: bool
+    metrics: dict[str, Any]
+    capabilities: list[dict[str, Any]]
+
+
+class EvaluationReportDetail(BaseModel):
+    report_id: str
+    summary: EvaluationReportSummary
+    reliability: list[dict[str, Any]]
+    capability_matrix: dict[str, dict[str, bool]]
+    attempts: list[EvaluationAttemptSummary]
+    proving_events: list[EvaluationProvingEvent]

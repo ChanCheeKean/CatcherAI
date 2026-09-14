@@ -19,6 +19,8 @@ import type {
   RunGraphResponse,
   SourceResponse,
   BlobResponse,
+  EvaluationReportSummary,
+  EvaluationReportDetail,
 } from './types'
 
 const API_PREFIX = '/api/v1'
@@ -109,6 +111,8 @@ export const api = {
   listMemoryNotes: (params: { subject?: string; scope?: string; kind?: string; tag?: string; status?: string; min_confidence?: number; as_of?: string; limit?: number } = {}) => request<MemoryNotePage>(`/memory/notes${query(params)}`),
   getCaseGraph: (caseId: string, depth = 2) => request<GraphResponse>(`/graph/cases/${encodeURIComponent(caseId)}${query({ depth })}`),
   getSource: (sourceId: string) => request<SourceResponse>(`/sources/${encodeURIComponent(sourceId)}`),
+  listEvaluationReports: () => request<EvaluationReportSummary[]>('/evaluation/reports'),
+  getEvaluationReport: (reportId: string) => request<EvaluationReportDetail>(`/evaluation/reports/${encodeURIComponent(reportId)}`),
 
   startQueueRun: (adapter: Adapter) =>
     request<RunStartResponse>('/queue/runs', {

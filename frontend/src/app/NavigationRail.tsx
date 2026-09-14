@@ -23,9 +23,10 @@ export function NavigationRail() {
       >
         Mission control
       </NavLink>
-      <div className="mx-3 mt-1 grid grid-cols-2 gap-1">
+      <div className="mx-3 mt-1 grid grid-cols-3 gap-1">
         <NavLink to="/memory" className={({ isActive }) => `rounded-md px-2 py-2 text-center text-xs ${isActive ? 'bg-surface-3 text-ink' : 'text-ink-muted hover:bg-surface-3'}`}>Memory</NavLink>
         <NavLink to="/graph" className={({ isActive }) => `rounded-md px-2 py-2 text-center text-xs ${isActive ? 'bg-surface-3 text-ink' : 'text-ink-muted hover:bg-surface-3'}`}>Graph Lab</NavLink>
+        <NavLink to="/evaluation" className={({ isActive }) => `rounded-md px-2 py-2 text-center text-xs ${isActive ? 'bg-surface-3 text-ink' : 'text-ink-muted hover:bg-surface-3'}`}>Evaluation</NavLink>
       </div>
 
       <div className="mt-4 flex-1 overflow-y-auto px-3 pb-3">

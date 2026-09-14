@@ -148,3 +148,18 @@ export function projectRun(events: EventEnvelope[]): RunProjection {
 
   return projection
 }
+
+export function projectRunAt(events: EventEnvelope[], sequence: number): RunProjection {
+  return projectRun(events.filter((event) => event.seq <= sequence))
+}
+
+/** Small stable fingerprint for proving that live-follow and seek replay reduce identically. */
+export function projectionHash(projection: RunProjection): string {
+  const canonical = JSON.stringify(projection)
+  let hash = 2166136261
+  for (let index = 0; index < canonical.length; index += 1) {
+    hash ^= canonical.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0')
+}

@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { Outlet } from 'react-router-dom'
+import { NavLink, Outlet } from 'react-router-dom'
 import { api } from '../api/client'
 import { Inspector } from './Inspector'
 import { InspectorProvider } from './InspectorContext'
 import { NavigationRail } from './NavigationRail'
+import { CommandPalette } from './CommandPalette'
 
 export function Shell() {
   const metaQuery = useQuery({ queryKey: ['meta'], queryFn: api.meta, staleTime: 60_000 })
@@ -26,8 +27,14 @@ export function Shell() {
                 </span>
               </>
             )}
+            <CommandPalette />
           </div>
+          <div className="sm:hidden"><CommandPalette /></div>
         </header>
+
+        <nav aria-label="Mobile navigation" className="grid shrink-0 grid-cols-4 border-b border-border lg:hidden">
+          {[['/', 'Cases'], ['/memory', 'Memory'], ['/graph', 'Graph'], ['/evaluation', 'Eval']].map(([to, label]) => <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `px-2 py-2 text-center text-xs ${isActive ? 'bg-surface-3 text-cyan' : 'text-ink-muted'}`}>{label}</NavLink>)}
+        </nav>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[280px_1fr_380px]">
           <aside className="hidden border-r border-border lg:block">

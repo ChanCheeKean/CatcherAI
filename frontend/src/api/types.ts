@@ -230,6 +230,11 @@ export interface RunGraphResponse { run_id: string; operations: EventEnvelope[];
 export interface SourceResponse { source_id: string; kind: string; title: string; data: Record<string, unknown>; related_source_ids: string[] }
 export interface BlobResponse { sha256: string; media_type: string; size_bytes: number; content: unknown }
 
+export interface EvaluationReportSummary { report_id: string; modified_at: string; attempts: number; passed: number; cases: number; pass_rate: number; stable_cases: number; reconciled_attempts: number }
+export interface EvaluationProvingEvent { capability: string; case_id: string; run_id: string; seq: number; type: string; summary: string; ts_virtual: string }
+export interface EvaluationAttempt { run_index: number; run_id: string; case_id: string; passed: boolean; trajectory_complete: boolean; metrics: Record<string, unknown>; capabilities: Array<Record<string, unknown>> }
+export interface EvaluationReportDetail { report_id: string; summary: EvaluationReportSummary; reliability: Array<Record<string, unknown>>; capability_matrix: Record<string, Record<string, boolean>>; attempts: EvaluationAttempt[]; proving_events: EvaluationProvingEvent[] }
+
 export interface ApiErrorBody {
   error: { code: string; message: string; details: Record<string, unknown> }
 }

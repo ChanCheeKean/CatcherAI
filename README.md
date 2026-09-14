@@ -111,7 +111,7 @@ variants that rename merchants, the agentic provider and customers and reword in
 It compares decision semantics and verifies each event hash chain, catching logic that accidentally
 depends on an authored display name rather than operational data.
 
-### Dispute Observatory API (Stage 4: advanced observability)
+### Dispute Observatory API (Stage 5: evaluation and replay polish)
 
 A FastAPI presentation adapter (`src/api/`) exposes the SQLite trajectory store and can now start,
 cancel, and rerun fake-adapter runs itself. It still never mutates the pristine
@@ -140,6 +140,10 @@ Read endpoints: `/api/v1/health`, `/meta`, `/meta/routes`, `/meta/agents`, `/met
 `/runs/{run_id}/blobs/{sha256}`, `/memory/notes`, `/memory/notes/{note_id}`,
 `/graph/cases/{case_id}` (bounded to depth 1–3), and `/sources/{source_id}` (an explicit
 allowlist of operational source kinds; never an arbitrary path or query).
+Durable evaluation artifacts are available through `/evaluation/reports` and
+`/evaluation/reports/{report_id}`. These responses omit attempt database paths and evaluator-only
+fixtures while linking capability cells to event sequences read from the report's own isolated
+attempt stores.
 
 Execution endpoints, all under `/api/v1`:
 
@@ -155,14 +159,19 @@ Execution endpoints, all under `/api/v1`:
 See [`docs/design/07-observability-console.md`](docs/design/07-observability-console.md) for the
 full staged plan and `handoff.md` for exact current status and honest Stage 2 limitations.
 
-### Dispute Observatory frontend (Stage 4: advanced observability)
+### Dispute Observatory frontend (Stage 5: evaluation and replay polish)
 
 A React + TypeScript + Vite app in `frontend/` gives Mission Control (case browser, filters, run
 launcher, Q01 queue launcher, recent runs), a live Run Observatory (workflow graph, timeline and
 actor swimlanes, safe Reasoning Artifacts, specialized event/blob inspection, run memory/graph
 overlays, metrics and field-level decision provenance), plus standalone Memory Explorer and
-bounded Graph Lab views. There is no combined launcher script yet (Stage 6); run the API and the
-dev server in two terminals:
+bounded Graph Lab views. The Evaluation view shows pass rate, pass^k inputs, stability,
+reconciliation and a deep-linkable capability matrix backed by actual proving events. Run pages
+support live-follow, seek, step, replay speed, event/actor/text filters, URL-linked selections and
+bookmarks; Q01 has a virtual-time deadline-pressure board. Press `Ctrl/Cmd+K` for navigation.
+Graph-heavy routes are loaded on demand and timeline DOM rendering is capped to the latest 350
+matching events for responsive ~1,000-event queue traces. There is no combined launcher script yet
+(Stage 6); run the API and the dev server in two terminals:
 
 ```bash
 uv run uvicorn api.app:app --app-dir src --port 8000   # terminal 1
@@ -173,8 +182,7 @@ Vite proxies `/api` to `http://127.0.0.1:8000`, so the frontend never needs a ba
 commands: `npm run dev`, `npm run build` (`tsc -b && vite build`), `npm run test` (Vitest +
 React Testing Library), `npm run lint` (`oxlint`).
 
-Evaluation/capability navigation and playback polish are Stage 5; the one-command combined
-launcher is Stage 6. See
+The one-command combined launcher and committed browser E2E path are Stage 6. See
 [`docs/design/07-observability-console.md`](docs/design/07-observability-console.md).
 
 ### How the runtime is organized
