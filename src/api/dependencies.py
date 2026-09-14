@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 from fastapi import Request
@@ -26,7 +26,12 @@ def get_db_path(request: Request) -> Path:
     return request.app.state.db_path  # type: ignore[no-any-return]
 
 
-def get_connection(request: Request) -> Iterator[sqlite3.Connection]:
+async def get_connection(request: Request) -> AsyncIterator[sqlite3.Connection]:
+    """Async, not a plain generator, for the same reason `get_run_connection` below is: a sync
+    generator dependency and a sync path operation function are each dispatched to the worker
+    threadpool independently, so they can land on different threads for the same request, and
+    `sqlite3` connections are thread-affine. `cases.py`'s endpoints are `async def` to match."""
+
     connection = connect_readonly(request.app.state.db_path)
     try:
         yield connection

@@ -13,7 +13,7 @@ router = APIRouter(prefix="/cases", tags=["cases"])
 
 
 @router.get("", response_model=CasePage)
-def get_cases(
+async def get_cases(
     connection: Annotated[sqlite3.Connection, Depends(get_connection)],
     regime: str | None = None,
     status: str | None = None,
@@ -36,7 +36,7 @@ def get_cases(
 
 
 @router.get("/{case_id}", response_model=CaseDetail)
-def get_case(
+async def get_case(
     case_id: str, connection: Annotated[sqlite3.Connection, Depends(get_connection)]
 ) -> CaseDetail:
     return get_case_detail(connection, case_id)

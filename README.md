@@ -152,6 +152,27 @@ Execution endpoints, all under `/api/v1`:
 See [`docs/design/07-observability-console.md`](docs/design/07-observability-console.md) for the
 full staged plan and `handoff.md` for exact current status and honest Stage 2 limitations.
 
+### Dispute Observatory frontend (Stage 3: shell and Mission Control)
+
+A React + TypeScript + Vite app in `frontend/` gives Mission Control (case browser, filters, run
+launcher, Q01 queue launcher, recent runs) and a basic live Run Observatory (ordered event
+timeline, an inspector for the selected event, a metrics strip and the cardholder/network decision
+once a run reaches one). There is no combined launcher script yet (Stage 6); run the API and the
+dev server in two terminals:
+
+```bash
+uv run uvicorn api.app:app --app-dir src --port 8000   # terminal 1
+cd frontend && npm install && npm run dev               # terminal 2, http://localhost:5173
+```
+
+Vite proxies `/api` to `http://127.0.0.1:8000`, so the frontend never needs a base URL. Frontend
+commands: `npm run dev`, `npm run build` (`tsc -b && vite build`), `npm run test` (Vitest +
+React Testing Library), `npm run lint` (`oxlint`).
+
+Advanced observability (workflow graph, swimlanes, memory/graph explorers, evaluation view) and
+the one-command combined launcher are later stages; see
+[`docs/design/07-observability-console.md`](docs/design/07-observability-console.md).
+
 ### How the runtime is organized
 
 - `runtime/langgraph_runtime.py` is one route-independent graph: `run_start → load_case → route → compute_clocks → investigate → assess_progress ⟲ {gather_evidence | ask_cardholder → await_external_event → apply_external_event | run_specialists | analyze_track (Send fan-out) → merge_tracks} → verify ⟲ replan → propose_decision → governance_gate → review_panel? → record_decision → execute_actions → memory_maintenance → terminate`.

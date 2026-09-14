@@ -498,20 +498,99 @@ Known limitations carried forward (honest, not blocking):
   design's Stage 2 endpoint table); a genuinely suspended (`auto_resume=false`) run stays suspended
   until resumed some other way (CLI `catcher resume`).
 
-### Stage 3 — Frontend shell and Mission Control
+### Stage 3 — Frontend shell and Mission Control: COMPLETE (2026-09-14)
 
-Deliver:
+Delivered:
 
-- Vite React/TypeScript app, Tailwind tokens, routing and responsive three-pane shell.
-- Typed API client, TanStack Query setup and SSE hook.
-- Case browser, recent runs, run launcher, status/metric cards and basic live timeline.
-- Loading, empty, disconnected, failed and completed states.
+- `frontend/`: Vite + React 19 + TypeScript, Tailwind v4 (CSS-token `@theme`, no `tailwind.config.js`
+  needed), `react-router-dom` for the two Stage 3 routes (`/` Mission Control, `/runs/:runId` Run
+  Observatory). The responsive three-pane shell (`app/Shell.tsx`) is a 280px nav rail / flexible
+  center / 380px inspector `grid` on `lg+`; the rail and inspector collapse below `lg` (mobile keeps
+  the center content, which is the actual workable surface for both routes) rather than becoming a
+  drawer — a deliberate, documented trade-off, not an oversight.
+- `api/types.ts` (hand-mirrors `src/api/models.py`/`domain/events.py` — no generated client yet),
+  `api/client.ts` (typed fetch wrapper, one `ApiError`), `api/useRunStream.ts`.
+- `projections/runProjection.ts`: a small, pure, deterministic reducer over the canonical event log
+  (event/tool/model/subagent/memory/wait/verifier counts, usage totals, terminal/failed flags) —
+  the Stage-3-sized slice of the design's full `RunProjection` (§6); workflow/plan/hypothesis/panel
+  projections are Stage 4.
+- `features/mission-control/`: `CaseFilters`, `CaseCard`, `RunLauncher` (per-case adapter/auto-resume
+  + Run button), `QueueLauncher` (separate component — Q01 is not a `/cases` row, it POSTs
+  `/queue/runs`, not `/runs`), `MissionControlPage`.
+- `features/run-observatory/`: `EventTimeline` (color-coded by the doc's fixed accent meanings via
+  `components/eventColor.ts`), `MetricsStrip`, `DecisionPanel` (cardholder outcome, network actions,
+  confidence, explanation — the Stage-3-sized slice of Decision & Provenance; field-level
+  `event_seqs`/`source_ids` provenance is Stage 4), `RunObservatoryPage`.
+- `app/InspectorContext.tsx` + `app/Inspector.tsx`: selecting a timeline event shows its actor,
+  times, refs and raw payload JSON in the right pane.
+- Tests: `useRunStream.test.ts` (REST-snapshot + SSE-tail merge, de-duplicated and seq-ordered, via a
+  hand-rolled `ReadableStream`/`Response` mock — not `EventSource`, see below), `CaseFilters.test.tsx`
+  (filter reporting), `RunLauncher.test.tsx` (mutation → navigation, with `api/client` and
+  `react-router-dom`'s `useNavigate` mocked). `npm run test` (Vitest + React Testing Library):
+  **5 passed**. `npx tsc -b`: clean. `npx oxlint`: 3 warnings (react-refresh export-shape, one
+  set-state-in-effect that is the intended REST-then-stream sequencing), no errors. `npm run build`:
+  clean (370 KB JS / 14 KB CSS, gzip 115 KB / 4 KB).
 
-Acceptance:
+**One real design deviation from this document, made deliberately: `useRunStream` does not use
+`EventSource`.** §5.3 says "de-duplicate by `(run_id, seq)` in both server and client" and the SSE
+messages are named after the canonical event `type` (`api/sse.py`: `yield {"id": ..., "event":
+event.type, "data": ...}`) — and that vocabulary is meant to grow (Stage 4/5 add many more event
+kinds; §6 says "a new backend event must never crash the UI"). `EventSource.onmessage` only fires
+for the unnamed `message` event; catching every other named event would require either a fixed
+`addEventListener` call per known type (silently drops any type not in that fixed list — exactly
+the failure mode §6 forbids) or reading `EventSource`'s private frame buffer, which doesn't exist.
+`useRunStream.ts` instead fetches the stream with `fetch`/`ReadableStream` and parses the `data:`
+line of each frame itself, ignoring `id:`/`event:` (the payload's own `seq` is authoritative
+either way). Browser `EventSource` reconnect via `Last-Event-ID` is replaced with an explicit
+poll-and-retry loop keyed on the last-seen `seq`, checking `GET /runs/{run_id}` for a terminal
+status once the stream ends to decide whether to reconnect or stop — behaviorally equivalent to
+what `EventSource` would have done, but able to dispatch on an open-ended `type` vocabulary. If a
+future stage regrets this, only `api/useRunStream.ts` needs to change: nothing about the wire
+format or the API changed, and no other frontend code touches SSE framing directly.
 
-- Component tests cover case filtering, launch mutation and ordered stream updates.
-- A user can launch C02 from the browser and see it reach a decision live.
-- Keyboard navigation, focus visibility and reduced-motion behavior work.
+**One real backend bug found and fixed while manually verifying this stage in a live browser,
+worth knowing before touching `src/api/`:** `GET /cases`/`GET /cases/{case_id}` intermittently
+500'd with `sqlite3.ProgrammingError: SQLite objects created in a thread can only be used in that
+same thread`. `api/dependencies.get_connection` was still the plain sync generator dependency from
+Stage 1, paired with `cases.py`'s `def` (sync) endpoints — the same cross-thread hazard Stage 2's
+handoff entry already documents and fixed for the run-lifecycle endpoints (FastAPI dispatches a
+sync generator dependency and a sync path-operation function to the worker threadpool
+independently, so they can land on different threads for one request), just not yet applied to
+`cases.py` because Stage 1/2's own tests happen not to trigger the race. A real browser hitting
+`/meta`, `/cases`, `/runs` back-to-back does. Fixed the same way: `get_connection` is now an
+`AsyncIterator` and `get_cases`/`get_case` are `async def`. `uv run pytest` stayed at 94 passed / 1
+skipped; ruff check/format clean.
+
+Acceptance — met:
+
+- Component tests cover case filtering (`CaseFilters.test.tsx`), the launch mutation
+  (`RunLauncher.test.tsx`) and ordered/de-duplicated stream updates (`useRunStream.test.ts`).
+- Verified live in a real Chromium browser (Playwright, driven manually against the actual `uv run
+  uvicorn`/`npm run dev` processes, not a committed E2E script — that's Stage 6): launched C02
+  (`DSP-2026-90002`, fake adapter) from Mission Control, watched the timeline grow to 132 live
+  events with no console errors, and reached a `Decided` status with the cardholder/network
+  decision panel visible — all without a page reload. Also exercised the Q01 queue launcher and a
+  narrow (390px) mobile viewport (see the stage's screenshots directory reference in `handoff.md`
+  if kept, or rerun the same manual steps).
+- Keyboard: every interactive control is a native `button`/`select`/`input`/link, so Tab order and
+  `:focus-visible` (global 2px cyan outline in `index.css`) work without extra wiring; verified one
+  Tab reaches the first real button. Reduced motion: the only non-decorative animation
+  (`.animate-pulse-edge`, used for the live-status pulse) is disabled globally via
+  `prefers-reduced-motion: reduce` in `index.css`.
+
+Known limitations carried into Stage 4 (honest, not blocking):
+
+- No workflow graph, swimlanes, plan/hypothesis/panel views, memory/graph explorers or evaluation
+  view yet — all Stage 4/5 by design.
+- `api/types.ts` is hand-maintained against `src/api/models.py`, not generated from
+  `schemas/openapi.json`; a backend DTO change needs a matching manual edit here until a generator
+  is wired in (not currently planned — the design doc never commits to one).
+- The nav rail's "Recent runs" list and a run's own header status badge poll (`refetchInterval`)
+  rather than stream; only the event timeline and metrics strip are truly live. Acceptable for
+  Stage 3's acceptance gate; Stage 4's swimlanes/workflow graph will likely want the same live
+  event feed the timeline already has, not more polling.
+- No Playwright test is committed yet (planned for Stage 6, per this design's own staging); Stage 3
+  acceptance was met by manual Playwright-driven verification instead, not skipped.
 
 ### Stage 4 — Advanced observability
 

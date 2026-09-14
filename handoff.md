@@ -1,11 +1,11 @@
 # Dispute Observatory implementation handoff
 
-Last updated: 2026-09-14  
+Last updated: 2026-09-15  
 Repository: `/Users/kean/Dev/CatcherAI`  
-Branch / starting commit: `main` / `d993fe3`  
-Current phase: Stage 2 (execution manager + live SSE stream) COMPLETE, plus a post-Stage-2 cleanup
-pass (dead code, duplication, efficiency, one TTL bug); no frontend yet  
-Next stage: Stage 3 — frontend shell and Mission Control
+Branch / starting commit: `main` / `63e521b`  
+Current phase: Stage 3 (frontend shell and Mission Control) COMPLETE  
+Next stage: Stage 4 — advanced observability (workflow graph, swimlanes, reasoning artifacts,
+decision/provenance explorer, Memory Explorer, Graph Lab)
 
 ## Current objective
 
@@ -43,10 +43,15 @@ Read these files completely, in order, before editing:
 10. For historical implementation context, `docs/prompts/02-implementation-kickoff.md`,
     `docs/design/06-eval-results.md` and the remaining design/research documents.
 
-Do not begin Stage 4 (advanced observability) or add graph/memory/source routers casually — Stage
-3's own acceptance gate (component tests, a browser-launched C02 reaching a live decision, keyboard/
-focus/reduced-motion behavior) must pass first, and Stage 3 is a separate `frontend/` TypeScript
-app that this backend-only session has not scaffolded yet.
+Stage 3's acceptance gate is met (component tests, a browser-launched C02 reaching a live decision,
+keyboard/focus/reduced-motion behavior — see that stage's entry in the history below for exact
+evidence). Do not begin Stage 4 (advanced observability) without first reading
+`frontend/src/` as it stands: `app/` (shell, router, providers, inspector context), `api/` (types,
+client, `useRunStream`), `projections/runProjection.ts`, `features/mission-control/`,
+`features/run-observatory/`. Stage 4 adds a workflow React Flow canvas, swimlanes, specialized
+event inspectors, plan/hypothesis diffs, the full Decision & Provenance explorer, and Memory
+Explorer/Graph Lab — extend the existing `features/` structure and `RunProjection` rather than
+restructuring what Stage 3 built.
 
 ## Product and UX decision
 
@@ -313,14 +318,13 @@ Known limitations carried into Stage 3 (honest, not blocking):
   way (CLI `catcher resume`).
 - Memory, graph and source read models/routers do not exist yet — planned for Stage 4.
 
-### Stage 3 — Frontend shell and Mission Control (NEXT)
+### Stage 3 — Frontend shell and Mission Control: COMPLETE
 
-- Vite React/TypeScript/Tailwind app and responsive three-pane shell.
-- Typed REST client, TanStack Query and SSE hook.
-- Case browser, recent runs, launcher, status cards and basic live timeline.
-- Component tests and a browser-launched C02 decision path.
+See the stage history entry below for exactly what was built, the one deliberate design deviation
+(hand-rolled SSE parsing instead of `EventSource`), the one real backend bug found and fixed, and
+honest known limitations carried into Stage 4.
 
-### Stage 4 — Advanced observability
+### Stage 4 — Advanced observability (NEXT)
 
 - Workflow graph, swimlanes and specialized event inspectors.
 - Plans, hypotheses and safe Reasoning Artifacts.
@@ -374,11 +378,29 @@ Material backend entry points:
 | Event schema + shared row/hash-chain helpers | `src/domain/events.py`, `schemas/trajectory-event.schema.json` |
 | API read-only foundation (Stage 1) | `src/api/app.py`, `src/api/dependencies.py`, `src/api/models.py`, `src/api/read_models.py`, `src/api/routers/{meta,cases}.py` |
 | API execution manager + SSE (Stage 2) | `src/api/run_manager.py`, `src/api/sse.py`, `src/api/routers/{runs,queue}.py` |
+| Frontend shell and Mission Control (Stage 3) | `frontend/src/app/`, `frontend/src/api/`, `frontend/src/features/{mission-control,run-observatory}/`, `frontend/src/projections/runProjection.ts` |
 
 ## Last verified baseline
 
-Verified after the post-Stage-2 cleanup pass (see stage history below; this is the current
-baseline — the Stage 2 baseline paragraph immediately below is kept for history):
+Verified after Stage 3 (see stage history below; this is the current baseline — earlier baselines
+are kept below for history):
+
+- Backend unchanged by Stage 3 except the two-file thread-affinity fix in `src/api/dependencies.py`/
+  `src/api/routers/cases.py` (see that stage's history entry): `uv run pytest` — **94 passed, 1
+  skipped** (same count), `uv run ruff check src tests` / `uv run ruff format --check src tests` —
+  both clean.
+- Frontend (`frontend/`): `npx tsc -b` clean; `npm run test` (Vitest) — **5 passed**; `npx oxlint` —
+  0 errors, 3 warnings (react-refresh export-shape notices and one intentional
+  set-state-in-effect); `npm run build` — clean, 370 KB JS / 14 KB CSS (gzip 115 KB / 4 KB).
+- Live manual verification: `uv run uvicorn api.app:app --app-dir src --port 8000` +
+  `npm run dev` (Vite on `[::1]:5173`, proxying `/api`), driven with a throwaway Playwright script
+  (not committed — Stage 6 owns the committed E2E test): launched C02 (`DSP-2026-90002`, fake
+  adapter) from Mission Control, timeline reached 132 live events with zero browser console errors,
+  run reached `Decided` with the cardholder/network decision panel visible, all without a reload.
+  Also exercised the Q01 queue launcher and a 390px mobile viewport. Screenshots were taken to
+  self-review the visual design (not committed as repo artifacts).
+
+Verified after the post-Stage-2 cleanup pass (prior baseline, kept for history):
 
 - `uv run pytest` — **94 passed, 1 skipped** (unchanged count; the cleanup pass touched behavior,
   not test coverage), ruff check and format both clean (100 files formatted).
@@ -417,10 +439,14 @@ The `.env` contains the user's OpenAI key. Never print, copy, commit or send its
 
 ## Known limitations relevant to the console
 
-- The API can now start, cancel, rerun and stream runs (`src/api/`), but there is still no
-  frontend. See "Known limitations carried into Stage 3" under the Stage 2 entry above for the
-  execution layer's own honest gaps (cancel/liveness is per-process, no queue-ranking persistence,
-  no resume endpoint, no memory/graph/source routers yet).
+- The frontend now covers Mission Control and a basic live Run Observatory (`frontend/`); it does
+  not yet cover the workflow graph, swimlanes, Reasoning Artifacts, the full Decision & Provenance
+  explorer, Memory Explorer or Graph Lab — all Stage 4/5. See "Known limitations carried into
+  Stage 4" under the Stage 3 entry below for this frontend slice's own honest gaps (hand-mirrored
+  types instead of a generated client, polled rather than streamed run-status badge/nav list, no
+  committed E2E test yet). See "Known limitations carried into Stage 3" under the Stage 2 entry
+  above for the execution layer's own honest gaps (cancel/liveness is per-process, no queue-ranking
+  persistence, no resume endpoint, no memory/graph/source routers yet — all still true).
 - `LangGraphRuntime` still keeps active tasks/emitters in-process by design; `RunManager` wraps it
   with a durable store registry but does not (and per the architecture doc should not) make a run
   controllable or its liveness knowable from a different API process.
@@ -666,3 +692,78 @@ above. `data/generated/eval/` output from the eval runs is gitignored, not commi
 
 No design, API-contract-beyond-the-two-fields, or six-stage-plan changes. Stage 3 remains next and
 unaffected in scope.
+
+### 2026-09-15 — Dispute Observatory Stage 3 frontend shell and Mission Control complete
+
+- Scaffolded `frontend/` (Vite + React 19 + TypeScript, Tailwind v4 via `@theme` tokens in
+  `src/index.css`, `react-router-dom`, `@tanstack/react-query`, `@xyflow/react` installed now for
+  Stage 4's workflow/entity graphs, Vitest + React Testing Library). Manrope (sans) + IBM Plex Mono
+  (data/IDs/JSON) from Google Fonts, per the design doc's "humanist sans for prose, mono for
+  IDs/dates/amounts/JSON" rule; picked deliberately to avoid both the generic Inter-everywhere
+  default and the cliché warm-cream/terracotta AI-generated look — see
+  `docs/design/07-observability-console.md`'s Stage 3 entry for the token/typography rationale.
+- Built the responsive three-pane shell (`app/Shell.tsx`, `NavigationRail.tsx`, `Inspector.tsx`,
+  `InspectorContext.tsx`, `router.tsx`), a typed API layer (`api/types.ts`, `api/client.ts`,
+  `api/useRunStream.ts`), a small pure `projections/runProjection.ts` reducer, and the two Stage 3
+  features (`features/mission-control/`, `features/run-observatory/`).
+- Delivered exactly the planned Stage 3 scope: case browser with regime/status/stage/search
+  filters, per-case run launcher (adapter + auto-resume), a separate Q01 queue launcher (`/queue/
+  runs`, not `/runs` — Q01 isn't a `/cases` row), recent-runs nav, a live event timeline with a
+  per-event inspector, a metrics strip and a basic cardholder/network decision panel once a run
+  decides.
+- **Deliberately did not use `EventSource` for the SSE stream** (a real deviation from this design
+  doc's original wording, made for a documented reason, not an oversight): the backend names each
+  SSE frame's `event:` field after the event's `type`, and that vocabulary is meant to keep growing
+  through Stage 4/5, so a browser `EventSource` with a fixed set of `addEventListener` calls would
+  silently drop any event type this build doesn't know about — exactly the failure mode §6 of the
+  design doc forbids. `api/useRunStream.ts` instead parses the stream with `fetch`/`ReadableStream`
+  by hand, reading only the `data:` line (the payload's own `seq` is authoritative) and reconnecting
+  itself by polling `GET /runs/{run_id}` for a terminal status when the stream ends. See the design
+  doc's Stage 3 entry for the full reasoning; the wire format and API are unchanged, so this is
+  contained entirely in one file.
+- **Found and fixed one real backend bug while manually verifying in a live browser**: `GET
+  /cases`/`GET /cases/{case_id}` intermittently 500'd with a cross-thread `sqlite3.ProgrammingError`
+  — `api/dependencies.get_connection` was still Stage 1's plain sync generator dependency paired
+  with `cases.py`'s sync `def` endpoints, the same FastAPI thread-affinity hazard Stage 2 already
+  found and fixed for the run-lifecycle endpoints, just never applied to `cases.py` because Stage
+  1/2's own tests don't trigger the race the way a real browser hitting several endpoints
+  back-to-back does. Fixed identically: `get_connection` is now `AsyncIterator`, `get_cases`/
+  `get_case` are `async def`. `uv run pytest` stayed at 94 passed/1 skipped.
+- Also fixed a real frontend correctness bug caught during the same manual verification, before
+  calling the stage done: `RunObservatoryPage`'s header status badge and its "has this run decided
+  yet" logic were reading only the polled `GET /runs/{run_id}` REST status, which doesn't refetch on
+  its own — a run could finish (visible in the live event stream and its 132-event timeline) while
+  the header still said "Running" and the decision panel never appeared. Fixed by making the pure
+  `runProjection.terminal`/`.failed` flags (derived from the live stream) the primary signal, with
+  the polled REST status as a secondary source only for the case ID label and the cancel/rerun
+  button states; `runQuery`'s `refetchInterval` is now gated off once the projection says the run is
+  terminal instead of running forever.
+- Tests added: `api/useRunStream.test.ts` (REST snapshot + SSE tail merge to a sorted, de-duplicated
+  event list, via a hand-built `ReadableStream`/`Response` mock — chosen over mocking `EventSource`
+  because the hook itself doesn't use `EventSource`, see above), `features/mission-control/
+  CaseFilters.test.tsx` (filter state reporting through a small controlled-component test harness),
+  `features/mission-control/RunLauncher.test.tsx` (launch mutation → navigation, with `api/client`
+  and `useNavigate` mocked). `npm run test` — **5 passed**.
+- Verified end-to-end in a real Chromium browser via a throwaway Playwright script (not committed —
+  the committed E2E path is Stage 6's, per the design doc's own staging) against the actual `uv run
+  uvicorn`/`npm run dev` processes: launched C02 from Mission Control, watched the timeline reach
+  132 live events with zero console errors, reached `Decided` with the decision panel visible, all
+  without a page reload; also drove the Q01 queue launcher and a 390px mobile viewport, and took
+  screenshots to self-review the visual design against the brief (dark navy canvas; cyan/violet/
+  amber/emerald/rose/slate fixed accent meanings; Manrope/Plex Mono type pairing) before calling the
+  stage done.
+- Final baseline: backend 94 passed/1 skipped (unchanged), ruff clean; frontend `tsc -b` clean,
+  Vitest 5 passed, oxlint 0 errors, `npm run build` clean.
+- Updated `README.md` (new "Dispute Observatory frontend" section with the two-terminal dev
+  commands — `scripts/dev.sh` is still Stage 6) and `docs/design/07-observability-console.md`
+  (Stage 3 marked complete with what was actually built, the `EventSource` deviation and both bugs
+  above, in full).
+- Known limitations carried into Stage 4 (honest, not blocking): `api/types.ts` is hand-mirrored
+  against `src/api/models.py`, not generated — a backend DTO change needs a matching manual edit
+  here; the nav rail's recent-runs list still polls (`refetchInterval: 5000`) rather than
+  subscribing to any run's live stream, so a run's status there can lag up to 5 seconds behind
+  reality (the run's own page is fully live); no committed Playwright test yet (by design, Stage
+  6's job); the rail and inspector are hidden below `lg` rather than becoming a drawer, so mobile
+  Stage 4 graph/swimlane work will need its own narrow-viewport treatment, not inherited from Stage
+  3's shell.
+- Committed and pushed per the standing authorization below.

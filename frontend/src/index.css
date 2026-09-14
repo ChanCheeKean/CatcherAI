@@ -1,0 +1,78 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Canvas and surfaces: layered blue-black, never pure black. */
+  --color-canvas: #070a12;
+  --color-surface-1: #0b0f1b;
+  --color-surface-2: #111729;
+  --color-surface-3: #182036;
+  --color-border: #232c44;
+  --color-border-strong: #303c5c;
+
+  /* Text. */
+  --color-ink: #e7ebf5;
+  --color-ink-muted: #97a1bc;
+  --color-ink-faint: #5c6684;
+
+  /* Status/role accents — fixed meanings across the whole console. */
+  --color-cyan: #34d5ef;
+  --color-violet: #ab8ffb;
+  --color-amber: #f3b74d;
+  --color-emerald: #3fd694;
+  --color-rose: #f26e83;
+  --color-slate: #647090;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-cyan) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes pulse-edge {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-pulse-edge {
+  animation: pulse-edge 1.6s ease-in-out infinite;
+}
