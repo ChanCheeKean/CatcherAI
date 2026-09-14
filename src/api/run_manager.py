@@ -21,11 +21,12 @@ from pathlib import Path
 
 from api.errors import ApiError
 from api.models import Adapter, RunStatus
-from bootstrap import build_runtime, isolated_workspace
+from bootstrap import build_runtime_from_config, copy_scenario_store
 from config import ModelsConfig, RoutesConfig, ScenarioConfig
 from domain.events import Actor, ActorKind, EventDraft
 from runtime.langgraph_runtime import LangGraphRuntime
 from runtime.portfolio import rank_portfolio
+from storage import connect_readonly
 
 _REGISTRY_SCHEMA = """CREATE TABLE IF NOT EXISTS runs (
     run_id TEXT PRIMARY KEY,
@@ -68,12 +69,39 @@ class RunManager:
         self._runtimes: dict[str, LangGraphRuntime] = {}
         self._queue_tasks: dict[str, asyncio.Task[None]] = {}
         self._queue_rankings: dict[str, list[dict[str, object]]] = {}
+        self._registry_cache: dict[str, sqlite3.Row] = {}
         self._write_lock = asyncio.Lock()
+
+    def _forget_finished_runs(self) -> None:
+        """Drop this process's in-memory `LangGraphRuntime`/task objects for runs that finished.
+
+        Registry rows, the run's own persisted events and `_queue_rankings` are left alone: a
+        finished run stays inspectable/rerunnable (via the durable registry), and
+        `GET /queue/runs/{run_id}` keeps serving its ranking for the rest of this process's
+        lifetime exactly as before (`queue_ranking` has no fallback to the persisted
+        `portfolio_ranked` event, so evicting it here — rather than only on process restart, its
+        documented limitation — would be a regression, not a cleanup). Only the heavier
+        `LangGraphRuntime`/task objects (each holding a gateway, agent configs and a chat model
+        wrapper) are swept, which is where the actual per-process memory growth was.
+        """
+
+        for run_id in [rid for rid, task in self._queue_tasks.items() if task.done()]:
+            del self._queue_tasks[run_id]
+        for run_id in [rid for rid, runtime in self._runtimes.items() if runtime.is_done(rid)]:
+            del self._runtimes[run_id]
 
     # ------------------------------------------------------------------ case runs
     async def start_run(self, *, case_id: str, adapter: Adapter, auto_resume: bool) -> RunHandle:
-        store = isolated_workspace(self.root, self.ui_dir, f"run-{uuid.uuid4().hex}")
-        runtime = build_runtime(self.root, adapter=adapter, sqlite_path=store)
+        self._forget_finished_runs()
+        store = copy_scenario_store(self.scenario, self.ui_dir, f"run-{uuid.uuid4().hex}")
+        runtime = build_runtime_from_config(
+            self.root,
+            models=self.models,
+            routes=self.routes,
+            scenario=self.scenario,
+            adapter=adapter,
+            sqlite_path=store,
+        )
         run_id = await runtime.start(case_id, auto_resume=auto_resume)
         self._runtimes[run_id] = runtime
         await self._register(
@@ -127,8 +155,16 @@ class RunManager:
 
     # ----------------------------------------------------------------------- queue
     async def start_queue_run(self, *, adapter: Adapter) -> RunHandle:
-        store = isolated_workspace(self.root, self.ui_dir, f"queue-{uuid.uuid4().hex}")
-        runtime = build_runtime(self.root, adapter=adapter, sqlite_path=store)
+        self._forget_finished_runs()
+        store = copy_scenario_store(self.scenario, self.ui_dir, f"queue-{uuid.uuid4().hex}")
+        runtime = build_runtime_from_config(
+            self.root,
+            models=self.models,
+            routes=self.routes,
+            scenario=self.scenario,
+            adapter=adapter,
+            sqlite_path=store,
+        )
         run_id = f"queue-{uuid.uuid4().hex}"
         self._runtimes[run_id] = runtime
         await self._register(
@@ -163,7 +199,7 @@ class RunManager:
 
     def all_store_paths(self) -> list[Path]:
         self._ensure_registry()
-        with sqlite3.connect(f"file:{self.registry_path}?mode=ro", uri=True) as connection:
+        with connect_readonly(self.registry_path) as connection:
             rows = connection.execute("SELECT DISTINCT store_path FROM runs").fetchall()
         paths = [Path(row[0]) for row in rows]
         if self.fallback_db_path not in paths:
@@ -171,10 +207,17 @@ class RunManager:
         return paths
 
     def _registry_row(self, run_id: str) -> sqlite3.Row | None:
+        """Registry rows are immutable once written (`_register` only ever inserts), so a
+        lazily-populated process-local cache needs no invalidation."""
+
+        if run_id in self._registry_cache:
+            return self._registry_cache[run_id]
         self._ensure_registry()
-        with sqlite3.connect(f"file:{self.registry_path}?mode=ro", uri=True) as connection:
-            connection.row_factory = sqlite3.Row
-            return connection.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+        with connect_readonly(self.registry_path) as connection:
+            row = connection.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+        if row is not None:
+            self._registry_cache[run_id] = row
+        return row
 
     async def _register(
         self,

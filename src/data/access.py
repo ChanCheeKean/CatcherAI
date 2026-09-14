@@ -38,11 +38,22 @@ class CaseDataAccess:
     def __init__(self, db_path: Path, emitter: EventEmitter) -> None:
         self.db_path = db_path
         self.emitter = emitter
+        self._connection: sqlite3.Connection | None = None
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
-        connection.row_factory = sqlite3.Row
-        return connection
+        """One connection reused for this access object's lifetime.
+
+        Safe because `CaseDataAccess` is constructed once per run/segment and only ever driven
+        from that run's own asyncio task on the process's single event-loop thread (see
+        `LangGraphRuntime._drive`); it is never shared across runs or accessed from another
+        thread. Each `sqlite3` call here is synchronous with no `await` in between, so
+        interleaving with other coroutines on the same loop cannot corrupt a query in flight.
+        """
+
+        if self._connection is None:
+            self._connection = sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True)
+            self._connection.row_factory = sqlite3.Row
+        return self._connection
 
     def _query(
         self,
@@ -52,8 +63,7 @@ class CaseDataAccess:
         *,
         refs_column: str | None = None,
     ) -> list[dict[str, Any]]:
-        with self._connect() as connection:
-            rows = [dict(row) for row in connection.execute(sql, params).fetchall()]
+        rows = [dict(row) for row in self._connect().execute(sql, params).fetchall()]
         refs = [str(row[refs_column]) for row in rows] if refs_column else []
         self.emitter.emit(
             EventDraft(

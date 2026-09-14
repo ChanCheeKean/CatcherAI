@@ -23,6 +23,10 @@ class GraphMemory:
         self.graph_root = graph_root
         self.state_db_path = state_db_path
         self.emitter = emitter
+        # Reused for this object's lifetime: one `GraphMemory` per run/segment, always driven
+        # from that run's own asyncio task on the process's single event-loop thread, so a
+        # shared connection cannot be touched concurrently from another thread.
+        self._state_connection = sqlite3.connect(state_db_path)
         self._networkx = NetworkXGraphBackend(graph_root)
         self._ladybug: LadybugGraphBackend | None = None
         try:
@@ -287,7 +291,7 @@ class GraphMemory:
             "confidence": confidence,
             "properties": properties or {},
         }
-        with sqlite3.connect(self.state_db_path) as connection:
+        with self._state_connection as connection:
             before_row = connection.execute(
                 "SELECT payload_json FROM graph_hypotheses WHERE hypothesis_id=?",
                 (hypothesis_id,),
@@ -410,7 +414,7 @@ class GraphMemory:
         return rows
 
     def _init_writes(self) -> None:
-        with sqlite3.connect(self.state_db_path) as connection:
+        with self._state_connection as connection:
             existed = bool(
                 connection.execute(
                     "SELECT 1 FROM sqlite_master WHERE type='table' AND name='graph_hypotheses'"
@@ -783,6 +787,3 @@ def _qualified_subject(subject_id: str) -> str:
 
 def _cypher_path(path: Path) -> str:
     return str(path.resolve()).replace("'", "''")
-
-
-NetworkXGraphMemory = NetworkXGraphBackend

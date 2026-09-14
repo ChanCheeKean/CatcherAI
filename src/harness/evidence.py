@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import sqlite3
 from pathlib import Path
 from typing import Any
 
 from domain.events import Actor, ActorKind, EventDraft
 from observability.emitter import EventEmitter
+from storage import connect_readonly
 
 
 class EvidenceSchedulerAccess:
@@ -20,8 +20,7 @@ class EvidenceSchedulerAccess:
                  FROM evidence_packet_documents WHERE case_id=? AND available_at>?
                  ORDER BY available_at LIMIT 1"""
         params = (case_id, self.emitter.virtual_now.isoformat().replace("+00:00", "Z"))
-        with sqlite3.connect(f"file:{self.db_path}?mode=ro", uri=True) as connection:
-            connection.row_factory = sqlite3.Row
+        with connect_readonly(self.db_path) as connection:
             row = connection.execute(sql, params).fetchone()
         result = dict(row) if row else None
         refs = [result["packet_id"]] if result else []

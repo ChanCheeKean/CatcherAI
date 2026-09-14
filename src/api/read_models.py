@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import sqlite3
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
 
 from api.errors import not_found
@@ -27,7 +26,7 @@ from api.models import (
     RunSummary,
     TransactionSummary,
 )
-from domain.events import EventEnvelope
+from domain.events import EventEnvelope, event_from_row
 
 CASE_FIELDS = (
     "case_id",
@@ -44,12 +43,6 @@ CASE_FIELDS = (
     "cardholder_outcome",
     "network_outcome",
 )
-
-
-def connect_readonly(db_path: Path) -> sqlite3.Connection:
-    connection = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-    connection.row_factory = sqlite3.Row
-    return connection
 
 
 def _table_exists(connection: sqlite3.Connection, name: str) -> bool:
@@ -185,6 +178,11 @@ def derive_status(connection: sqlite3.Connection, run_id: str) -> RunStatus:
 
 
 def _runs_for_cases(connection: sqlite3.Connection, case_ids: list[str] | None) -> list[RunSummary]:
+    """One pass over `run_events`/`decision_records` per run-set instead of the ~5 follow-up
+    queries per run this used to issue (first/last event, status, wait payload, decision
+    existence) — this is called once per case (`get_case_detail`) and once for the whole `/runs`
+    listing across every known store, so the per-run round trips added up quickly."""
+
     if not _table_exists(connection, "run_events"):
         return []
     where = ""
@@ -199,47 +197,88 @@ def _runs_for_cases(connection: sqlite3.Connection, case_ids: list[str] | None) 
             FROM run_events {where} GROUP BY run_id ORDER BY last_seq DESC""",
         params,
     ).fetchall()
-    decisions_exist = _table_exists(connection, "decision_records")
+    if not aggregate_rows:
+        return []
+
+    run_ids = [row["run_id"] for row in aggregate_rows]
+    run_placeholders = ",".join("?" for _ in run_ids)
+
+    endpoint_pairs = [(row["run_id"], row["first_seq"]) for row in aggregate_rows]
+    endpoint_pairs.extend((row["run_id"], row["last_seq"]) for row in aggregate_rows)
+    pair_placeholders = ",".join("(?,?)" for _ in endpoint_pairs)
+    endpoints = {
+        (row["run_id"], row["seq"]): row
+        for row in connection.execute(
+            f"""SELECT run_id, seq, ts_wall, ts_virtual FROM run_events
+                WHERE (run_id, seq) IN ({pair_placeholders})""",
+            [value for pair in endpoint_pairs for value in pair],
+        ).fetchall()
+    }
+
+    statuses: dict[str, RunStatus] = {}
+    for row in connection.execute(
+        f"""SELECT run_id, type, payload_json FROM (
+                SELECT run_id, type, payload_json,
+                       ROW_NUMBER() OVER (PARTITION BY run_id ORDER BY seq DESC) AS rn
+                FROM run_events
+                WHERE run_id IN ({run_placeholders}) AND type IN ('error', 'termination')
+            ) WHERE rn = 1""",
+        run_ids,
+    ).fetchall():
+        if row["type"] == "error":
+            statuses[row["run_id"]] = "failed"
+        else:
+            payload = json.loads(row["payload_json"])
+            statuses[row["run_id"]] = _TERMINAL_STATUS_BY_FINAL_STATUS.get(
+                payload.get("final_status"), "running"
+            )
+
+    suspended_ids = [run_id for run_id in run_ids if statuses.get(run_id) == "suspended"]
+    waits: dict[str, dict[str, Any]] = {}
+    if suspended_ids:
+        suspended_placeholders = ",".join("?" for _ in suspended_ids)
+        waits = {
+            row["run_id"]: json.loads(row["payload_json"])
+            for row in connection.execute(
+                f"""SELECT run_id, payload_json FROM (
+                        SELECT run_id, payload_json,
+                               ROW_NUMBER() OVER (PARTITION BY run_id ORDER BY seq DESC) AS rn
+                        FROM run_events
+                        WHERE run_id IN ({suspended_placeholders}) AND type = 'wait_suspended'
+                    ) WHERE rn = 1""",
+                suspended_ids,
+            ).fetchall()
+        }
+
+    decided_run_ids: set[str] = set()
+    if _table_exists(connection, "decision_records"):
+        decided_run_ids = {
+            row["run_id"]
+            for row in connection.execute(
+                "SELECT DISTINCT run_id FROM decision_records "
+                f"WHERE run_id IN ({run_placeholders})",
+                run_ids,
+            ).fetchall()
+        }
+
     summaries: list[RunSummary] = []
     for row in aggregate_rows:
-        first_event = connection.execute(
-            "SELECT ts_wall FROM run_events WHERE run_id = ? AND seq = ?",
-            (row["run_id"], row["first_seq"]),
-        ).fetchone()
-        last_event = connection.execute(
-            "SELECT ts_wall, ts_virtual FROM run_events WHERE run_id = ? AND seq = ?",
-            (row["run_id"], row["last_seq"]),
-        ).fetchone()
-        status = derive_status(connection, row["run_id"])
-        wait = None
-        if status == "suspended":
-            wait_row = connection.execute(
-                """SELECT payload_json FROM run_events
-                   WHERE run_id = ? AND type = 'wait_suspended' ORDER BY seq DESC LIMIT 1""",
-                (row["run_id"],),
-            ).fetchone()
-            if wait_row is not None:
-                wait = json.loads(wait_row["payload_json"])
-        decision_row = (
-            connection.execute(
-                "SELECT 1 FROM decision_records WHERE run_id = ?", (row["run_id"],)
-            ).fetchone()
-            if decisions_exist
-            else None
-        )
+        run_id = row["run_id"]
+        first_event = endpoints.get((run_id, row["first_seq"]))
+        last_event = endpoints[(run_id, row["last_seq"])]
         summaries.append(
             RunSummary(
-                run_id=row["run_id"],
+                run_id=run_id,
                 case_id=row["case_id"],
-                status=status,
+                status=statuses.get(run_id, "running"),
                 event_count=row["event_count"],
                 first_seq=row["first_seq"],
                 last_seq=row["last_seq"],
                 started_at=first_event["ts_wall"] if first_event else None,
                 last_event_at=last_event["ts_wall"],
                 virtual_now=last_event["ts_virtual"],
-                wait=wait,
-                decision_available=decision_row is not None,
+                wait=waits.get(run_id),
+                decision_available=run_id in decided_run_ids,
             )
         )
     return summaries
@@ -305,32 +344,9 @@ def list_events(
     sql = f"SELECT * FROM run_events WHERE {' AND '.join(clauses)} ORDER BY seq LIMIT ?"
     rows = connection.execute(sql, [*params, limit + 1]).fetchall()
     has_more = len(rows) > limit
-    events = [_event_from_row(row) for row in rows[:limit]]
+    events = [event_from_row(row) for row in rows[:limit]]
     next_after_seq = events[-1].seq if has_more and events else None
     return events, next_after_seq
-
-
-def _event_from_row(row: sqlite3.Row) -> EventEnvelope:
-    return EventEnvelope.model_validate(
-        {
-            "event_id": row["event_id"],
-            "run_id": row["run_id"],
-            "case_id": row["case_id"],
-            "seq": row["seq"],
-            "span_id": row["span_id"],
-            "parent_span_id": row["parent_span_id"],
-            "ts_wall": row["ts_wall"],
-            "ts_virtual": row["ts_virtual"],
-            "actor": {"kind": row["actor_kind"], "name": row["actor_name"]},
-            "type": row["type"],
-            "summary": row["summary"],
-            "payload": json.loads(row["payload_json"]),
-            "refs": json.loads(row["refs_json"]),
-            "runtime": json.loads(row["runtime_json"]),
-            "usage": json.loads(row["usage_json"]),
-            "redactions": json.loads(row["redactions_json"]),
-        }
-    )
 
 
 def get_decision(connection: sqlite3.Connection, run_id: str) -> DecisionResponse:

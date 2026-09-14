@@ -6,14 +6,20 @@ import json
 import sqlite3
 import threading
 import uuid
-from collections.abc import AsyncIterator, Iterable
+from collections.abc import AsyncIterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from domain.events import EventDraft, EventEnvelope, RuntimeSnapshot
+from domain.events import (
+    EventDraft,
+    EventEnvelope,
+    RuntimeSnapshot,
+    event_from_row,
+    verify_event_chain,
+)
 from observability.redaction import redact
 
 
@@ -217,56 +223,21 @@ class EventEmitter:
             rows = connection.execute(
                 "SELECT * FROM run_events WHERE run_id=? ORDER BY seq", (self.run_id,)
             ).fetchall()
-        return [self._row_to_event(row) for row in rows]
-
-    @staticmethod
-    def _row_to_event(row: sqlite3.Row) -> EventEnvelope:
-        return EventEnvelope.model_validate(
-            {
-                "event_id": row["event_id"],
-                "run_id": row["run_id"],
-                "case_id": row["case_id"],
-                "seq": row["seq"],
-                "span_id": row["span_id"],
-                "parent_span_id": row["parent_span_id"],
-                "ts_wall": row["ts_wall"],
-                "ts_virtual": row["ts_virtual"],
-                "actor": {"kind": row["actor_kind"], "name": row["actor_name"]},
-                "type": row["type"],
-                "summary": row["summary"],
-                "payload": json.loads(row["payload_json"]),
-                "refs": json.loads(row["refs_json"]),
-                "runtime": json.loads(row["runtime_json"]),
-                "usage": json.loads(row["usage_json"]),
-                "redactions": json.loads(row["redactions_json"]),
-            }
-        )
+        return [event_from_row(row) for row in rows]
 
     def verify_chain(self) -> bool:
-        previous: str | None = None
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT * FROM run_events WHERE run_id=? ORDER BY seq", (self.run_id,)
             ).fetchall()
-        for expected_seq, row in enumerate(rows, start=1):
-            if row["seq"] != expected_seq or row["previous_event_hash"] != previous:
-                return False
-            event = self._row_to_event(row)
-            canonical = json.dumps(
-                event.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-            )
-            computed = hashlib.sha256(f"{previous or ''}{canonical}".encode()).hexdigest()
-            if computed != row["event_hash"]:
-                return False
-            previous = computed
-        return bool(rows)
+        return verify_event_chain(rows)
 
     def last_event(self) -> EventEnvelope | None:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT * FROM run_events WHERE run_id=? ORDER BY seq DESC LIMIT 1", (self.run_id,)
             ).fetchone()
-        return self._row_to_event(row) if row else None
+        return event_from_row(row) if row else None
 
     def restore_virtual_now(self) -> None:
         """Continue a persisted run at the virtual time of its last event."""
@@ -282,6 +253,3 @@ class EventEmitter:
             if event.type == "budget_update" and event.payload.get("dimension") == dimension
         ]
         return used[-1] if used else 0
-
-    def event_types(self) -> Iterable[str]:
-        return (event.type for event in self.events())

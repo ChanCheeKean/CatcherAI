@@ -57,6 +57,18 @@ class ActionRepository:
                 )"""
             )
 
+    @staticmethod
+    def _case_snapshot(
+        connection: sqlite3.Connection, case_id: str | None
+    ) -> dict[str, Any] | None:
+        if not case_id:
+            return None
+        row = connection.execute(
+            "SELECT case_id, status, stage, cardholder_outcome FROM disputes WHERE case_id=?",
+            (case_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
     def execute(self, decision: DecisionRecord) -> list[str]:
         actions: list[tuple[str, dict[str, Any]]] = []
         if decision.cardholder_resolution.outcome == "withdrawn_after_clarification":
@@ -126,15 +138,8 @@ class ActionRepository:
             action_id = f"action-{uuid.uuid4().hex}"
             with sqlite3.connect(self.db_path) as connection:
                 connection.row_factory = sqlite3.Row
-                before: dict[str, Any] | None = None
                 target_case_id = details.get("case_id")
-                if target_case_id:
-                    row = connection.execute(
-                        """SELECT case_id, status, stage, cardholder_outcome
-                           FROM disputes WHERE case_id=?""",
-                        (target_case_id,),
-                    ).fetchone()
-                    before = dict(row) if row else None
+                before = self._case_snapshot(connection, target_case_id)
                 if action in {"reopen_case", "credit_reopened_case"} and target_case_id:
                     if before is None:
                         raise ValueError(f"unknown case action target: {target_case_id}")
@@ -162,12 +167,7 @@ class ActionRepository:
                     ),
                 )
                 if target_case_id:
-                    row = connection.execute(
-                        """SELECT case_id, status, stage, cardholder_outcome
-                           FROM disputes WHERE case_id=?""",
-                        (target_case_id,),
-                    ).fetchone()
-                    after = dict(row) if row else details
+                    after = self._case_snapshot(connection, target_case_id) or details
                 else:
                     after = {
                         "action_id": action_id,

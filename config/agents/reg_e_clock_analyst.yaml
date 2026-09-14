@@ -1,7 +1,6 @@
 id: reg_e_clock_analyst
 version: 1
 description: Independently validates Reg E liability, new-account status and bank-calendar deadlines.
-model_role: default
 tools: [get_account, get_account_events, compute_reg_e_deadlines]
 skills: [reg-e-clocks]
 max_iterations: 4

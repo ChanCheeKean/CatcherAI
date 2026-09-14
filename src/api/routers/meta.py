@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import importlib.util
 import os
 import sqlite3
+from functools import cache
 from pathlib import Path
 from typing import Annotated
 
@@ -27,6 +27,7 @@ from api.models import (
 from api.workflow_graph import build_workflow_graph
 from config import ModelsConfig, RoutesConfig, ScenarioConfig, load_agent_configs
 from domain.events import event_json_schema
+from storage import connect_readonly
 
 router = APIRouter(tags=["meta"])
 
@@ -37,18 +38,16 @@ def health(db_path: Annotated[Path, Depends(get_db_path)]) -> HealthResponse:
     status = "ok"
     if scenario_db:
         try:
-            with sqlite3.connect(f"file:{db_path}?mode=ro", uri=True) as connection:
+            with connect_readonly(db_path) as connection:
                 connection.execute("SELECT 1 FROM disputes LIMIT 1")
         except sqlite3.OperationalError:
             status = "degraded"
     else:
         status = "degraded"
-    graph_available = importlib.util.find_spec("ladybug") is not None
     return HealthResponse(
         status=status,  # type: ignore[arg-type]
         scenario_db=scenario_db,
         scenario_db_path=str(db_path),
-        graph_available=graph_available,
     )
 
 
@@ -86,13 +85,17 @@ def routes(
 
 @router.get("/meta/agents", response_model=list[AgentSummary])
 def agents(root: Annotated[Path, Depends(get_root)]) -> list[AgentSummary]:
+    return _load_agent_summaries(root)
+
+
+@cache
+def _load_agent_summaries(root: Path) -> list[AgentSummary]:
     configs = load_agent_configs(root / "config" / "agents")
     return [
         AgentSummary(
             id=agent.id,
             version=agent.version,
             description=agent.description,
-            model_role=agent.model_role,
             tools=agent.tools,
             skills=agent.skills,
         )
@@ -102,6 +105,11 @@ def agents(root: Annotated[Path, Depends(get_root)]) -> list[AgentSummary]:
 
 @router.get("/meta/skills", response_model=list[SkillSummary])
 def skills(root: Annotated[Path, Depends(get_root)]) -> list[SkillSummary]:
+    return _load_skill_summaries(root)
+
+
+@cache
+def _load_skill_summaries(root: Path) -> list[SkillSummary]:
     skill_root = root / "skills"
     results: list[SkillSummary] = []
     for skill_file in sorted(skill_root.glob("*/SKILL.md")):

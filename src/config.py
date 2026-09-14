@@ -45,7 +45,6 @@ class ModelsConfig(BaseModel):
     provider: str
     api: str
     default: DefaultModelConfig
-    role_overrides: dict[str, dict[str, Any]] = Field(default_factory=dict)
     concurrency: ConcurrencyConfig = Field(default_factory=ConcurrencyConfig)
     retry: RetryConfig = Field(default_factory=RetryConfig)
 
@@ -72,7 +71,6 @@ class AgentConfig(BaseModel):
     id: str
     version: int
     description: str
-    model_role: str = "default"
     tools: list[str] = Field(default_factory=list)
     skills: list[str] = Field(default_factory=list)
     max_iterations: int = 4

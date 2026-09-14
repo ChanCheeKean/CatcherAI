@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
@@ -45,6 +46,21 @@ class RegEDeadlineResult(BaseModel):
     liability_amount: Decimal
 
 
+def is_new_account(
+    first_deposit_date: date | str | None, transaction_dates: Iterable[date]
+) -> bool:
+    """Reg E "new account" test: any transaction within 30 days of the first deposit."""
+
+    if not first_deposit_date:
+        return False
+    first_deposit = (
+        first_deposit_date
+        if isinstance(first_deposit_date, date)
+        else date.fromisoformat(first_deposit_date)
+    )
+    return any(0 <= (txn_date - first_deposit).days <= 30 for txn_date in transaction_dates)
+
+
 def _add_business_days(start: date, days: int, holidays: set[date]) -> date:
     current = start
     remaining = days
@@ -67,10 +83,7 @@ def reg_e_deadlines(
     """Apply tested Reg E new-account and business-day calendar rules."""
 
     holiday_set = set(holidays)
-    new_account = any(
-        0 <= (transaction_date - first_deposit_date).days <= 30
-        for transaction_date in transaction_dates
-    )
+    new_account = is_new_account(first_deposit_date, transaction_dates)
     provisional_days = 20 if new_account else 10
     result = RegEDeadlineResult(
         new_account=new_account,
@@ -80,34 +93,25 @@ def reg_e_deadlines(
         investigation_deadline=notice_date + timedelta(days=90),
         liability_amount=Decimal("0") if not card_lost_or_stolen else Decimal("50"),
     )
-    emitter.emit(
-        EventDraft(
-            actor=Actor(kind=ActorKind.SANDBOX, name="reg_e_deadlines"),
-            type="computation",
-            summary="Computed Reg E new-account, liability and business-day deadlines",
-            payload={
-                "helper": "reg_e_deadlines",
-                "code": (
-                    "new_account=any(0 <= txn-first_deposit <= 30); "
-                    "provisional=add_business_days(notice, 20 if new_account else 10, "
-                    "holidays); investigation=notice+90 calendar days; "
-                    "liability=0 when access device was not lost or stolen"
-                ),
-                "inputs": {
-                    "notice_date": notice_date.isoformat(),
-                    "first_deposit_date": first_deposit_date.isoformat(),
-                    "transaction_dates": [value.isoformat() for value in transaction_dates],
-                    "holidays": [value.isoformat() for value in holidays],
-                    "card_lost_or_stolen": card_lost_or_stolen,
-                },
-                "stdout": "",
-                "stderr": "",
-                "output": result.model_dump(mode="json"),
-                "runtime_ms": 0,
-                "status": "success",
-            },
-            refs=["REGE-1005.6", "REGE-1005.11", "LFB-CB-2025-09"],
-        )
+    _record_computation(
+        emitter,
+        "reg_e_deadlines",
+        "Computed Reg E new-account, liability and business-day deadlines",
+        code=(
+            "new_account=any(0 <= txn-first_deposit <= 30); "
+            "provisional=add_business_days(notice, 20 if new_account else 10, "
+            "holidays); investigation=notice+90 calendar days; "
+            "liability=0 when access device was not lost or stolen"
+        ),
+        inputs={
+            "notice_date": notice_date.isoformat(),
+            "first_deposit_date": first_deposit_date.isoformat(),
+            "transaction_dates": [value.isoformat() for value in transaction_dates],
+            "holidays": [value.isoformat() for value in holidays],
+            "card_lost_or_stolen": card_lost_or_stolen,
+        },
+        output=result.model_dump(mode="json"),
+        refs=["REGE-1005.6", "REGE-1005.11", "LFB-CB-2025-09"],
     )
     return result
 
@@ -130,23 +134,14 @@ def group_clearings(rows: list[dict[str, Any]], emitter: EventEmitter) -> Cleari
         is_split_clearing=one_auth and sequences == list(range(1, expected_count + 1)),
         exceeds_authorization=total > auth_amount,
     )
-    emitter.emit(
-        EventDraft(
-            actor=Actor(kind=ActorKind.SANDBOX, name="group_clearings"),
-            type="computation",
-            summary="Computed clearing aggregation in the sandbox helper",
-            payload={
-                "helper": "group_clearings",
-                "code": code,
-                "inputs": {"rows": rows},
-                "stdout": "",
-                "stderr": "",
-                "output": result.model_dump(mode="json"),
-                "runtime_ms": 0,
-                "status": "success",
-            },
-            refs=[str(row["txn_id"]) for row in rows],
-        )
+    _record_computation(
+        emitter,
+        "group_clearings",
+        "Computed clearing aggregation in the sandbox helper",
+        code=code,
+        inputs={"rows": rows},
+        output=result.model_dump(mode="json"),
+        refs=[str(row["txn_id"]) for row in rows],
     )
     return result
 
@@ -174,30 +169,21 @@ def write_off_eligibility(
         threshold=threshold,
         checks=checks,
     )
-    emitter.emit(
-        EventDraft(
-            actor=Actor(kind=ActorKind.SANDBOX, name="write_off_eligibility"),
-            type="computation",
-            summary=f"Computed write-off eligibility for {txn_id}",
-            payload={
-                "helper": "write_off_eligibility",
-                "code": "eligible = all(SOP_DSP_002_v4_checks)",
-                "inputs": {
-                    "txn_id": txn_id,
-                    "amount": str(amount),
-                    "threshold": str(threshold),
-                    "prior_dispute_count": prior_dispute_count,
-                    "delinquency_days": delinquency_days,
-                    "merchant_cluster_open": merchant_cluster_open,
-                },
-                "stdout": "",
-                "stderr": "",
-                "output": result.model_dump(mode="json"),
-                "runtime_ms": 0,
-                "status": "success",
-            },
-            refs=[txn_id, "LFB-SOP-DSP-002@v4"],
-        )
+    _record_computation(
+        emitter,
+        "write_off_eligibility",
+        f"Computed write-off eligibility for {txn_id}",
+        code="eligible = all(SOP_DSP_002_v4_checks)",
+        inputs={
+            "txn_id": txn_id,
+            "amount": str(amount),
+            "threshold": str(threshold),
+            "prior_dispute_count": prior_dispute_count,
+            "delinquency_days": delinquency_days,
+            "merchant_cluster_open": merchant_cluster_open,
+        },
+        output=result.model_dump(mode="json"),
+        refs=[txn_id, "LFB-SOP-DSP-002@v4"],
     )
     return result
 
@@ -224,31 +210,22 @@ def unused_portion(
         unused_portion=value,
         used_portion=amount - value,
     )
-    emitter.emit(
-        EventDraft(
-            actor=Actor(kind=ActorKind.SANDBOX, name="unused_portion"),
-            type="computation",
-            summary="Computed the validity-bounded unused subscription portion",
-            payload={
-                "helper": "unused_portion",
-                "code": (
-                    "days=(end-start)+1; used=(used_through-start)+1; "
-                    "unused=amount*(days-used)/days; round_half_up(0.01); used=amount-unused"
-                ),
-                "inputs": {
-                    "amount": str(amount),
-                    "service_start": service_start.isoformat(),
-                    "service_end": service_end.isoformat(),
-                    "used_through": used_through.isoformat(),
-                },
-                "stdout": "",
-                "stderr": "",
-                "output": result.model_dump(mode="json"),
-                "runtime_ms": 0,
-                "status": "success",
-            },
-            refs=["VISA-13.5@2026-04-18"],
-        )
+    _record_computation(
+        emitter,
+        "unused_portion",
+        "Computed the validity-bounded unused subscription portion",
+        code=(
+            "days=(end-start)+1; used=(used_through-start)+1; "
+            "unused=amount*(days-used)/days; round_half_up(0.01); used=amount-unused"
+        ),
+        inputs={
+            "amount": str(amount),
+            "service_start": service_start.isoformat(),
+            "service_end": service_end.isoformat(),
+            "used_through": used_through.isoformat(),
+        },
+        output=result.model_dump(mode="json"),
+        refs=["VISA-13.5@2026-04-18"],
     )
     return result
 
@@ -331,12 +308,9 @@ def case_clocks(
             notice, int(account["statement_cycle_day"])
         )
     else:
-        first_deposit = account.get("first_deposit_date")
-        new_account = bool(first_deposit) and any(
-            0
-            <= (date.fromisoformat(row["processing_date"]) - date.fromisoformat(first_deposit)).days
-            <= 30
-            for row in transactions
+        new_account = is_new_account(
+            account.get("first_deposit_date"),
+            (date.fromisoformat(row["processing_date"]) for row in transactions),
         )
         if not case.get("provisional_credit_at"):
             deadlines["reg_e_provisional_credit_deadline"] = add_business_days(
@@ -753,15 +727,9 @@ def portfolio_case_clocks(
             )
         )
     else:
-        first_deposit = case.get("first_deposit_date")
-        new_account = bool(first_deposit) and any(
-            0
-            <= (
-                date.fromisoformat(row["txn_local_datetime"][:10])
-                - date.fromisoformat(first_deposit)
-            ).days
-            <= 30
-            for row in transactions
+        new_account = is_new_account(
+            case.get("first_deposit_date"),
+            (date.fromisoformat(row["txn_local_datetime"][:10]) for row in transactions),
         )
         if not case.get("provisional_credit_at"):
             clocks.append(

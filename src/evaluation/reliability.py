@@ -10,6 +10,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from domain.events import EventEnvelope
+from runtime.portfolio import QUEUE_SCENARIO_ID
 
 
 class RunObservation(BaseModel):
@@ -67,7 +68,7 @@ def observe_run(
     for event in events:
         counts[event.type] += 1
     decision_events = [event for event in events if event.type == "decision_recorded"]
-    if case_id == "Q01":
+    if case_id == QUEUE_SCENARIO_ID:
         replay_reconciled = counts["portfolio_ranked"] == 1
     else:
         replay_reconciled = (

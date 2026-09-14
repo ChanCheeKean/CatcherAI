@@ -20,7 +20,7 @@ from evaluation.reliability import (
 from memory.curator import curate_offline
 from replay import load_events, render_timeline, verify_hash_chain
 from runtime.langgraph_runtime import RunSuspended
-from runtime.portfolio import rank_portfolio
+from runtime.portfolio import QUEUE_SCENARIO_ID, rank_portfolio
 
 app = typer.Typer(no_args_is_help=True, help="Run and replay card-dispute investigations.")
 
@@ -125,7 +125,7 @@ def evaluate_cases(
                 name = case_id if runs == 1 else f"{case_id}-run-{run_index}"
                 db_path = isolated_workspace(root, directory, name)
                 runtime = build_runtime(root, adapter=_adapter(adapter), sqlite_path=db_path)  # type: ignore[arg-type]
-                if case_id == "Q01":
+                if case_id == QUEUE_SCENARIO_ID:
                     run_id, ranking = await rank_portfolio(runtime)
                     emitter = runtime.emitter(run_id)
                     events = emitter.events()

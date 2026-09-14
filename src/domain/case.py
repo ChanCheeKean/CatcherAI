@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -27,20 +26,6 @@ class RouteDecision(BaseModel):
     agents: list[str]
     skills: list[str]
     rationale: str
-
-
-class Fact(BaseModel):
-    fact_id: str
-    statement: str
-    source_refs: list[str]
-
-
-class CaseFile(BaseModel):
-    facts: list[Fact] = Field(default_factory=list)
-    hypotheses: list[dict[str, Any]] = Field(default_factory=list)
-    open_questions: list[str] = Field(default_factory=list)
-    deadlines: dict[str, str] = Field(default_factory=dict)
-    evidence_matrix: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class NetworkAction(BaseModel):
@@ -102,19 +87,3 @@ class DecisionRecord(BaseModel):
     fallback: dict[str, str] = Field(default_factory=dict)
     confidence: float
     explanation_for_cardholder: str
-
-
-class RunState(BaseModel):
-    run_id: str
-    case_id: str
-    scenario_id: str
-    virtual_now: datetime
-    status: Literal["running", "suspended", "decided", "failed"] = "running"
-    raw_case: dict[str, Any] = Field(default_factory=dict)
-    transactions: list[dict[str, Any]] = Field(default_factory=list)
-    route: RouteDecision | None = None
-    case_file: CaseFile = Field(default_factory=CaseFile)
-    plan: list[str] = Field(default_factory=list)
-    artifacts: dict[str, Any] = Field(default_factory=dict)
-    decision: DecisionRecord | None = None
-    termination_reason: str | None = None

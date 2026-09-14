@@ -58,7 +58,7 @@ def expired(notes: list[dict[str, Any]], as_of: date) -> list[dict[str, Any]]:
         for note in notes
         if note["scope"] in TTL_DAYS
         and date.fromisoformat(note["created_at"][:10]) + timedelta(days=TTL_DAYS[note["scope"]])
-        < as_of
+        <= as_of
     ]
 
 

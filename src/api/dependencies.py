@@ -6,7 +6,6 @@ from pathlib import Path
 
 from fastapi import Request
 
-from api.read_models import connect_readonly
 from api.run_manager import RunManager
 from config import (
     ModelsConfig,
@@ -16,6 +15,7 @@ from config import (
     load_routes_config,
     load_scenario,
 )
+from storage import connect_readonly
 
 
 def get_root(request: Request) -> Path:

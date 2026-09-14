@@ -104,7 +104,6 @@ class HealthResponse(BaseModel):
     status: Literal["ok", "degraded"]
     scenario_db: bool
     scenario_db_path: str
-    graph_available: bool
 
 
 class MetaResponse(BaseModel):
@@ -129,7 +128,6 @@ class AgentSummary(BaseModel):
     id: str
     version: int
     description: str
-    model_role: str
     tools: list[str]
     skills: list[str]
 

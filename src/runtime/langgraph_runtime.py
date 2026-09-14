@@ -462,7 +462,6 @@ class LangGraphRuntime:
             concurrency=self.models.concurrency.per_run,
         )
         return RunContext(
-            root=self.root,
             db_path=self.scenario.sqlite_path,
             emitter=emitter,
             clock=clock,
@@ -1004,6 +1003,7 @@ class LangGraphRuntime:
                 default=str,
             )
             triggers = state.get("panel_triggers", [])
+            fairness_violations = governance.fairness_violations(decision)
             checks = [
                 (
                     "separate_cardholder_network_outcomes",
@@ -1021,9 +1021,9 @@ class LangGraphRuntime:
                 ),
                 (
                     "fairness_prohibited_basis",
-                    not governance.fairness_violations(decision),
+                    not fairness_violations,
                     {
-                        "violations": governance.fairness_violations(decision),
+                        "violations": fairness_violations,
                         "policy": governance.FAIRNESS_SOP,
                     },
                 ),
@@ -1648,6 +1648,7 @@ async def _review_panel(
     )
     decided = governance.panel_adjudication(proposal, positions, ruling)
     aligned = (ruling["favors"] == "cardholder") == governance.favors_cardholder(proposal)
+    fairness_violations = governance.fairness_violations(decided)
     checks = [
         (
             "panel_independence",
@@ -1678,8 +1679,8 @@ async def _review_panel(
         ),
         (
             "sop_004_fairness",
-            not governance.fairness_violations(decided),
-            {"violations": governance.fairness_violations(decided)},
+            not fairness_violations,
+            {"violations": fairness_violations},
         ),
     ]
     for name, passed, details in checks:

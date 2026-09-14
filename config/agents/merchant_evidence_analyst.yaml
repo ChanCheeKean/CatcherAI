@@ -1,7 +1,6 @@
 id: merchant_evidence_analyst
 version: 1
 description: Validates merchant evidence fields, contradictions and Visa formatting requirements.
-model_role: default
 tools: [read_evidence_packet, retrieve_knowledge]
 skills: [fraud-cnp]
 max_iterations: 5

@@ -3,7 +3,8 @@
 Last updated: 2026-09-14  
 Repository: `/Users/kean/Dev/CatcherAI`  
 Branch / starting commit: `main` / `d993fe3`  
-Current phase: Stage 2 (execution manager + live SSE stream) COMPLETE; no frontend yet  
+Current phase: Stage 2 (execution manager + live SSE stream) COMPLETE, plus a post-Stage-2 cleanup
+pass (dead code, duplication, efficiency, one TTL bug); no frontend yet  
 Next stage: Stage 3 — frontend shell and Mission Control
 
 ## Current objective
@@ -182,7 +183,7 @@ Endpoints (all under `/api/v1`, all read-only, all returning the one error envel
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/health` | store reachability, `scenario_db_path`, `graph_available` (ladybug importable) |
+| GET | `/health` | store reachability, `scenario_db_path` |
 | GET | `/meta` | adapter availability (never the key value), model, virtual clock, feature flags |
 | GET | `/meta/routes` | `config/routes.yaml`, sorted by priority |
 | GET | `/meta/agents` | `config/agents/*.yaml` |
@@ -236,8 +237,11 @@ Known limitations carried into Stage 2 (honest, not blocking):
 - `/cases` cannot filter or sort by deadline, because deadlines are deliberately not stored in the
   dataset (computed only during a run's `compute_clocks` node). This is unchanged from the
   original design decision documented in the data dictionary, not a new gap.
-- `/health`'s `graph_available` reports whether the `ladybug` package is importable, not whether a
-  specific store's graph file loaded successfully; the runtime always has a NetworkX fallback.
+- `/health` originally also reported `graph_available` (whether the `ladybug` package was
+  importable). Removed in the post-Stage-2 cleanup pass below: it measured the wrong library (the
+  real optional graph backend is `ladybug`, but the field always read `False` in this environment
+  in a way disconnected from whether the NetworkX fallback — which always works — was in use), so
+  it was misleading rather than informative. See that pass's entry in the stage history.
 
 ### Stage 2 — Execution manager and live stream: COMPLETE
 
@@ -362,17 +366,34 @@ Material backend entry points:
 | Replay/hash verification | `src/replay.py` |
 | Decision and field provenance | `src/decisions.py` |
 | Runtime construction and isolated stores | `src/bootstrap.py` |
+| Shared sqlite connection helper (core + API) | `src/storage.py` |
 | Operational reads | `src/data/access.py` |
 | Memory | `src/memory/notes.py`, `src/memory/retrieval.py` |
 | Entity graph | `src/memory/graph.py` |
 | Existing lifecycle commands | `src/cli.py` |
-| Event schema | `src/domain/events.py`, `schemas/trajectory-event.schema.json` |
+| Event schema + shared row/hash-chain helpers | `src/domain/events.py`, `schemas/trajectory-event.schema.json` |
 | API read-only foundation (Stage 1) | `src/api/app.py`, `src/api/dependencies.py`, `src/api/models.py`, `src/api/read_models.py`, `src/api/routers/{meta,cases}.py` |
 | API execution manager + SSE (Stage 2) | `src/api/run_manager.py`, `src/api/sse.py`, `src/api/routers/{runs,queue}.py` |
 
 ## Last verified baseline
 
-Verified at the end of Stage 2 (this stage):
+Verified after the post-Stage-2 cleanup pass (see stage history below; this is the current
+baseline — the Stage 2 baseline paragraph immediately below is kept for history):
+
+- `uv run pytest` — **94 passed, 1 skipped** (unchanged count; the cleanup pass touched behavior,
+  not test coverage), ruff check and format both clean (100 files formatted).
+- Full fake evaluation (`catcher eval` over all 20 hero cases + Q01, `--adapter fake`) — **21/21**
+  passed. `data/generator/validate.py` — **401/401**.
+- One live end-to-end run on the real OpenAI adapter (`DSP-2026-90002`, `gpt-5.6-luna`, Responses
+  API) against an isolated store copy: reached `decided` with a valid hash chain (396 events,
+  `catcher replay --db ... hash_chain_valid=True`); pristine `catcher.sqlite` confirmed
+  byte-identical (sha256) before and after.
+- Live `uvicorn` smoke test of the full run lifecycle (`POST /runs` → `GET /runs/{id}` →
+  `GET /runs` → `POST /runs/{id}/rerun`) against the API, including the rewritten `_runs_for_cases`
+  read model and `RunManager`'s config-reuse/finished-run-sweep changes; pristine store confirmed
+  unmodified afterward.
+
+Verified at the end of Stage 2 (prior baseline, kept for history):
 
 - `uv run pytest` — **94 passed, 1 skipped** (was 86/1), 1 deprecation warning from
   `starlette.testclient` (an upstream `anyio` alias notice, not our code). The 8 new tests live in
@@ -386,13 +407,11 @@ Verified at the end of Stage 2 (this stage):
   every API-started run in both the automated tests and the manual live-server session, including
   a run that fails immediately on an unknown case ID.
 
-Not re-verified this stage (unchanged since the prior baseline, still assumed good):
+Not re-verified since the post-Stage-2 cleanup pass (unchanged, still assumed good):
 
-- All 20 routes × 3 presentation perturbations, full fake evaluation (21/21), Q01 metrics,
-  `data/generator/validate.py` (401/401), the real-OpenAI smoke tests, and the built wheel. Rerun
-  these before a demo if the runtime/domain code changes; Stage 2 touched only `src/api/`,
-  `src/runtime/langgraph_runtime.py` (one additive `is_done` method), `src/runtime/portfolio.py`
-  (one additive optional parameter), and added `tests/test_api_stage2.py`.
+- All 20 routes × 3 presentation perturbations and the built wheel — the cleanup pass did not touch
+  playbook logic or packaging, only shared infrastructure exercised by the eval/live-run checks
+  above. Rerun before a demo if playbook or packaging code changes next.
 
 The `.env` contains the user's OpenAI key. Never print, copy, commit or send its value to the browser.
 
@@ -524,3 +543,126 @@ Before reporting any stage complete:
 - Regenerated `schemas/openapi.json`. Added `data/generated/ui/` to `.gitignore` (per-run copied
   stores and the run registry; never committed).
 - Committed and pushed per the standing authorization below.
+
+### 2026-09-14 — Post-Stage-2 cleanup pass (`/simplify`, then targeted efficiency follow-ups)
+
+A code-quality pass over all of `src/`/`tests/` (four parallel reuse/dead-code/efficiency/altitude
+reviews, findings applied directly), followed by a second, more targeted pass at the user's request
+to also address the riskier efficiency items the first pass had deliberately skipped. Not a staged
+feature addition — no new endpoints, no new UI-visible behavior, no change to the six-stage plan.
+
+**API surface change (breaking for any Stage 3 frontend code, still unwritten):**
+
+- `GET /health` no longer returns `graph_available`. It checked whether the `ladybug` package was
+  importable, but the real optional graph backend is `ladybug` and the field was disconnected from
+  whether a store's graph actually loaded — always misleading, never a source of truth. The
+  endpoint table and known-limitations entry above are updated to match.
+- `GET /meta/agents` (`AgentSummary`) no longer returns `model_role`. It was always `"default"` in
+  every one of the 12 agent configs and never consumed anywhere to select a model — decorative.
+  `AgentConfig.model_role`, `ModelsConfig.role_overrides` (and the matching yaml keys) were removed
+  with it, since the mechanism they'd have keyed into was equally unused.
+- `schemas/openapi.json` regenerated to match.
+
+**Dead code removed:** `domain.case.RunState`/`CaseFile`/`Fact` (superseded by dict-based LangGraph
+state, never referenced), `ports.AgentRuntime` (unwired Protocol), `runtime.context.RunContext.root`
+and `note_by_id`, `api.errors.denied()`, `observability.emitter.EventEmitter.event_types()`,
+`memory.graph.NetworkXGraphMemory` alias (and the now-empty `memory/__init__.py` re-exports).
+
+**Reuse/duplication removed:** the `sqlite3.Row → EventEnvelope` mapping and hash-chain
+verification loop were each triplicated across `read_models.py`/`emitter.py`/`replay.py` — now
+`domain.events.event_from_row`/`verify_event_chain`, used by all three. `connect_readonly` was
+duplicated four times (`meta.py`, `harness/evidence.py`, `run_manager.py`, plus the original in
+`read_models.py`) — now one definition in a new `src/storage.py`, used by all of them plus
+`dependencies.py`/`sse.py`. `sandbox.py`'s four earlier helpers now call the `_record_computation`
+helper the later ones already used instead of hand-rolling the same event payload; a Reg E
+"new account" test that had drifted into three separately-maintained copies (`reg_e_deadlines`,
+`case_clocks`, `portfolio_case_clocks`, two of them with different field-name plumbing) is now one
+`is_new_account()` helper. `actions.py`'s duplicated before/after case-state SELECT factored into
+`ActionRepository._case_snapshot()`.
+
+**Bugs fixed:** `memory/curator.py`'s TTL expiry was off by one day at the boundary (`<` should be
+`<=`: a note created exactly `TTL_DAYS` before `as_of` should expire that day). `api/sse.py` had a
+narrow TOCTOU race — a run whose final event(s) committed in the window between the events query
+and the `is_task_done()` check could have its stream close without ever sending them; fixed with
+one more poll immediately after observing `done`.
+
+**Efficiency (first pass, low-risk):** `api/sse.py` now holds one sqlite connection for the whole
+stream instead of reconnecting every ~150ms poll (verified single-threaded: this generator is only
+ever driven from its own asyncio task on the process's one event-loop thread — see the second-pass
+note below for why that same argument was extended further). `api/run_manager.py` gained a lazy,
+unbounded-safe `run_id → registry row` cache (rows are immutable once written) and sweeps its
+in-memory `LangGraphRuntime`/queue-task objects for finished runs on every new run start (memory
+growth was unbounded in a long-lived API process before this). `api/workflow_graph.py`'s
+already-computed-but-discarded loop-back-edge flag now actually emits `kind="resume"`.
+`runtime/langgraph_runtime.py`'s `governance.fairness_violations(...)` was called twice per check
+in two places; now once. The CLI's/`evaluation/reliability.py`'s duplicated `case_id == "Q01"`
+literal is now one `runtime.portfolio.QUEUE_SCENARIO_ID` constant.
+
+**Efficiency (second pass, at the user's explicit follow-up request — the items the first pass had
+flagged as "requires a larger/riskier rewrite"):**
+
+- `data/access.CaseDataAccess` and `memory/graph.GraphMemory` now each hold one connection for
+  their lifetime instead of reconnecting per query/write. Verified safe by tracing the concurrency
+  model, not by analogy: both are constructed once per run/segment inside
+  `LangGraphRuntime._context()` and are only ever touched from that run's own `asyncio.create_task`
+  on the process's single event-loop thread (confirmed via `grep` — no `threading`/`to_thread`/
+  `run_in_executor`/`ThreadPoolExecutor` anywhere in `src/`). This is a different situation from the
+  Stage 2 cross-thread `sqlite3` bug documented above, which was FastAPI running a *sync* dependency
+  in a worker thread while the endpoint body ran on the event-loop thread — genuinely two threads.
+  `observability/emitter.py`'s per-call connections were deliberately **left alone**: `EventEmitter`
+  is the busiest, most heavily-shared object in the system and a mistake there would be much
+  costlier to find than in these two narrower, per-run objects.
+- `bootstrap.py` split `build_runtime`/`isolated_workspace` into config-accepting variants
+  (`build_runtime_from_config`, `copy_scenario_store`) alongside the original disk-loading
+  functions (still used by the CLI/tests). `api/run_manager.py` now passes its already-loaded
+  `ModelsConfig`/`RoutesConfig`/`ScenarioConfig` (loaded once at app startup) into these instead of
+  re-parsing three YAML files on every `POST /runs`/`POST /queue/runs`.
+- `api/read_models._runs_for_cases` rewritten from up to ~5 sqlite round trips *per run* (first
+  event, last event, status, wait payload, decision existence) to 4 queries total per call
+  (aggregate; endpoints via a row-value `IN`; latest status via one `ROW_NUMBER()` window query;
+  a decision-availability set), used by both `get_case_detail` and the cross-store `GET /runs`
+  listing. `derive_status` itself is untouched and still backs the single-run/SSE path.
+- **One real regression caught and fixed before it shipped**: the first version of the
+  finished-run sweep also evicted `RunManager._queue_rankings`, but `GET /queue/runs/{run_id}` has
+  no fallback to the persisted `portfolio_ranked` event — it only ever reads that in-memory dict.
+  That would have turned the documented "ranking is lost on API restart" limitation into "lost as
+  soon as any other run starts," a real behavior regression, not cleanup. Caught by re-reading the
+  route before shipping and confirmed with a live repro (start a queue run, fetch its ranking,
+  start an unrelated case run, fetch the ranking again — now still present). Fixed by sweeping only
+  `_runtimes`/`_queue_tasks` (the actually-heavy objects — each `LangGraphRuntime` holds a gateway,
+  agent configs and a chat-model wrapper) and leaving `_queue_rankings` alone, matching the
+  documented restart-only limitation exactly.
+- **`AgentConfig.max_iterations` deliberately left unwired.** It carries real per-agent tuning
+  values (2–5) across all 12 agent yaml files, so deleting it would lose authored intent — but
+  `deepagents`' `SubAgent` spec has no native per-subagent iteration cap (only LangGraph's
+  graph-level `recursion_limit`, and a `middleware` hook that would require writing and testing a
+  new iteration-counting `AgentMiddleware` from scratch). That is new engineering with real
+  correctness risk (silently truncating a subagent's reasoning under real-model variance, in a
+  system making financial decisions) — not a wiring fix a cleanup pass should make opportunistically.
+  Revisit as its own scoped task if this is wanted.
+- `_build_graph` rebuilding ~20 node closures and recompiling the `StateGraph` on every run
+  segment was investigated and **deliberately not touched**: the topology is static but every node
+  closure captures `ctx`/`emitter` by reference across ~700 lines, so separating static topology
+  from per-run binding would touch nearly all of `LangGraphRuntime`'s largest method. It only runs
+  once per run/resume-segment (not per event or per node), so the actual payoff is low relative to
+  the size and blast radius of the change. Worth its own planned, incrementally-verified task if the
+  frontend or a heavier concurrent-run load later makes this a real bottleneck — not opportunistic.
+
+Verification (both passes together, run before every commit in this entry):
+
+```bash
+uv run pytest                          # 94 passed, 1 skipped (unchanged)
+uv run ruff check src tests            # All checks passed!
+uv run ruff format --check src tests   # 100 files already formatted
+uv run catcher eval <20 hero cases> Q01 --adapter fake --runs 1   # 21/21 passed
+python3 data/generator/validate.py     # PASS 401 FAIL 0
+```
+
+Plus, specific to the changes made: one live end-to-end run on the real OpenAI adapter
+(`DSP-2026-90002`, isolated store copy, hash chain verified valid, pristine store sha256
+unchanged); a live `uvicorn` smoke test of the full run lifecycle (start/status/list/rerun) with
+the pristine store confirmed unmodified; the queue-ranking-survives-a-later-run repro described
+above. `data/generated/eval/` output from the eval runs is gitignored, not committed.
+
+No design, API-contract-beyond-the-two-fields, or six-stage-plan changes. Stage 3 remains next and
+unaffected in scope.

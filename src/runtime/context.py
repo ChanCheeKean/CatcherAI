@@ -28,7 +28,6 @@ from tools.executor import ToolExecutor
 
 @dataclass
 class RunContext:
-    root: Path
     db_path: Path
     emitter: EventEmitter
     clock: VirtualClock
@@ -127,10 +126,6 @@ def source_ids(state: dict[str, Any]) -> list[str]:
     ids.extend(row["packet_id"] for row in state.get("evidence", []))
     ids.extend(row["doc_id"] for row in state.get("knowledge", []))
     return list(dict.fromkeys(ids))
-
-
-def note_by_id(state: dict[str, Any], note_id: str) -> dict[str, Any] | None:
-    return next((row for row in state.get("memory_notes", []) if row["note_id"] == note_id), None)
 
 
 def note_matching(

@@ -28,10 +28,6 @@ def not_found(code: str, message: str, **details: Any) -> ApiError:
     return ApiError(code, message, status_code=404, details=details)
 
 
-def denied(code: str, message: str, **details: Any) -> ApiError:
-    return ApiError(code, message, status_code=403, details=details)
-
-
 async def api_error_handler(_request: Request, exc: ApiError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,

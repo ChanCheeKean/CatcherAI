@@ -934,10 +934,6 @@
             "type": "string",
             "title": "Description"
           },
-          "model_role": {
-            "type": "string",
-            "title": "Model Role"
-          },
           "tools": {
             "items": {
               "type": "string"
@@ -958,7 +954,6 @@
           "id",
           "version",
           "description",
-          "model_role",
           "tools",
           "skills"
         ],
@@ -1542,18 +1537,13 @@
           "scenario_db_path": {
             "type": "string",
             "title": "Scenario Db Path"
-          },
-          "graph_available": {
-            "type": "boolean",
-            "title": "Graph Available"
           }
         },
         "type": "object",
         "required": [
           "status",
           "scenario_db",
-          "scenario_db_path",
-          "graph_available"
+          "scenario_db_path"
         ],
         "title": "HealthResponse"
       },

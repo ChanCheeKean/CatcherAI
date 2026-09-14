@@ -1,7 +1,6 @@
 id: lead_investigator
 version: 1
 description: Maintains a source-linked plan and chooses the next evidence worth pursuing.
-model_role: default
 tools: []
 skills: []
 max_iterations: 4

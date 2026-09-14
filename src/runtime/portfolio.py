@@ -21,6 +21,7 @@ from domain.events import ActorKind
 from runtime.langgraph_runtime import LangGraphRuntime, _edge, _emit, _instrument_node
 from sandbox import portfolio_case_clocks
 
+QUEUE_SCENARIO_ID = "Q01"
 TOP_N = 15
 REMEDY_WINDOW = re.compile(r"(?:within|in) the last (\d+) days", re.I)
 SCORING = "rank by (overdue clocks first, earliest next hard deadline, larger exposure)"
@@ -262,7 +263,7 @@ async def rank_portfolio(
         "runtime",
         "run_started",
         "Started the portfolio queue run",
-        {"scenario_id": runtime.scenario.id, "input_case_ids": ["Q01"]},
+        {"scenario_id": runtime.scenario.id, "input_case_ids": [QUEUE_SCENARIO_ID]},
     )
     _edge(emitter, "__start__", "load_open_cases", "run invoked", True)
     result = await builder.compile().ainvoke({})

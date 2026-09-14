@@ -79,8 +79,8 @@ def build_workflow_graph() -> WorkflowGraph:
         WorkflowNode(id=node_id, label=node_id, kind=kind) for node_id, kind in _NODE_KINDS.items()
     ]
     edges = [
-        WorkflowEdge(source=source, target=target, kind="fixed")
-        for source, target, _back_edge in _FIXED_EDGES
+        WorkflowEdge(source=source, target=target, kind="resume" if back_edge else "fixed")
+        for source, target, back_edge in _FIXED_EDGES
     ]
     edges.extend(
         WorkflowEdge(source=source, target=target, kind="conditional", label=label)
