@@ -374,10 +374,10 @@ Material backend entry points:
 
 ## Last verified baseline
 
-Verified after Stage 6 (see stage history below; this is the current baseline — earlier baselines
-are kept below for history):
+Verified after the post-Stage-6 missing-evidence hardening (see stage history below; this is the
+current baseline — earlier baselines are kept below for history):
 
-- Backend: `uv run pytest` — **98 passed, 1 skipped**; `uv run ruff check src tests` and
+- Backend: `uv run pytest` — **105 passed, 1 skipped**; `uv run ruff check src tests` and
   `uv run ruff format --check src tests` clean.
 - Frontend: `npx tsc -b` clean; Vitest — **10 passed**; oxlint 0 errors / 3 pre-existing warnings;
   production build clean. Route splitting reduced the main entry to 372 KB and moved React Flow
@@ -390,6 +390,9 @@ are kept below for history):
   `npx playwright install chromium`. The pristine scenario-store SHA-256 was unchanged by E2E.
 - Full fake evaluation over 20 hero cases plus Q01: **21/21 passed**. Dataset validation:
   **PASS 401 / FAIL 0**.
+- Seven packet-less background cases spanning CNP fraud, high-value CNP, recurring, duplicate and
+  non-receipt routes completed with `credited_conservative_default`, no `error` event and valid
+  event hash chains.
 
 Verified after the post-Stage-2 cleanup pass (prior baseline, kept for history):
 
@@ -669,6 +672,25 @@ Before reporting any stage complete:
   process-local active-run control/full queue ranking, polled recent-run status, desktop-first event
   inspector, coarse per-field provenance, scripted personas and no production security/deployment.
 - Committed and pushed per the standing stage-completion authorization.
+
+### 2026-09-15 — Post-Stage-6 missing-evidence runtime hardening
+
+- Diagnosed historical run `run-d9282f8ee93d49dab47514e3d38a43af` / case
+  `DSP-2026-00069`: the selected CNP route received no merchant packet, `gather_evidence` treated
+  the empty result as complete, and `cardholder_question` indexed the packet-derived finding. The
+  resulting `KeyError('packet')` was a runtime/playbook contract gap, not a frontend failure.
+- Made an absent required packet a shared runtime forced stop. The graph now emits
+  `evidence_unavailable`, prevents evidence-dependent steps and replans, records a failed source
+  availability verifier, creates a zero-confidence proposal, and applies the automated
+  cardholder-favorable conservative default through governance. It files no network dispute and
+  skips memory curation because absence is not an adverse or reusable fact.
+- Added parametrized regression coverage for seven packet-less background cases across multiple
+  routes. All decide as `insufficient_required_evidence` / `credited_conservative_default`, emit no
+  error or persona message, and retain valid event hash chains.
+- Verification: backend **105 passed, 1 skipped**; ruff check/format clean; all 20 hero cases plus
+  Q01 **21/21 passed** with the fake adapter; dataset validation **PASS 401 / FAIL 0**.
+- Historical event logs remain immutable, so the old run URL still correctly shows its recorded
+  failure. A rerun on the fixed runtime produces a new successful run.
 
 ### 2026-09-14 — Post-Stage-2 cleanup pass (`/simplify`, then targeted efficiency follow-ups)
 

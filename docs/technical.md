@@ -1467,6 +1467,15 @@ If the packet is already available, the runtime reads it immediately with _read_
 created. Evidence JSON is untrusted data. The runtime emits untrusted_content_flagged and calls
 on_evidence if the playbook implements it.
 
+If a route includes `gather_evidence` but no current or scheduled packet exists, that absence is a
+runtime state rather than an empty value left for playbook code to interpret. The graph emits
+`evidence_unavailable`, records `required_evidence_unavailable`, skips later evidence-dependent
+steps and re-plans, and sends a zero-confidence `insufficient_required_evidence` proposal through
+the governance gate. The automated panel then applies the cardholder-favorable conservative
+default, takes no network dispute action, and records no reusable memory fact. This shared boundary
+prevents route hooks from indexing an empty packet list or reading findings that could only have
+been produced from a packet; absence remains an availability fact, never adverse evidence.
+
 ### 7.2 Cardholder clarification
 
 ask_cardholder calls the route question hook, sends the message through PersonaHarness, and waits

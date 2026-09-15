@@ -31,7 +31,13 @@ from actions import ActionRepository
 from config import ModelsConfig, RoutesConfig, ScenarioConfig, load_agent_configs
 from data.access import CaseDataAccess
 from decisions import DecisionRepository
-from domain.case import DecisionRecord, RouteDecision
+from domain.case import (
+    Adjudication,
+    CardholderResolution,
+    DecisionRecord,
+    NetworkAction,
+    RouteDecision,
+)
 from domain.events import Actor, ActorKind, EventDraft, EventEnvelope, RuntimeSnapshot
 from harness.clock import VirtualClock
 from harness.evidence import EvidenceSchedulerAccess
@@ -57,6 +63,7 @@ FORCED_STOPS = (
     "no_progress",
     "max_replans_reached",
     "value_of_information_stop",
+    "required_evidence_unavailable",
 )
 
 
@@ -927,8 +934,21 @@ class LangGraphRuntime:
             return {**_complete_step(state, "analyze_tracks"), "findings": findings}
 
         async def verify(state: WorkflowState) -> dict[str, Any]:
-            module = playbook(state)
-            checks = module.verify(ctx, state) if hasattr(module, "verify") else []
+            if state.get("forced_stop") == "required_evidence_unavailable":
+                checks = [
+                    {
+                        "check": "required_route_evidence_available",
+                        "pass": False,
+                        "details": {
+                            "available": False,
+                            "treatment": "absence_is_not_adverse_evidence",
+                        },
+                        "refs": [state["case_id"]],
+                    }
+                ]
+            else:
+                module = playbook(state)
+                checks = module.verify(ctx, state) if hasattr(module, "verify") else []
             for item in checks:
                 ctx.event(
                     ActorKind.AGENT,
@@ -950,7 +970,10 @@ class LangGraphRuntime:
             return {**update, "replan_count": state.get("replan_count", 0) + 1}
 
         async def propose_decision(state: WorkflowState) -> dict[str, Any]:
-            proposal = playbook(state).decide(ctx, state)
+            if state.get("forced_stop") == "required_evidence_unavailable":
+                proposal = _missing_evidence_proposal(state)
+            else:
+                proposal = playbook(state).decide(ctx, state)
             ctx.event(
                 ActorKind.AGENT,
                 "lead_investigator",
@@ -1059,6 +1082,13 @@ class LangGraphRuntime:
             return {"action_ids": ActionRepository(ctx.db_path, emitter).execute(decision)}
 
         async def memory_maintenance(state: WorkflowState) -> dict[str, Any]:
+            if state.get("forced_stop") == "required_evidence_unavailable":
+                ctx.notes.skip(
+                    candidate=state["case_id"],
+                    reason="No reusable fact can be written from missing required evidence",
+                    refs=[state["case_id"]],
+                )
+                return {}
             module = playbook(state)
             if hasattr(module, "curate"):
                 return module.curate(ctx, state) or {}
@@ -1181,7 +1211,11 @@ class LangGraphRuntime:
         def after_verify(state: WorkflowState) -> str:
             passed = state["verifier_passed"]
             remaining = state["route"]["budget"]["replans"] - state.get("replan_count", 0)
-            can_replan = hasattr(playbook(state), "replan") and remaining > 0
+            can_replan = (
+                state.get("forced_stop") != "required_evidence_unavailable"
+                and hasattr(playbook(state), "replan")
+                and remaining > 0
+            )
             if not passed and can_replan:
                 target = "replan"
             else:
@@ -1439,7 +1473,33 @@ def _read_evidence(ctx: RunContext, module: ModuleType, state: dict[str, Any]) -
         lambda: ctx.data.evidence_packets(state["case_id"]),
     )
     if not packets:
-        return {"evidence": []}
+        update: dict[str, Any] = {
+            "evidence": [],
+            "forced_stop": "required_evidence_unavailable",
+            "findings": {
+                **state.get("findings", {}),
+                "required_evidence_unavailable": True,
+            },
+            "governance_facts": {
+                **state.get("governance_facts", {}),
+                "required_evidence_unavailable": True,
+            },
+        }
+        ctx.event(
+            ActorKind.AGENT,
+            "lead_investigator",
+            "evidence_unavailable",
+            "Required route evidence was unavailable",
+            {
+                "case_id": state["case_id"],
+                "treatment": "absence_is_not_adverse_evidence",
+                "next_action": "stop_and_apply_governed_conservative_default",
+            },
+            refs=[state["case_id"]],
+        )
+        if hasattr(module, "on_missing_evidence"):
+            update.update(module.on_missing_evidence(ctx, {**state, **update}))
+        return update
     ids = [row["packet_id"] for row in packets]
     ctx.event(
         ActorKind.AGENT,
@@ -1506,10 +1566,78 @@ def _arithmetic_check(
     }
 
 
+def _missing_evidence_proposal(state: WorkflowState) -> DecisionRecord:
+    """Build a source-safe proposal when a route's required evidence is absent."""
+
+    case = state["case"]
+    amount = Decimal(str(case.get("dispute_amount") or "0"))
+    return DecisionRecord(
+        case_id=case["case_id"],
+        regime=case["regime"],
+        is_dispute=True,
+        claim_family="insufficient_required_evidence",
+        network_actions=[
+            NetworkAction(
+                txn_id=txn["txn_id"],
+                case_id=case["case_id"],
+                action="no_dispute",
+                amount=Decimal(str(txn["billing_amount"])),
+                reason="Required route evidence is unavailable; network eligibility is uncertain",
+            )
+            for txn in state["transactions"]
+        ],
+        cardholder_resolution=CardholderResolution(
+            outcome="credited_pending_governance",
+            credit_amount=amount,
+            reversal_amount=Decimal("0"),
+            liability_amount=Decimal("0"),
+        ),
+        adjudication=Adjudication(
+            review_panel_used=False,
+            confidence=0.0,
+            flip_fact=(
+                "Source-linked evidence sufficient to establish the route's eligibility facts."
+            ),
+        ),
+        confidence=0.0,
+        explanation_for_cardholder=(
+            "We could not obtain the evidence required to decide this claim against you. "
+            "The available information is being resolved in your favor."
+        ),
+    )
+
+
 async def _review_panel(
     ctx: RunContext, module: ModuleType, state: WorkflowState
 ) -> dict[str, Any]:
     proposal = DecisionRecord.model_validate(state["proposal"])
+    if state.get("forced_stop") == "required_evidence_unavailable":
+        amount = Decimal(str(state["case"].get("dispute_amount") or "0"))
+        decided = governance.apply_conservative_default(
+            proposal.model_copy(
+                update={
+                    "adjudication": proposal.adjudication.model_copy(
+                        update={"review_panel_used": True}
+                    )
+                }
+            ),
+            disputed_amount=amount,
+            reason="required route evidence unavailable",
+        )
+        ctx.event(
+            ActorKind.GRAPH_NODE,
+            "review_panel",
+            "conservative_default_applied",
+            "Required evidence was unavailable; applied the cardholder-favorable default",
+            {
+                "failed_checks": ["required_route_evidence_available"],
+                "triggers": state["panel_triggers"],
+                "credit_amount": str(amount),
+                "policy": governance.GOVERNING_SOP,
+            },
+            refs=[state["case_id"], governance.GOVERNING_SOP],
+        )
+        return decided.model_dump(mode="json")
     if not hasattr(module, "hypotheses"):
         amount = Decimal(str(state["case"].get("dispute_amount") or "0"))
         decided = governance.apply_conservative_default(
