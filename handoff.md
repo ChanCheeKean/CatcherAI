@@ -1,7 +1,7 @@
 # Dispute Observatory implementation handoff
 
 Last updated: 2026-09-15  
-Repository: `/Users/kean/Dev/Dispute Observatory`  
+Repository: current checkout
 Branch / starting commit: `main` / `63e521b`  
 Current phase: Stage 6 (integrated launcher and final verification) COMPLETE
 Next stage: None — Dispute Observatory initiative complete
@@ -691,6 +691,21 @@ Before reporting any stage complete:
   Q01 **21/21 passed** with the fake adapter; dataset validation **PASS 401 / FAIL 0**.
 - Historical event logs remain immutable, so the old run URL still correctly shows its recorded
   failure. A rerun on the fixed runtime produces a new successful run.
+
+### 2026-09-15 — CLI, database and internal-name cleanup
+
+- Replaced the arbitrary legacy CLI aliases with one command: `inspect`. All README, design,
+  technical and handoff command examples now use `uv run inspect`.
+- Renamed the default generated scenario store to `data/generated/disputes.sqlite` across the
+  loader, scenario configuration, runtime/API defaults and tests. The ignored local database was
+  moved to the new path so the current checkout remains immediately runnable.
+- Removed the legacy product token from tracked source and documentation, including model gateway
+  metadata, structured-output schema names and generated dataset metadata. The product name is now
+  consistently Dispute Observatory; the Python distribution remains the descriptive
+  `card-dispute-agent`.
+- Verification: `uv sync --extra dev --extra graph --extra api` installed `inspect` and removed the
+  two previous console scripts; `uv run inspect --help` passed; backend **105 passed, 1 skipped**;
+  ruff check/format clean; `git grep -i` confirmed no tracked legacy-name occurrences.
 
 ### 2026-09-14 — Post-Stage-2 cleanup pass (`/simplify`, then targeted efficiency follow-ups)
 

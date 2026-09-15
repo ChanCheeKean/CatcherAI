@@ -217,7 +217,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# CatcherAI generated artifacts
+# Dispute Observatory generated artifacts
 data/generated/*.sqlite
 data/generated/*.lbug
 data/generated/*.lbug.wal
