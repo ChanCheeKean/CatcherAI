@@ -430,7 +430,7 @@ Delivered:
 
 - `src/api/run_manager.py`: `RunManager` — one copied store + `LangGraphRuntime` per UI-started
   run under `data/generated/ui/` (`bootstrap.isolated_workspace`/`build_runtime`, unchanged from
-  Stage 1's `catcher run --db` isolation), and a tiny durable SQLite registry
+  Stage 1's `inspect run --db` isolation), and a tiny durable SQLite registry
   (`data/generated/ui/registry.sqlite`, table `runs(run_id, case_id, kind, store_path, adapter,
   auto_resume, created_at)`) mapping `run_id -> store path` so run history and store routing
   survive an API process restart. Live `LangGraphRuntime`/task objects (needed to `cancel()` or to
@@ -496,7 +496,7 @@ Known limitations carried forward (honest, not blocking):
   this stage's tests needed to prove separately.
 - There is still no resume-from-suspension endpoint (`POST /runs/{run_id}/resume` was never in this
   design's Stage 2 endpoint table); a genuinely suspended (`auto_resume=false`) run stays suspended
-  until resumed some other way (CLI `catcher resume`).
+  until resumed some other way (CLI `inspect resume`).
 
 ### Stage 3 — Frontend shell and Mission Control: COMPLETE (2026-09-14)
 

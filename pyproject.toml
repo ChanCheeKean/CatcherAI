@@ -33,8 +33,7 @@ dev = [
 ]
 
 [project.scripts]
-catcher = "cli:app"
-dispute-agent = "cli:app"
+inspect = "cli:app"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,7 +1,7 @@
 # Dispute Observatory implementation handoff
 
 Last updated: 2026-09-15  
-Repository: `/Users/kean/Dev/CatcherAI`  
+Repository: `/Users/kean/Dev/Dispute Observatory`  
 Branch / starting commit: `main` / `63e521b`  
 Current phase: Stage 6 (integrated launcher and final verification) COMPLETE
 Next stage: None — Dispute Observatory initiative complete
@@ -124,7 +124,7 @@ Full endpoint tables and response behavior are in `docs/design/07-observability-
 - Never expose `data/generated/ground_truth/**` or `data/generated/simulation/**` through the API.
 - Never expose arbitrary SQL, arbitrary paths, secrets or unredacted blob content.
 - UI-started runs default to fake and always use copied stores under `data/generated/ui/`; they must
-  not mutate `data/generated/catcher.sqlite`.
+  not mutate `data/generated/disputes.sqlite`.
 - Domain policy, routing, governance, actions and memory-write decisions stay outside `src/api/` and
   `frontend/`.
 - Keep Python flat under `src/`; do not recreate a product-named package wrapper.
@@ -164,7 +164,7 @@ Delivered exactly the planned scope, nothing more:
   for those two, per the design's "never expose sqlite rows ad hoc" rule.
 - `src/api/read_models.py` — all SQL. Every query opens `sqlite3.connect(..., mode=ro)`; queries
   are plain, parameterized, and never touch `ground_truth/**` or `simulation/**` (those tables
-  aren't even loaded into `catcher.sqlite` — see `data/generator/load_sqlite.py`). Run status is
+  aren't even loaded into `disputes.sqlite` — see `data/generator/load_sqlite.py`). Run status is
   *derived*, not stored: see the note below.
 - `src/api/workflow_graph.py` — a small hand-maintained static description of the LangGraph node/
   edge wiring in `runtime.langgraph_runtime.LangGraphRuntime._build_graph`, for `/meta/workflow`.
@@ -174,7 +174,7 @@ Delivered exactly the planned scope, nothing more:
 - `schemas/openapi.json` — generated OpenAPI document (regenerate command in `README.md`).
 - `tests/test_api.py` — 8 new tests using the existing `project_root`/`scenario_db`/`runtime`/
   `make_runtime` fixtures from `tests/conftest.py`, so every API test runs against a
-  `tmp_path`-copied store, never the pristine `data/generated/catcher.sqlite`.
+  `tmp_path`-copied store, never the pristine `data/generated/disputes.sqlite`.
 
 Endpoints (all under `/api/v1`, all read-only, all returning the one error envelope on failure):
 
@@ -195,7 +195,7 @@ Endpoints (all under `/api/v1`, all read-only, all returning the one error envel
 | GET | `/runs/{run_id}/decision` | full `DecisionRecord` JSON + field-level `event_seqs`/`source_ids` provenance |
 
 Deliberate Stage-1-only decision, to be revisited in Stage 2: `create_app` takes one `db_path` for
-the whole process (defaulting to `data/generated/catcher.sqlite`), not a run registry mapping many
+the whole process (defaulting to `data/generated/disputes.sqlite`), not a run registry mapping many
 run IDs to many isolated stores. That is enough to satisfy the Stage 1 acceptance gate ("inspect a
 historical run") because nothing writes new runs through the API yet; Stage 2's `RunManager`
 supersedes this with the planned `run_id -> isolated db path` registry so the UI can hold many
@@ -223,7 +223,7 @@ uv run uvicorn api.app:app --app-dir src --reload      # http://127.0.0.1:8000/a
 run, via a temporary `uvicorn` process — not a committed script): `GET /api/v1/health`,
 `GET /api/v1/cases?limit=2`, `GET /api/v1/runs/{run_id}`, `GET /api/v1/runs/{run_id}/events?limit=3`
 and `GET /api/v1/runs/{run_id}/decision` all returned correct, well-formed JSON; the pristine
-`data/generated/catcher.sqlite` was confirmed unmodified afterward (`git status` clean on it, and
+`data/generated/disputes.sqlite` was confirmed unmodified afterward (`git status` clean on it, and
 it still has no `run_events`/`decision_records` tables).
 
 Known limitations carried into Stage 2 (honest, not blocking):
@@ -290,7 +290,7 @@ Live `curl`/manual acceptance against a temporary `uvicorn` process (not a commi
 started a case run (`202` immediately), streamed it via `curl -N .../events/stream` from seq 1
 to `termination`, started and cancelled a second run, reran the first, started and drained a Q01
 queue run (95 open cases ranked, rank 1 shown), listed `GET /runs` merged across stores, and
-confirmed via `git status`/sha256 that `data/generated/catcher.sqlite` was byte-identical before
+confirmed via `git status`/sha256 that `data/generated/disputes.sqlite` was byte-identical before
 and after every one of those API calls.
 
 Known limitations carried into Stage 3 (honest, not blocking):
@@ -307,7 +307,7 @@ Known limitations carried into Stage 3 (honest, not blocking):
   only, hash-chained SQLite) rather than something this stage's tests needed to prove separately.
 - There is still no `POST /runs/{run_id}/resume` endpoint (it was never in the design's Stage 2
   table); a genuinely suspended (`auto_resume=false`) run stays suspended until resumed some other
-  way (CLI `catcher resume`).
+  way (CLI `inspect resume`).
 - Memory, graph and source read models/routers do not exist yet — planned for Stage 4.
 
 ### Stage 3 — Frontend shell and Mission Control: COMPLETE
@@ -398,11 +398,11 @@ Verified after the post-Stage-2 cleanup pass (prior baseline, kept for history):
 
 - `uv run pytest` — **94 passed, 1 skipped** (unchanged count; the cleanup pass touched behavior,
   not test coverage), ruff check and format both clean (100 files formatted).
-- Full fake evaluation (`catcher eval` over all 20 hero cases + Q01, `--adapter fake`) — **21/21**
+- Full fake evaluation (`inspect eval` over all 20 hero cases + Q01, `--adapter fake`) — **21/21**
   passed. `data/generator/validate.py` — **401/401**.
 - One live end-to-end run on the real OpenAI adapter (`DSP-2026-90002`, `gpt-5.6-luna`, Responses
   API) against an isolated store copy: reached `decided` with a valid hash chain (396 events,
-  `catcher replay --db ... hash_chain_valid=True`); pristine `catcher.sqlite` confirmed
+  `inspect replay --db ... hash_chain_valid=True`); pristine `disputes.sqlite` confirmed
   byte-identical (sha256) before and after.
 - Live `uvicorn` smoke test of the full run lifecycle (`POST /runs` → `GET /runs/{id}` →
   `GET /runs` → `POST /runs/{id}/rerun`) against the API, including the rewritten `_runs_for_cases`
@@ -419,7 +419,7 @@ Verified at the end of Stage 2 (prior baseline, kept for history):
   99 files already formatted.
 - Live `curl`/manual acceptance against a temporary `uvicorn` process, described above under
   Stage 2.
-- Pristine `data/generated/catcher.sqlite` confirmed unmodified (sha256 identical before/after) by
+- Pristine `data/generated/disputes.sqlite` confirmed unmodified (sha256 identical before/after) by
   every API-started run in both the automated tests and the manual live-server session, including
   a run that fails immediately on an unknown case ID.
 
@@ -521,7 +521,7 @@ Before reporting any stage complete:
   commits after `terminate`'s `termination`/`run_completed` events. Fixed by deriving status from
   the latest `error`/`termination` event specifically; documented in both this file and the code.
 - Verified end-to-end with a live `uvicorn` process and `curl`, and confirmed the pristine
-  `data/generated/catcher.sqlite` was left unmodified.
+  `data/generated/disputes.sqlite` was left unmodified.
 - Final baseline: 86 passed / 1 skipped tests (was 78/1), ruff check and format both clean.
 - Updated `README.md` (new "Dispute Observatory API" section) and
   `docs/design/07-observability-console.md` (Stage 1 marked complete with what was actually built).
@@ -553,7 +553,7 @@ Before reporting any stage complete:
   cancel-idempotency + rerun, rerun-rejection for an unmanaged run, a full Q01 queue run, an
   immediate-failure run that never touches the pristine store, and cross-store `GET /runs` merging.
 - Verified end-to-end with a live `uvicorn` process: start/stream/cancel/rerun/queue all worked via
-  `curl`, and `data/generated/catcher.sqlite`'s sha256 was identical before and after.
+  `curl`, and `data/generated/disputes.sqlite`'s sha256 was identical before and after.
 - Final baseline: 94 passed / 1 skipped tests (was 86/1), ruff check and format both clean.
 - Updated `README.md` ("Dispute Observatory API" section rewritten with an execution-endpoint
   table) and `docs/design/07-observability-console.md` (Stage 2 marked complete with what was
@@ -626,7 +626,7 @@ Before reporting any stage complete:
   Final verification: `uv run pytest` **98 passed, 1 skipped**; ruff check/format clean; frontend
   `npx tsc -b` clean, Vitest **9 passed**, oxlint 0 errors / 3 pre-existing warnings, production
   build clean with no >500 KB warning (372 KB entry, 178 KB shared React Flow chunk, 25 KB run,
-  5 KB evaluation and 3 KB graph feature chunks). `catcher eval` over all 20 hero cases plus Q01
+  5 KB evaluation and 3 KB graph feature chunks). `inspect eval` over all 20 hero cases plus Q01
   passed **21/21** with the fake adapter; `data/generator/validate.py` passed **401/401** checks.
 - One verification command mistakenly invoked `npx tsc -b` from the repository root; `npx` fetched
   the unrelated deprecated `tsc@2.0.4` runner and exited 1 before compiling anything. No repository
@@ -802,7 +802,7 @@ Verification (both passes together, run before every commit in this entry):
 uv run pytest                          # 94 passed, 1 skipped (unchanged)
 uv run ruff check src tests            # All checks passed!
 uv run ruff format --check src tests   # 100 files already formatted
-uv run catcher eval <20 hero cases> Q01 --adapter fake --runs 1   # 21/21 passed
+uv run inspect eval <20 hero cases> Q01 --adapter fake --runs 1   # 21/21 passed
 python3 data/generator/validate.py     # PASS 401 FAIL 0
 ```
 

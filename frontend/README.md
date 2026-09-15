@@ -1,6 +1,6 @@
 # Dispute Observatory frontend
 
-React + TypeScript + Vite console for the CatcherAI dispute agent. See the repository root
+React + TypeScript + Vite console for the Dispute Observatory dispute agent. See the repository root
 [`README.md`](../README.md#dispute-observatory-frontend) for how
 to run this alongside the backend API, and
 [`docs/design/07-observability-console.md`](../docs/design/07-observability-console.md) for the

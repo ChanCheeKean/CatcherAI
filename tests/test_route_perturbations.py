@@ -35,7 +35,7 @@ CASES = [
 async def test_route_semantics_survive_three_unseen_presentation_variants(
     project_root: Path, tmp_path: Path, case_id: str
 ) -> None:
-    source = project_root / "data/generated/catcher.sqlite"
+    source = project_root / "data/generated/disputes.sqlite"
     baseline_db = tmp_path / f"{case_id}-baseline.sqlite"
     create_perturbed_store(source, baseline_db, seed=0)
     baseline = (await build_runtime(project_root, sqlite_path=baseline_db).run(case_id)).model_dump(

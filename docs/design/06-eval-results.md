@@ -1,4 +1,4 @@
-# CatcherAI evaluation results
+# Dispute Observatory evaluation results
 
 Last run: 2026-09-14  
 Scope: 20 hero cases, C12b, and Q01 (20 decision runs + one portfolio run)  
@@ -134,7 +134,7 @@ uv run pytest -q
 python3 data/generator/validate.py
 uv run ruff check src tests
 uv run ruff format --check src tests
-uv run catcher eval \
+uv run inspect eval \
   DSP-2026-90001 DSP-2026-90002 DSP-2026-90003 DSP-2026-90005 DSP-2026-90006 \
   DSP-2026-90007 DSP-2026-90008 DSP-2026-90009 DSP-2026-90010 DSP-2026-90011 \
   DSP-2026-90012 DSP-2026-90013 DSP-2026-90014 DSP-2026-90015 DSP-2026-90016 \
@@ -169,7 +169,7 @@ properties are represented as required nullable fields.
   untested.
 - Deep Agents delegations run inside parallel LangGraph branches for C05/C15/Q01. Correctness is
   deterministic, but production concurrency limits and provider rate behavior are not evaluated.
-- `catcher run` without `--db` mutates the shared scenario store. `catcher eval` is isolated and is the
+- `inspect run` without `--db` mutates the shared scenario store. `inspect eval` is isolated and is the
   repeatable evaluation path.
 - The evaluator checks required primary signals and structural reconciliation. A production audit
   should additionally reconstruct and compare every intermediate case-file, action and graph overlay,

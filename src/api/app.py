@@ -2,7 +2,7 @@
 
 Stage 2 adds a `RunManager`: isolated UI run workspaces, a durable run registry, start/cancel/
 rerun/queue endpoints, and a reconnectable SSE stream. It still never writes to the pristine
-`data/generated/catcher.sqlite` scenario store itself — only to per-run copies under
+`data/generated/disputes.sqlite` scenario store itself — only to per-run copies under
 `data/generated/ui/`.
 """
 
@@ -22,7 +22,7 @@ from api.run_manager import RunManager
 def create_app(root: Path, db_path: Path | None = None, ui_dir: Path | None = None) -> FastAPI:
     app = FastAPI(title="Dispute Observatory API", version="0.1.0")
     app.state.root = root
-    app.state.db_path = (db_path or root / "data/generated/catcher.sqlite").resolve()
+    app.state.db_path = (db_path or root / "data/generated/disputes.sqlite").resolve()
     models, routes, scenario = load_config_state(root)
     app.state.models = models
     app.state.routes = routes

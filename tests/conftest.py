@@ -18,9 +18,9 @@ def project_root() -> Path:
 
 @pytest.fixture
 def scenario_db(project_root: Path, tmp_path: Path) -> Path:
-    source_db = project_root / "data/generated/catcher.sqlite"
+    source_db = project_root / "data/generated/disputes.sqlite"
     assert source_db.exists(), "run: uv run python data/generator/load_sqlite.py"
-    db_path = tmp_path / "catcher.sqlite"
+    db_path = tmp_path / "disputes.sqlite"
     shutil.copy2(source_db, db_path)
     return db_path
 

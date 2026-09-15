@@ -1,4 +1,4 @@
-# CatcherAI agent architecture research
+# Dispute Observatory agent architecture research
 
 **Status:** Phase 1 recommendation  
 **Research date:** 13 September 2026  
@@ -6,7 +6,7 @@
 
 ## Executive conclusion
 
-CatcherAI should use a **hybrid deterministic workflow with a bounded agentic investigation core**:
+Dispute Observatory should use a **hybrid deterministic workflow with a bounded agentic investigation core**:
 
 1. A LangGraph state machine owns intake, routing, clocks, budgets, checkpoints, verifier gates, automated governance, execution, memory write gates, and termination.
 2. One Deep Agent is the lead investigator. It maintains a typed case file and chooses the next evidence-gathering action within the route's budget.
@@ -41,27 +41,27 @@ Claims below are labelled as one of:
 
 ### 1. Deterministic workflows and agents solve different parts of this problem
 
-Anthropic distinguishes workflows, whose paths are predefined in code, from agents, whose control flow is model-directed, and recommends starting with the simplest design that meets the need.[^anthropic-effective] OpenAI's agent guide similarly distinguishes a manager that calls specialists from decentralized handoffs.[^openai-agents-guide] CatcherAI needs both:
+Anthropic distinguishes workflows, whose paths are predefined in code, from agents, whose control flow is model-directed, and recommends starting with the simplest design that meets the need.[^anthropic-effective] OpenAI's agent guide similarly distinguishes a manager that calls specialists from decentralized handoffs.[^openai-agents-guide] Dispute Observatory needs both:
 
 - clocks, eligibility, governance, allowed actions, persistence, and termination must be predictable;
 - evidence pursuit, contradiction discovery, hypothesis revision, and value-of-information decisions benefit from adaptive reasoning.
 
 A single unconstrained agent cannot prove that every mandatory gate ran. A fully deterministic rules engine cannot handle C05, C06, C10–C13, or novel evidence. The appropriate boundary is therefore a deterministic graph around an agentic investigator.
 
-Magentic-One reinforces this split. Its orchestrator keeps both a task ledger and a progress ledger and replans when progress stalls.[^magentic] For CatcherAI, those ledgers should become typed case state—facts, hypotheses, open questions, deadlines, plan, budgets, and progress—not free-form orchestration chat.
+Magentic-One reinforces this split. Its orchestrator keeps both a task ledger and a progress ledger and replans when progress stalls.[^magentic] For Dispute Observatory, those ledgers should become typed case state—facts, hypotheses, open questions, deadlines, plan, budgets, and progress—not free-form orchestration chat.
 
 ### 2. More agents are useful only when decomposition is real
 
-Anthropic's multi-agent research system reports a large improvement on its breadth-first research evaluation, but about 15 times the tokens of ordinary chat. It identifies parallelizable, high-value, context-heavy research as a good fit and tightly coupled work as a poor fit.[^anthropic-research] Later Anthropic experiments also found that role-labelled hierarchies did not automatically improve long-horizon software work, and that identical agents can converge on correlated mistakes.[^anthropic-multiagent-study] MetaGPT's useful contribution is narrower than its software-company metaphor: SOP-shaped roles exchange standardized artifacts rather than unconstrained chat. CatcherAI borrows that contract discipline, not the domain-specific role hierarchy.[^metagpt]
+Anthropic's multi-agent research system reports a large improvement on its breadth-first research evaluation, but about 15 times the tokens of ordinary chat. It identifies parallelizable, high-value, context-heavy research as a good fit and tightly coupled work as a poor fit.[^anthropic-research] Later Anthropic experiments also found that role-labelled hierarchies did not automatically improve long-horizon software work, and that identical agents can converge on correlated mistakes.[^anthropic-multiagent-study] MetaGPT's useful contribution is narrower than its software-company metaphor: SOP-shaped roles exchange standardized artifacts rather than unconstrained chat. Dispute Observatory borrows that contract discipline, not the domain-specific role hierarchy.[^metagpt]
 
-The consequence for CatcherAI is selective concurrency:
+The consequence for Dispute Observatory is selective concurrency:
 
 - fan out independent folio lines, linked cases, portfolio cases, and opposing panel positions;
 - keep route selection, state ownership, evidence merge, policy gates, and final decision authority centralized;
 - require structured specialist returns with source IDs, not conversational consensus;
 - cap fan-out, tokens, tool calls, wall time, and re-plans by route.
 
-The current `open_deep_research` implementation is useful source-level pattern evidence: its supervisor dispatches bounded research units concurrently, each researcher loops through tools, and reducers merge notes before final synthesis.[^open-deep-research] CatcherAI should copy the bounded fan-out and reducer pattern, while replacing open-ended research state with case-specific typed artifacts. LangChain's supervisor package now recommends direct tool-based supervision for most new work, while swarm handoffs maintain an `active_agent` and move authority between peers.[^langgraph-supervisor][^langgraph-swarm] The latter is a poor match for a regulated case with one authoritative owner.
+The current `open_deep_research` implementation is useful source-level pattern evidence: its supervisor dispatches bounded research units concurrently, each researcher loops through tools, and reducers merge notes before final synthesis.[^open-deep-research] Dispute Observatory should copy the bounded fan-out and reducer pattern, while replacing open-ended research state with case-specific typed artifacts. LangChain's supervisor package now recommends direct tool-based supervision for most new work, while swarm handoffs maintain an `active_agent` and move authority between peers.[^langgraph-supervisor][^langgraph-swarm] The latter is a poor match for a regulated case with one authoritative owner.
 
 Deep Agents now offers three relevant modes. Synchronous `SubAgent`/`CompiledSubAgent` calls isolate context but block until completion. Async subagents run on separate threads and support status, update, and cancellation. Beta dynamic subagents use QuickJS interpreter middleware and an interpreter-level `task()` API to dispatch configured subagents through loops and parallel batches.[^deepagents-subagents][^deepagents-async][^deepagents-dynamic] “Dynamic” does not mean inventing arbitrary trusted roles at runtime: the dispatcher selects registered subagents, optionally with a dynamic response schema. Dynamic fan-out is promising for C05, C12, and Q01, but its beta surface and interpreter dependency make it unsuitable as the sole control plane. LangGraph `Send` fan-out is the more stable default; dynamic subagents can be evaluated behind a registry adapter.
 
@@ -69,9 +69,9 @@ Deep Agents now offers three relevant modes. Synchronous `SubAgent`/`CompiledSub
 
 LangGraph can stream state updates, messages, custom events, checkpoints, tasks, debug data, and nested subgraph namespaces.[^langgraph-streaming] Its newer typed v3 event surface exposes projections for messages, values, tool calls, usage, output, and subgraphs; Deep Agents adds per-delegation subagent streams with nested messages, tools, status, and output.[^langchain-event-streaming][^deepagents-event-streaming] These projections are valuable inputs to the instrumentation spine, but the raw protocol stream is still required when exact interleaving matters. Checkpointers support resume, history, and time travel.[^langgraph-persistence][^langgraph-time-travel] However, replaying from a checkpoint re-executes later model and external calls. A checkpoint is a state snapshot, not a deterministic record of why that state arose.
 
-Source inspection confirms the primitives needed for the graph: typed `StateGraph` reducers for concurrent branches, conditional edges, `Send` for map/fan-out, and `Command` for update/resume/goto.[^langgraph-source] LangGraph's `interrupt()` restarts the containing node from its beginning on resume. CatcherAI may use that mechanism only to implement an external-event suspension; any side effect before suspension must be idempotent or moved into a completed prior node. Framework human-interrupt middleware is not part of the product graph.
+Source inspection confirms the primitives needed for the graph: typed `StateGraph` reducers for concurrent branches, conditional edges, `Send` for map/fan-out, and `Command` for update/resume/goto.[^langgraph-source] LangGraph's `interrupt()` restarts the containing node from its beginning on resume. Dispute Observatory may use that mechanism only to implement an external-event suspension; any side effect before suspension must be idempotent or moved into a completed prior node. Framework human-interrupt middleware is not part of the product graph.
 
-LangSmith represents nested runs with trace, parent, ordering, inputs, outputs, errors, timing, and usage metadata, and Studio can visualize graph execution and state.[^langsmith-run][^langsmith-studio] It is excellent optional operational tooling, but cloud retention, masking configuration, and non-audit semantics mean CatcherAI cannot make it the system of record.
+LangSmith represents nested runs with trace, parent, ordering, inputs, outputs, errors, timing, and usage metadata, and Studio can visualize graph execution and state.[^langsmith-run][^langsmith-studio] It is excellent optional operational tooling, but cloud retention, masking configuration, and non-audit semantics mean Dispute Observatory cannot make it the system of record.
 
 The system therefore needs an unsampled application ledger that records normalized calls, results, state diffs, source references, decisions, and checkpoints. Recorded model outputs—not merely checkpointed state—provide deterministic re-scoring and replay.
 
@@ -87,7 +87,7 @@ dynamic-subagents surface. A second spike against `ladybug` 0.20.4 confirmed emb
 and `Connection`, parameterized Cypher, and fast bulk projection through `COPY`; per-row loading was
 too slow for the 25.9k-node/49.3k-edge fixture and was rejected.
 
-Custom subagents do not inherit skills by default; compiled subagents must supply compatible message state; permission inheritance differs for declarative, compiled, and remote subagents. `memory` loads configured `AGENTS.md` files into context, while summarization can offload older content to a backend. These conveniences must not be confused with CatcherAI's governed memory lifecycle or canonical event store.
+Custom subagents do not inherit skills by default; compiled subagents must supply compatible message state; permission inheritance differs for declarative, compiled, and remote subagents. `memory` loads configured `AGENTS.md` files into context, while summarization can offload older content to a backend. These conveniences must not be confused with Dispute Observatory's governed memory lifecycle or canonical event store.
 
 Deep Agents filesystem permissions apply to built-in filesystem tools. The documentation explicitly says they do not govern custom tools or MCP tools, and sandbox execution has separate controls.[^deepagents-permissions] Consequently:
 
@@ -102,11 +102,11 @@ Deep Agents filesystem permissions apply to built-in filesystem tools. The docum
 
 The model gateway should normalize only those consumed semantics: messages/content blocks, tools and calls, schemas, output, finish/error classes, usage, latency, provider request ID, and stream events. It must centralize capability validation, timeouts, retry classification, cancellation, rate limiting, and redaction. Provider request objects remain inside the adapter.
 
-The Codex SDK is structurally different. Its official SDK exposes long-lived threads, runs/turns, streamed item events, resume/fork/read/compact, steering, interruption, and sandbox controls.[^codex-sdk] Source types include lifecycle events and items such as agent messages, reasoning summaries, command execution, file changes, MCP tool calls, web search, todos, and errors.[^codex-source] That is an **agent runtime**, not just a chat model. A future Codex adapter should implement `start`, `run_or_stream`, `resume`, and `cancel` at the runtime boundary and map its item tree into CatcherAI events. It should not be forced through a LangChain `BaseChatModel` facade.
+The Codex SDK is structurally different. Its official SDK exposes long-lived threads, runs/turns, streamed item events, resume/fork/read/compact, steering, interruption, and sandbox controls.[^codex-sdk] Source types include lifecycle events and items such as agent messages, reasoning summaries, command execution, file changes, MCP tool calls, web search, todos, and errors.[^codex-source] That is an **agent runtime**, not just a chat model. A future Codex adapter should implement `start`, `run_or_stream`, `resume`, and `cancel` at the runtime boundary and map its item tree into Dispute Observatory events. It should not be forced through a LangChain `BaseChatModel` facade.
 
 ### 6. Memory must be temporal, scoped, and distrustful of itself
 
-Graphiti's most relevant idea is separating event/ingestion time from fact-validity time while retaining episode provenance and supporting hybrid semantic, keyword, and graph retrieval.[^graphiti] CatcherAI should borrow the temporal model, not the hosted stack: every policy, relationship, and memory note needs source, `valid_from`, `valid_to`, status, and observation time.
+Graphiti's most relevant idea is separating event/ingestion time from fact-validity time while retaining episode provenance and supporting hybrid semantic, keyword, and graph retrieval.[^graphiti] Dispute Observatory should borrow the temporal model, not the hosted stack: every policy, relationship, and memory note needs source, `valid_from`, `valid_to`, status, and observation time.
 
 Letta/MemGPT separates always-visible working context from archival memory; LangMem supports semantic, episodic, and procedural memory plus background consolidation.[^memgpt][^langmem] A-MEM and Generative Agents illustrate linked memories and reflection, but model-authored rewriting raises provenance risk in a financial system.[^amem][^generative-agents]
 
@@ -122,23 +122,23 @@ The repository's seeded memory cases demand stronger rules than generic memory l
 - support explicit skip, reject, supersede, retract, consolidate, expire, and purge events;
 - keep policy truth in the versioned corpus, never in mutable memory summaries.
 
-SQLite remains the system of record and FTS/vector host. LadybugDB is the current name of the Kùzu fork; the project documents `pip install ladybug` and embedded `Database`, `Connection`, and `AsyncConnection` APIs.[^ladybug][^ladybug-python] Its native vector extension is separate from sqlite-vec; no supported direct bridge was found.[^ladybug-vector][^sqlite-vec] CatcherAI should therefore use sqlite-vec for the SQLite hybrid-retrieval path and LadybugDB for Cypher graph traversal, with explicit ETL at load time where embeddings are needed in both. Because the rename and packaging are recent, keep the proposed small graph interface and a tested NetworkX fallback. A fallback must be emitted as an event, not silently selected.
+SQLite remains the system of record and FTS/vector host. LadybugDB is the current name of the Kùzu fork; the project documents `pip install ladybug` and embedded `Database`, `Connection`, and `AsyncConnection` APIs.[^ladybug][^ladybug-python] Its native vector extension is separate from sqlite-vec; no supported direct bridge was found.[^ladybug-vector][^sqlite-vec] Dispute Observatory should therefore use sqlite-vec for the SQLite hybrid-retrieval path and LadybugDB for Cypher graph traversal, with explicit ETL at load time where embeddings are needed in both. Because the rename and packaging are recent, keep the proposed small graph interface and a tested NetworkX fallback. A fallback must be emitted as an event, not silently selected.
 
 ### 7. Tool-grounded computation and state-based evaluation are mandatory
 
 FIA demonstrates a fraud-investigation assistant that plans, gathers evidence, and executes code across hundreds of evaluations, but it remains analyst assistance rather than proof of safe autonomous adjudication.[^fia] CodeAct and smolagents support executable code as an action for checkable arithmetic; smolagents also warns that unrestricted code execution is dangerous.[^codeact][^smolagents]
 
-For CatcherAI, business days, billing cycles, pro-rata, FX, time zones, and CE 3.0 day counts belong in tested helpers executed through a restricted sandbox. Both code and output are events. The model proposes or selects a calculation; code owns the result. macOS builds of Python's `sqlite3` may lack loadable-extension support, so startup capability checks must verify sqlite-vec loading and fail clearly rather than silently degrading to a different retrieval method.[^sqlite-load-extension]
+For Dispute Observatory, business days, billing cycles, pro-rata, FX, time zones, and CE 3.0 day counts belong in tested helpers executed through a restricted sandbox. Both code and output are events. The model proposes or selects a calculation; code owns the result. macOS builds of Python's `sqlite3` may lack loadable-extension support, so startup capability checks must verify sqlite-vec loading and fail clearly rather than silently degrading to a different retrieval method.[^sqlite-load-extension]
 
-τ-bench evaluates policy-following agents through final environment state and shows that pass@1 hides substantial unreliability; its pass^k metric measures the probability that all repeated runs succeed.[^taubench] τ²-bench adds a simulated user that can act in the shared environment, making it a strong pattern for the persona harness and external-event coordination.[^tau2] CatcherAI should score final records, side effects, prohibited actions, required capability events, trajectory completeness, and pass^k—not prose quality alone. LangChain's `agentevals` can supplement those checks with strict, unordered, subset, and superset tool-trajectory matching, but CatcherAI's source-ID and capability semantics require its own deterministic evaluator.[^agentevals]
+τ-bench evaluates policy-following agents through final environment state and shows that pass@1 hides substantial unreliability; its pass^k metric measures the probability that all repeated runs succeed.[^taubench] τ²-bench adds a simulated user that can act in the shared environment, making it a strong pattern for the persona harness and external-event coordination.[^tau2] Dispute Observatory should score final records, side effects, prohibited actions, required capability events, trajectory completeness, and pass^k—not prose quality alone. LangChain's `agentevals` can supplement those checks with strict, unordered, subset, and superset tool-trajectory matching, but Dispute Observatory's source-ID and capability semantics require its own deterministic evaluator.[^agentevals]
 
 ### 8. Domain implementations support the pattern but not autonomous trust
 
-ClaimPilot is the strongest close analogue found: strict status transitions, file-backed shared state, append-only audit logs, verify-and-retry wrappers, deterministic adjudication, and independently computed outcomes. Its evaluation reports 97.3% workflow completion and 90.0% overall adjudication accuracy, and it attributes an important improvement to fixing inter-agent contract ambiguity.[^claimpilot] It ends with human approval; CatcherAI must replace that step with its coded automated panel and conservative default.
+ClaimPilot is the strongest close analogue found: strict status transitions, file-backed shared state, append-only audit logs, verify-and-retry wrappers, deterministic adjudication, and independently computed outcomes. Its evaluation reports 97.3% workflow completion and 90.0% overall adjudication accuracy, and it attributes an important improvement to fixing inter-agent contract ambiguity.[^claimpilot] It ends with human approval; Dispute Observatory must replace that step with its coded automated panel and conservative default.
 
 AWS claims, Databricks KYC/AML, and open-source compliance demos show supervisor/specialist graphs, structured returns, checkpointing, policy retrieval, and deterministic risk gates.[^aws-claims][^aws-claims-eks][^databricks-kyc] They are useful pattern evidence. Their “production-ready,” accuracy, latency, or cost claims are not independent validation and should not determine this architecture.
 
-Visa, Pega, Quavo, and Stripe public materials confirm the industry's emphasis on automated document structuring, reason/condition selection, confidence-based routing, pre-dispute resolution, and evidence assembly.[^visa-ai][^pega][^quavo][^stripe-disputes] These are product descriptions, not transparent technical evaluations. CatcherAI should borrow the workflow primitives, not their evidentiary claims.
+Visa, Pega, Quavo, and Stripe public materials confirm the industry's emphasis on automated document structuring, reason/condition selection, confidence-based routing, pre-dispute resolution, and evidence assembly.[^visa-ai][^pega][^quavo][^stripe-disputes] These are product descriptions, not transparent technical evaluations. Dispute Observatory should borrow the workflow primitives, not their evidentiary claims.
 
 ## Candidate architectures
 
@@ -360,7 +360,7 @@ The lead operates a bounded plan-and-execute loop. Each iteration must add a sou
 - max-replan and budget termination;
 - wait checkpoint, awaited event, and latest safe decision time.
 
-Reflexion and Self-Refine support bounded critique/revision, but self-critique is correlated with the original model. Their useful contribution is the loop shape, not proof of correctness.[^reflexion][^self-refine] CatcherAI's verifier therefore has isolated context and deterministic checks.
+Reflexion and Self-Refine support bounded critique/revision, but self-critique is correlated with the original model. Their useful contribution is the loop shape, not proof of correctness.[^reflexion][^self-refine] Dispute Observatory's verifier therefore has isolated context and deterministic checks.
 
 ### Governance flow
 
@@ -396,11 +396,11 @@ The Pydantic event envelope specified in the brief should be the canonical schem
 
 AG-UI provides run, step, text, tool-call, state snapshot/delta, raw, and custom event types over SSE/WebSocket-style transports.[^agui-events] It is a good frontend projection. It does not define authorization, retention, tamper evidence, or PII policy, so it must not be the audit source.
 
-OpenTelemetry's GenAI semantic conventions and OpenInference define useful agent, model, tool, retriever, guardrail, and evaluator span kinds.[^otel-genai][^openinference] The OTel GenAI conventions are still evolving; map CatcherAI events in one export adapter rather than shaping the canonical schema around them.
+OpenTelemetry's GenAI semantic conventions and OpenInference define useful agent, model, tool, retriever, guardrail, and evaluator span kinds.[^otel-genai][^openinference] The OTel GenAI conventions are still evolving; map Dispute Observatory events in one export adapter rather than shaping the canonical schema around them.
 
-The observability products examined share a nested-span model but none supplies CatcherAI's memory lifecycle, virtual-clock, field provenance, or regulatory action semantics:
+The observability products examined share a nested-span model but none supplies Dispute Observatory's memory lifecycle, virtual-clock, field provenance, or regulatory action semantics:
 
-| Product | Useful pattern | Gap for CatcherAI |
+| Product | Useful pattern | Gap for Dispute Observatory |
 |---|---|---|
 | Langfuse | nested agent/tool/retriever/generation observations, usage/cost, self-hosting, masking | operational trace, not the authoritative decision ledger[^langfuse] |
 | Phoenix/OpenInference | open-source OTLP collector and explicit AI span kinds | no financial authorization or replayable domain-state contract[^phoenix] |
@@ -451,7 +451,7 @@ Architecture tests should ban provider SDK imports outside adapters and raw data
 | Hidden chain-of-thought is unavailable and must not be logged | Record concise rationale, structured findings, sources, decisions, and flip facts only |
 | Parallel branches can race event sequence/state merges | Allocate sequences transactionally; isolate branch state; deterministic reducer; log merge order |
 | Third-party traces may retain prompts or PII | Redact in-process, export only allow-listed fields, make tracing opt-in |
-| `deep-agents-ui` was archived in June 2026; generic chat UI passthroughs lack production auth | Build a thin Catcher-specific replay UI/API against the canonical ledger; borrow UI patterns only[^deep-agents-ui][^agent-chat-ui] |
+| `deep-agents-ui` was archived in June 2026; generic chat UI passthroughs lack production auth | Build a thin Dispute Observatory-specific replay UI/API against the canonical ledger; borrow UI patterns only[^deep-agents-ui][^agent-chat-ui] |
 
 ## Safety and financial-services audit implications
 
@@ -467,9 +467,9 @@ PII and secrets are redacted before events or telemetry leave the process. Full 
 
 The Federal Reserve's April 2026 SR 26-2 supersedes SR 11-7, while retaining a risk-based emphasis on model governance and risk management; SR 11-7 remains useful historical design context, not the current citation.[^sr2602][^sr1107] The EU AI Act's current consolidated text includes automatic logging requirements for high-risk systems; whether a particular issuer deployment falls into that classification requires legal analysis, but reconstructability is a sound design baseline.[^eu-ai-act]
 
-CFPB adverse-action circulars concern credit decisions rather than card-dispute adjudication, so they should not be misstated as directly controlling every CatcherAI outcome. They nevertheless demonstrate the expectation that complex models cannot substitute generic reasons for accurate, specific decision causes.[^cfpb-2022][^cfpb-2023] CFPB guidance on consumer-reporting disputes is a closer audit analogy: preserve the dispute information, investigative actions, findings, and resolution, not only the final letter.[^cfpb-disputes]
+CFPB adverse-action circulars concern credit decisions rather than card-dispute adjudication, so they should not be misstated as directly controlling every Dispute Observatory outcome. They nevertheless demonstrate the expectation that complex models cannot substitute generic reasons for accurate, specific decision causes.[^cfpb-2022][^cfpb-2023] CFPB guidance on consumer-reporting disputes is a closer audit analogy: preserve the dispute information, investigative actions, findings, and resolution, not only the final letter.[^cfpb-disputes]
 
-For CatcherAI, a QA reviewer or regulator must be able to reconstruct:
+For Dispute Observatory, a QA reviewer or regulator must be able to reconstruct:
 
 - the exact data, policy version, date rule, model/runtime configuration, tools, and skills available;
 - every retrieved candidate and why it was accepted or discarded;

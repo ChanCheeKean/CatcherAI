@@ -28,11 +28,11 @@ class GatewayChatModel(BaseChatModel):
 
     @property
     def _llm_type(self) -> str:
-        return "catcher-model-gateway"
+        return "dispute-model-gateway"
 
     @property
     def _identifying_params(self) -> dict[str, Any]:
-        return {"model_name": self.model_name, "adapter": "catcher-model-gateway"}
+        return {"model_name": self.model_name, "adapter": "dispute-model-gateway"}
 
     def bind_tools(
         self,

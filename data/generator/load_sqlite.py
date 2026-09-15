@@ -1,6 +1,6 @@
 """Load the agent-visible generated data into a single SQLite file (the POC's persistent store).
 
-Usage: python3 data/generator/load_sqlite.py [output_path]   (default: data/generated/catcher.sqlite)
+Usage: python3 data/generator/load_sqlite.py [output_path]   (default: data/generated/disputes.sqlite)
 Ground truth and simulation files are deliberately NOT loaded.
 """
 from __future__ import annotations
@@ -71,4 +71,4 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else os.path.join(GEN, "catcher.sqlite"))
+    main(sys.argv[1] if len(sys.argv) > 1 else os.path.join(GEN, "disputes.sqlite"))

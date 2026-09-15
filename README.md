@@ -1,6 +1,6 @@
-# CatcherAI — an agentic card-dispute investigator
+# Dispute Observatory — an agentic card-dispute investigator
 
-CatcherAI is a proof-of-concept of an AI agent system that **investigates and resolves credit and debit card disputes end to end** from the card issuer's side: it receives a cardholder's claim, works out what actually happened, applies the correct network rule *and* the correct regulation as of the right date, recovers money from the merchant when that's justified, protects the cardholder when that's required, and does all of it **fully automatically, with no human in the loop**. High-impact and uncertain decisions are challenged by an automated review panel and fail safe in the cardholder's favor.
+Dispute Observatory is a proof-of-concept of an AI agent system that **investigates and resolves credit and debit card disputes end to end** from the card issuer's side: it receives a cardholder's claim, works out what actually happened, applies the correct network rule *and* the correct regulation as of the right date, recovers money from the merchant when that's justified, protects the cardholder when that's required, and does all of it **fully automatically, with no human in the loop**. High-impact and uncertain decisions are challenged by an automated review panel and fail safe in the cardholder's favor.
 
 This repository contains the foundation and executable POC: domain research, 20 hand-built
 investigation scenarios with machine-checkable ground truth, a synthetic data ecosystem (~24k
@@ -31,7 +31,7 @@ console is designed but not implemented yet; the current CLI commands below rema
 python3 data/generator/gen.py          # generate data/generated/
 python3 data/corpus/author_policies.py # (re)write the policy corpus and skills
 python3 data/generator/validate.py     # 401 checks: integrity, leakage, invariants, discoverability, ground-truth references
-python3 data/generator/load_sqlite.py  # build data/generated/catcher.sqlite (tables + FTS over documents)
+python3 data/generator/load_sqlite.py  # build data/generated/disputes.sqlite (tables + FTS over documents)
 ```
 
 ## Run the agent
@@ -40,52 +40,51 @@ Python is managed with `uv`. The fake model adapter is deterministic and needs n
 
 Application code is flat under `src/`: modules import `domain`, `runtime`, `playbooks`, `memory`,
 and the other top-level packages directly. There is no product-named Python package wrapper. The
-distribution is named `card-dispute-agent`; both `catcher` (compatibility) and `dispute-agent` expose
-the same CLI.
+distribution is named `card-dispute-agent`; its CLI command is `inspect`.
 
 ```bash
 uv python install 3.12
 uv sync --extra dev --extra graph
 uv run python data/generator/load_sqlite.py
 
-uv run catcher run DSP-2026-90002 --adapter fake   # C02 descriptor confusion, L1 early stop
-uv run catcher run DSP-2026-90005 --adapter fake   # C04 split clearing, evidence wait, cardholder reply
-uv run catcher run DSP-2026-90003 --adapter fake   # C03 as-of write-off policy, stale-memory supersession
-uv run catcher run DSP-2026-90007 --adapter fake   # C06 verifier failure, re-plan back-edge, pro-rata
-uv run catcher run DSP-2026-90009 --adapter fake   # C08 Reg E clocks, compromise point, specialists, panel
-uv run catcher run DSP-2026-90011 --adapter fake   # C10 household authority, device graph, review panel
-uv run catcher run DSP-2026-90012 --adapter fake   # C11 account takeover, drop address, automated reopening
-uv run catcher run DSP-2026-90013 --adapter fake   # C12 linked-case fan-out, bounded ring controls
-uv run catcher run DSP-2026-90014 --adapter fake   # C12b negative linkage control
-uv run catcher run DSP-2026-90015 --adapter fake   # C13 agentic booking, provider-record wait, policy gap
-uv run catcher run DSP-2026-90017 --adapter fake   # C15 late Dispute Response, parallel charge tracks
-uv run catcher run DSP-2026-90022 --adapter fake   # C19 stale merchant reputation, consolidation
-uv run catcher queue --adapter fake                # Q01: rank all 95 open cases by hard deadline
+uv run inspect run DSP-2026-90002 --adapter fake   # C02 descriptor confusion, L1 early stop
+uv run inspect run DSP-2026-90005 --adapter fake   # C04 split clearing, evidence wait, cardholder reply
+uv run inspect run DSP-2026-90003 --adapter fake   # C03 as-of write-off policy, stale-memory supersession
+uv run inspect run DSP-2026-90007 --adapter fake   # C06 verifier failure, re-plan back-edge, pro-rata
+uv run inspect run DSP-2026-90009 --adapter fake   # C08 Reg E clocks, compromise point, specialists, panel
+uv run inspect run DSP-2026-90011 --adapter fake   # C10 household authority, device graph, review panel
+uv run inspect run DSP-2026-90012 --adapter fake   # C11 account takeover, drop address, automated reopening
+uv run inspect run DSP-2026-90013 --adapter fake   # C12 linked-case fan-out, bounded ring controls
+uv run inspect run DSP-2026-90014 --adapter fake   # C12b negative linkage control
+uv run inspect run DSP-2026-90015 --adapter fake   # C13 agentic booking, provider-record wait, policy gap
+uv run inspect run DSP-2026-90017 --adapter fake   # C15 late Dispute Response, parallel charge tracks
+uv run inspect run DSP-2026-90022 --adapter fake   # C19 stale merchant reputation, consolidation
+uv run inspect queue --adapter fake                # Q01: rank all 95 open cases by hard deadline
 
 # Same domain workflow through gpt-5.6-luna and the Responses API
-OPENAI_API_KEY=... uv run catcher run DSP-2026-90002 --adapter openai
+OPENAI_API_KEY=... uv run inspect run DSP-2026-90002 --adapter openai
 ```
 
-`catcher run` writes to the scenario store (`data/generated/catcher.sqlite`) unless `--db` points at a copy; use a copy when you want to rerun a case from pristine memory. Trajectory events and blobs go to that store and LangGraph checkpoints to `<store>_checkpoints.sqlite`.
+`inspect run` writes to the scenario store (`data/generated/disputes.sqlite`) unless `--db` points at a copy; use a copy when you want to rerun a case from pristine memory. Trajectory events and blobs go to that store and LangGraph checkpoints to `<store>_checkpoints.sqlite`.
 
 ### Waiting for external events
 
 Runs suspend only for merchant/provider evidence or a simulated cardholder reply. Suspension is a real LangGraph `interrupt` persisted by the SQLite checkpointer. The harness scheduler computes the latest safe decision time (earliest regulatory or network deadline minus two business days), advances the virtual clock to the arrival or that time—whichever is first—and resumes with `Command(resume=...)`. If nothing arrives, the absence is recorded as an availability fact and the case goes through verification, the review panel and, if confidence stays below 0.75, the cardholder-favorable conservative default. No person is ever awaited.
 
 ```bash
-cp data/generated/catcher.sqlite /tmp/c13.sqlite
-uv run catcher run DSP-2026-90015 --db /tmp/c13.sqlite --no-auto-resume   # prints the pending wait
-uv run catcher resume <run_id> --db /tmp/c13.sqlite                        # new process resumes from the checkpoint
+cp data/generated/disputes.sqlite /tmp/c13.sqlite
+uv run inspect run DSP-2026-90015 --db /tmp/c13.sqlite --no-auto-resume   # prints the pending wait
+uv run inspect resume <run_id> --db /tmp/c13.sqlite                        # new process resumes from the checkpoint
 ```
 
 ### Replay, evaluate, curate
 
 ```bash
-uv run catcher replay <run_id> [--db PATH] [--type tool_call] [--actor scheduler] [--to-seq 40]
-uv run catcher export-event-schema --output schemas/trajectory-event.schema.json
+uv run inspect replay <run_id> [--db PATH] [--type tool_call] [--actor scheduler] [--to-seq 40]
+uv run inspect export-event-schema --output schemas/trajectory-event.schema.json
 
 # Each attempt runs on its own copy of the scenario store under data/generated/eval/<timestamp>/
-uv run catcher eval \
+uv run inspect eval \
   DSP-2026-90001 DSP-2026-90002 DSP-2026-90003 DSP-2026-90005 DSP-2026-90006 \
   DSP-2026-90007 DSP-2026-90008 DSP-2026-90009 DSP-2026-90010 DSP-2026-90011 \
   DSP-2026-90012 DSP-2026-90013 DSP-2026-90014 DSP-2026-90015 DSP-2026-90016 \
@@ -94,7 +93,7 @@ uv run catcher eval \
 uv run pytest
 
 # Offline SOP-DSP-005 memory curator: purge, TTL expiry, dedupe, as-of policy supersession
-uv run catcher curate --db /tmp/c13.sqlite --as-of 2026-10-21
+uv run inspect curate --db /tmp/c13.sqlite --as-of 2026-10-21
 
 # Optional real Responses API provider-contract smoke test
 DISPUTE_AGENT_RUN_OPENAI_SMOKE=1 OPENAI_API_KEY=... uv run pytest tests/test_openai_smoke.py
@@ -115,7 +114,7 @@ depends on an authored display name rather than operational data.
 
 A FastAPI presentation adapter (`src/api/`) exposes the SQLite trajectory store and can now start,
 cancel, and rerun fake-adapter runs itself. It still never mutates the pristine
-`data/generated/catcher.sqlite`: every API-started run gets its own copied store and checkpoint
+`data/generated/disputes.sqlite`: every API-started run gets its own copied store and checkpoint
 file under `data/generated/ui/` (`RunManager` in `src/api/run_manager.py`), tracked in a small
 durable registry so run history and store routing survive an API restart.
 
@@ -434,7 +433,7 @@ Deadlines are deliberately **not** stored in the data. A stored deadline would b
 ### Chosen stack (POC, local, no servers)
 | Store | Technology | Why this one |
 |---|---|---|
-| Persistent / structured | **SQLite** (`catcher.sqlite`, built by `load_sqlite.py`; FTS5 over documents) | zero setup; exact queries; transactional case state |
+| Persistent / structured | **SQLite** (`disputes.sqlite`, built by `load_sqlite.py`; FTS5 over documents) | zero setup; exact queries; transactional case state |
 | Semantic / vector | **sqlite-vec** in the same SQLite file (embeddings for documents, communications, precedents, packets, memory notes) | one file, filter by metadata (effective dates) *and* similarity |
 | Graph | **LadybugDB** (embedded Cypher; community fork of Kùzu) loaded from `graph/*.jsonl`, with **NetworkX** as a fallback behind the same interface | multi-hop traversal without a server; Kùzu itself was archived in Oct 2025 |
 

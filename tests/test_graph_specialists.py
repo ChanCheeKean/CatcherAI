@@ -39,7 +39,7 @@ def test_graph_memory_uses_explicit_networkx_fallback(
     project_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     db_path = tmp_path / "fallback.sqlite"
-    shutil.copy2(project_root / "data/generated/catcher.sqlite", db_path)
+    shutil.copy2(project_root / "data/generated/disputes.sqlite", db_path)
     emitter = EventEmitter(
         db_path,
         run_id="run-graph-fallback",

@@ -121,7 +121,7 @@ async def test_reconnect_yields_exact_missing_suffix(
 async def test_two_simultaneous_runs_are_isolated_and_preserve_the_pristine_store(
     project_root: Path, scenario_db: Path, tmp_path: Path
 ) -> None:
-    pristine = project_root / "data/generated/catcher.sqlite"
+    pristine = project_root / "data/generated/disputes.sqlite"
     before = _sha256(pristine)
     async with _client(project_root, scenario_db, tmp_path) as client:
         first, second = await asyncio.gather(
@@ -203,7 +203,7 @@ async def test_queue_run_ranks_open_cases(
 async def test_starting_a_run_never_mutates_the_pristine_store_even_on_a_bad_case_id(
     project_root: Path, scenario_db: Path, tmp_path: Path
 ) -> None:
-    pristine = project_root / "data/generated/catcher.sqlite"
+    pristine = project_root / "data/generated/disputes.sqlite"
     before = _sha256(pristine)
     async with _client(project_root, scenario_db, tmp_path) as client:
         started = await client.post("/api/v1/runs", json={"case_id": "DSP-2026-NOPE"})

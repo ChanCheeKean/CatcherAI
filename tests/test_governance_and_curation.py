@@ -123,7 +123,7 @@ def test_fairness_scan_blocks_prohibited_bases_and_labels() -> None:
 @pytest.fixture
 def store(project_root: Path, tmp_path: Path) -> MemoryNoteStore:
     db_path = tmp_path / "memory.sqlite"
-    shutil.copy2(project_root / "data/generated/catcher.sqlite", db_path)
+    shutil.copy2(project_root / "data/generated/disputes.sqlite", db_path)
     emitter = EventEmitter(
         db_path,
         run_id="run-memory",
@@ -232,7 +232,7 @@ def test_offline_curator_expires_purges_dedupes_and_supersedes(
     project_root: Path, tmp_path: Path
 ) -> None:
     db_path = tmp_path / "curate.sqlite"
-    shutil.copy2(project_root / "data/generated/catcher.sqlite", db_path)
+    shutil.copy2(project_root / "data/generated/disputes.sqlite", db_path)
     summary = curate_offline(db_path, as_of=date(2026, 10, 21))
     assert summary["purged"] == ["MEM-0196"]
     assert summary["expired"] == ["MEM-0185"]

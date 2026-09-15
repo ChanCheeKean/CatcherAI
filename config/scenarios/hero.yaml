@@ -3,7 +3,7 @@ manifest: data/generated/manifest.json
 agent_root: data/generated
 policy_root: data/corpus/policies
 skill_root: data/corpus/skills
-sqlite_path: data/generated/catcher.sqlite
+sqlite_path: data/generated/disputes.sqlite
 virtual_clock: "2026-10-21T13:00:00Z"
 deny:
   - ground_truth

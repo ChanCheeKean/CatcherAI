@@ -1,4 +1,4 @@
-﻿# CatcherAI technical implementation guide
+﻿# Dispute Observatory technical implementation guide
 
 This document explains the implemented agentic framework for a developer new to this repository. It
 covers the runtime, routing, playbooks, tools, data access, memory, graph analysis, model adapters,
@@ -140,7 +140,7 @@ The important words are:
 ### The storage layers the agent can see
 
 The generated data starts as files under `data/generated/`, but the runtime normally reads the
-single SQLite file `data/generated/catcher.sqlite`. `data/generator/load_sqlite.py` imports the
+single SQLite file `data/generated/disputes.sqlite`. `data/generator/load_sqlite.py` imports the
 structured tables and selected event/document files into SQLite. The runtime then opens that file
 read-only through `CaseDataAccess`.
 
@@ -2453,7 +2453,7 @@ except RunSuspended as suspended:
 The API is a presentation adapter over the agent runtime and its committed event stores. It supports
 API-started case and queue runs through isolated copies under data/generated/ui/, while the case,
 run, event, and decision reads remain read-only. It never writes the pristine
-data/generated/catcher.sqlite scenario store. API reads do not emit agent sql_query events.
+data/generated/disputes.sqlite scenario store. API reads do not emit agent sql_query events.
 
 ### 18.1 App wiring
 
@@ -2465,7 +2465,7 @@ def create_app(
 ) -> FastAPI:
     app = FastAPI(title="Dispute Observatory API", version="0.1.0")
     app.state.root = root
-    app.state.db_path = (db_path or root / "data/generated/catcher.sqlite").resolve()
+    app.state.db_path = (db_path or root / "data/generated/disputes.sqlite").resolve()
     models, routes, scenario = load_config_state(root)
     app.state.models = models
     app.state.routes = routes

@@ -1,4 +1,4 @@
-# CatcherAI agent architecture
+# Dispute Observatory agent architecture
 
 **Status:** Phase 2 implementation blueprint  
 **Date:** 13 September 2026  
@@ -8,7 +8,7 @@
 
 ## 1. Architecture decision
 
-CatcherAI is a deterministic, event-sourced dispute workflow containing a bounded agentic investigation loop. LangGraph implements the first workflow runtime; Deep Agents implements the lead investigator and configured specialists. Neither owns dispute policy, governance, memory semantics, tools, decision schemas, or audit events.
+Dispute Observatory is a deterministic, event-sourced dispute workflow containing a bounded agentic investigation loop. LangGraph implements the first workflow runtime; Deep Agents implements the lead investigator and configured specialists. Neither owns dispute policy, governance, memory semantics, tools, decision schemas, or audit events.
 
 The design has five rules:
 
@@ -927,13 +927,13 @@ It rejects invalid events rather than dropping fields silently. If the primary e
 
 ### 12.6 AG-UI, SSE, and telemetry
 
-The future FastAPI endpoint streams committed events by `run_id` and `after_seq` with SSE resume IDs. A projection maps run lifecycle, messages, tool calls, and state patches to AG-UI standard events and sends Catcher-specific memory/panel/provenance records as namespaced custom events. Arbitrary raw events are not forwarded.
+The future FastAPI endpoint streams committed events by `run_id` and `after_seq` with SSE resume IDs. A projection maps run lifecycle, messages, tool calls, and state patches to AG-UI standard events and sends Dispute Observatory-specific memory/panel/provenance records as namespaced custom events. Arbitrary raw events are not forwarded.
 
 An optional exporter maps spans to OpenTelemetry/OpenInference and LangSmith. Export is allow-listed and redacted; it may be sampled. Export failure emits an operational error but never damages the canonical ledger or changes a decision.
 
 ### 12.7 Replay
 
-`catcher replay <run_id> [--to-seq N] [--type ...] [--actor ...] [--span ...] [--json]` verifies the hash chain, resolves authorized blobs, and reduces events into:
+`inspect replay <run_id> [--to-seq N] [--type ...] [--actor ...] [--span ...] [--json]` verifies the hash chain, resolves authorized blobs, and reduces events into:
 
 - case file and hypothesis board;
 - virtual clock and deadlines;
@@ -1186,7 +1186,7 @@ Implementation notes (2026-09-14, gate passed):
   investigation verifier, fairness) all apply the conservative default. Calibrating model-produced
   confidence remains deferred to a live-model calibration study after Increment 5.
 - **Memory (§10.4).** `MemoryNoteStore` is the only lifecycle boundary; `memory/curator.py` holds the
-  shared rules and `catcher curate` runs them offline as its own evented run. Duplicates require the
+  shared rules and `inspect curate` runs them offline as its own evented run. Duplicates require the
   same scope, subjects and tags plus a shared source; distinct episodic observations are
   consolidation input, never dedupe input. Offline consolidation is deliberately skipped (and
   logged) without a case-verified validity window.

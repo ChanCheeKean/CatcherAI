@@ -1,7 +1,7 @@
 """Isolated UI run workspaces, a durable run registry, and background runtime tasks.
 
 Every UI-started run gets its own copy of the pristine scenario store under
-`data/generated/ui/` (never `data/generated/catcher.sqlite` itself) and its own
+`data/generated/ui/` (never `data/generated/disputes.sqlite` itself) and its own
 `LangGraphRuntime`, because `LangGraphRuntime` and its `ScenarioConfig` are bound to one
 SQLite path. The registry is a tiny SQLite table mapping `run_id -> store path` so run
 history and store routing survive an API process reload; the live `LangGraphRuntime`

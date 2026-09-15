@@ -33,7 +33,7 @@ def _root() -> Path:
 
 
 def _db(db: Path | None) -> Path:
-    return (db or _root() / "data/generated/catcher.sqlite").resolve()
+    return (db or _root() / "data/generated/disputes.sqlite").resolve()
 
 
 def _adapter(value: str) -> str:

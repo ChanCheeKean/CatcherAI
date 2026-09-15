@@ -31,7 +31,7 @@ def test_hybrid_retrieval_respects_historical_validity_intervals(
     project_root: Path, tmp_path: Path
 ) -> None:
     db_path = tmp_path / "knowledge.sqlite"
-    shutil.copy2(project_root / "data/generated/catcher.sqlite", db_path)
+    shutil.copy2(project_root / "data/generated/disputes.sqlite", db_path)
     store = HybridKnowledgeStore(db_path, _emitter(db_path))
 
     old = store.search(

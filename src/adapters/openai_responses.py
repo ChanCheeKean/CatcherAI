@@ -65,7 +65,7 @@ class OpenAIResponsesGateway:
             params["text"] = {
                 "format": {
                     "type": "json_schema",
-                    "name": "catcher_output",
+                    "name": "dispute_output",
                     "schema": request.output_schema,
                     "strict": True,
                 }
