@@ -577,7 +577,7 @@ class LangGraphRuntime:
                 "prior_merchant_purchases": len({row["txn_id"] for row in history} - disputed),
                 "transaction_count": len(disputed),
             }
-            decision = route_case(state["case"], features, routes, emitter)
+            decision = await route_case(state["case"], features, routes, ctx.chat_model, emitter)
             ctx.tools.limit = decision.budget.tool_calls
             return {"route": decision.model_dump(mode="json")}
 
