@@ -4,12 +4,11 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from domain.case import RouteBudget
 from domain.model import Capability
 
 
@@ -56,14 +55,6 @@ class ModelsConfig(BaseModel):
         return f"sha256:{hashlib.sha256(raw.encode()).hexdigest()}"
 
 
-class RouteOutputConfig(BaseModel):
-    depth: str
-    graph_path: str
-    agents: list[str]
-    skills: list[str]
-    budget: RouteBudget
-
-
 class AgentConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -77,22 +68,32 @@ class AgentConfig(BaseModel):
 
 class RouteConfig(BaseModel):
     id: str
-    priority: int
-    match: dict[str, Any]
-    output: RouteOutputConfig
+    depth: Literal["L1", "L2", "L3", "L4"]
+    description: str
+    required_skills: list[str] = Field(default_factory=list)
+
+
+class DepthBoundsConfig(BaseModel):
+    tool_calls: tuple[int, int]
+    model_input_tokens: tuple[int, int]
+    model_output_tokens: tuple[int, int]
+    wall_seconds: tuple[float, float]
+    replans: tuple[int, int]
+    no_progress_iterations: tuple[int, int]
+    max_agent_calls: tuple[int, int]
 
 
 class RoutesConfig(BaseModel):
     schema_version: int
     route_confidence_threshold: float
     routes: list[RouteConfig]
+    depth_bounds: dict[str, DepthBoundsConfig]
 
     @model_validator(mode="after")
-    def unique_ordered_routes(self) -> RoutesConfig:
+    def unique_routes(self) -> RoutesConfig:
         ids = [route.id for route in self.routes]
         if len(ids) != len(set(ids)):
             raise ValueError("route ids must be unique")
-        self.routes.sort(key=lambda route: route.priority)
         return self
 
 

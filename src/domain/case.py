@@ -13,15 +13,15 @@ class RouteBudget(BaseModel):
     wall_seconds: float
     replans: int
     no_progress_iterations: int
+    max_agent_calls: int
 
 
 class RouteDecision(BaseModel):
     route_id: str
-    method: Literal["rule", "llm", "fallback"]
+    method: Literal["llm", "fallback"]
     candidates: list[str]
     confidence: float
     depth: Literal["L1", "L2", "L3", "L4"]
-    graph_path: str
     budget: RouteBudget
     agents: list[str]
     skills: list[str]
