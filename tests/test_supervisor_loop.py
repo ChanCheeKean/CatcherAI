@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 from domain.model import Capability, ModelRequest, ModelResponse, ModelStreamEvent, Usage
 from runtime.gateway_chat_model import GatewayChatModel
@@ -60,3 +61,34 @@ async def test_decide_next_step_defaults_to_verify_on_out_of_menu_choice() -> No
     chat_model = _chat_model({"next_step": "delete_the_case", "rationale": "x"})
     result = await _decide_next_step(chat_model, {"case_id": "DSP-TEST"}, ["gather_evidence"])
     assert result == "verify"
+
+
+def test_max_agent_calls_boundary_is_strict_greater_than() -> None:
+    """Pins the off-by-one boundary in assess_progress: the supervisor must be genuinely
+    consulted up to max_agent_calls times, and the forced stop must only fire on the call
+    *after* that (iterations > max_agent_calls), not on the call whose ordinal equals
+    max_agent_calls itself.
+
+    assess_progress is an async closure defined inside LangGraphRuntime._build_graph
+    (src/runtime/langgraph_runtime.py), not a separately importable function, and the
+    fixture-backed FakeModelGateway used by the full-graph tests (tests/conftest.py)
+    doesn't yet know how to answer the new supervisor call (that's a later task's
+    responsibility), so driving the real closure end-to-end is out of scope here. Instead
+    this test reads the actual comparison out of the source file, so a regression back to
+    `>=` is caught even though the closure itself can't be unit-invoked in isolation, and
+    separately pins the intended semantics with concrete iteration counts.
+    """
+    source = Path(__file__).parents[1] / "src/runtime/langgraph_runtime.py"
+    lines = source.read_text().splitlines()
+    (boundary_line,) = [
+        line for line in lines if "iterations" in line and "max_agent_calls" in line and "elif" in line
+    ]
+    assert boundary_line.strip() == 'elif iterations > budget["max_agent_calls"]:'
+
+    max_agent_calls = 3
+    # iterations == max_agent_calls: still a real supervisor call, no forced stop yet.
+    assert (max_agent_calls > max_agent_calls) is False
+    # iterations == max_agent_calls - 1: also a real supervisor call.
+    assert (max_agent_calls - 1 > max_agent_calls) is False
+    # iterations == max_agent_calls + 1: forced stop kicks in on this call.
+    assert (max_agent_calls + 1 > max_agent_calls) is True

@@ -784,7 +784,7 @@ class LangGraphRuntime:
                     "No new facts across the configured iterations",
                     {"stalled_iterations": stalled, "limit": budget["no_progress_iterations"]},
                 )
-            elif iterations >= budget["max_agent_calls"]:
+            elif iterations > budget["max_agent_calls"]:
                 forced, next_step = "max_agent_calls_reached", "verify"
                 ctx.event(
                     ActorKind.GRAPH_NODE,
