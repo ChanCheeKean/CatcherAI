@@ -67,13 +67,24 @@ FORCED_STOPS = (
     "required_evidence_unavailable",
 )
 
-SUPERVISOR_ACTIONS = frozenset(
-    {"gather_evidence", "ask_cardholder", "run_specialists", "analyze_tracks", "verify"}
-)
+_OPTIONAL_SUPERVISOR_HOOKS = {
+    "run_specialists": "specialists",
+    "ask_cardholder": "cardholder_question",
+    "analyze_tracks": "tracks",
+}
+
+
+def _supported_actions(module: ModuleType) -> frozenset[str]:
+    """Only offer/accept actions the selected playbook actually implements."""
+
+    return frozenset(
+        {"verify", "gather_evidence"}
+        | {action for action, hook in _OPTIONAL_SUPERVISOR_HOOKS.items() if hasattr(module, hook)}
+    )
 
 
 async def _decide_next_step(
-    chat_model: GatewayChatModel, state: dict[str, Any], available_actions: list[str]
+    chat_model: GatewayChatModel, state: dict[str, Any], supported: frozenset[str]
 ) -> str:
     """Ask the model which graph action to take next; default to `verify` if it can't."""
 
@@ -99,7 +110,7 @@ async def _decide_next_step(
                     content=json.dumps(
                         {
                             "case_id": state["case_id"],
-                            "available_actions": available_actions,
+                            "available_actions": sorted(supported),
                             "completed_steps": state.get("completed_steps", []),
                             "findings": sorted(state.get("findings", {})),
                             "evidence_count": len(state.get("evidence", [])),
@@ -114,8 +125,8 @@ async def _decide_next_step(
     )
     try:
         next_step = json.loads(str(reply["messages"][-1].content))["next_step"]
-        return next_step if isinstance(next_step, str) and next_step in SUPERVISOR_ACTIONS else "verify"
-    except (json.JSONDecodeError, KeyError, TypeError):
+        return next_step if isinstance(next_step, str) and next_step in supported else "verify"
+    except (json.JSONDecodeError, KeyError, TypeError, IndexError):
         return "verify"
 
 
@@ -794,7 +805,16 @@ class LangGraphRuntime:
                     {"iterations": iterations, "limit": budget["max_agent_calls"]},
                 )
             else:
-                next_step = await _decide_next_step(ctx.chat_model, state, steps)
+                module = playbook(state)
+                # `steps` is the playbook's own dynamic gate on what's safe to attempt right now
+                # (e.g. `ask_cardholder` may only appear once an earlier hook has populated the
+                # findings it reads); a completed step is also safe to loop back into. Intersecting
+                # with `_supported_actions` additionally guarantees we never offer or accept an
+                # action this playbook has no Python implementation for.
+                supported = (
+                    frozenset(steps) | frozenset(state.get("completed_steps", [])) | {"verify"}
+                ) & _supported_actions(module)
+                next_step = await _decide_next_step(ctx.chat_model, state, supported)
             ctx.event(
                 ActorKind.GRAPH_NODE,
                 "assess_progress",
@@ -1243,7 +1263,7 @@ class LangGraphRuntime:
                     sends.append(
                         Send("analyze_track", {**state, "track": track, "track_results": []})
                     )
-                return sends
+                return sends or "verify"
             _edge(emitter, "assess_progress", target, "next planned step or stop test", target)
             return target
 
@@ -1456,7 +1476,7 @@ def _progress_marker(state: WorkflowState) -> int:
             for key in ("evidence", "replies", "specialist_results", "knowledge", "memory_notes")
         )
         + len(state.get("findings", {}))
-        + len(state.get("completed_steps", []))
+        + len(set(state.get("completed_steps", [])))
     )
 
 

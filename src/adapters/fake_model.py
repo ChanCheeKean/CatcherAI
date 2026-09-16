@@ -14,6 +14,15 @@ from domain.model import (
 )
 
 
+_ASSESS_PROGRESS_PRIORITY = (
+    "gather_evidence",
+    "run_specialists",
+    "ask_cardholder",
+    "analyze_tracks",
+    "verify",
+)
+
+
 def _last_user_message(request: ModelRequest) -> str:
     return next(
         (message.content for message in reversed(request.messages) if message.role == "user"),
@@ -74,8 +83,19 @@ class FakeModelGateway:
             )
         if request.actor == "assess_progress":
             payload = json.loads(_last_user_message(request))
-            steps = payload.get("available_actions", [])
-            next_step = steps[0] if steps else "verify"
+            available = set(payload.get("available_actions", []))
+            completed = set(payload.get("completed_steps", []))
+            # `available_actions` is now the sorted (alphabetical) set of actions currently safe
+            # to take, not an ordered plan, so pick deterministically by a fixed workflow
+            # priority and skip anything already completed instead of trusting list position.
+            next_step = next(
+                (
+                    action
+                    for action in _ASSESS_PROGRESS_PRIORITY
+                    if action in available and action not in completed
+                ),
+                "verify",
+            )
             return json.dumps({"next_step": next_step, "rationale": "fake-deterministic"}), []
         if request.actor == "specialist_supervisor":
             if any(message.role == "tool" for message in request.messages):

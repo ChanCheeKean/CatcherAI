@@ -47,7 +47,7 @@ async def test_decide_next_step_accepts_a_valid_choice() -> None:
 async def test_decide_next_step_allows_looping_back_to_a_completed_action() -> None:
     chat_model = _chat_model({"next_step": "gather_evidence", "rationale": "not enough yet"})
     state = {"case_id": "DSP-TEST", "completed_steps": ["gather_evidence"]}
-    result = await _decide_next_step(chat_model, state, [])
+    result = await _decide_next_step(chat_model, state, frozenset({"gather_evidence", "verify"}))
     assert result == "gather_evidence"
 
 
@@ -70,13 +70,13 @@ def test_max_agent_calls_boundary_is_strict_greater_than() -> None:
     max_agent_calls itself.
 
     assess_progress is an async closure defined inside LangGraphRuntime._build_graph
-    (src/runtime/langgraph_runtime.py), not a separately importable function, and the
-    fixture-backed FakeModelGateway used by the full-graph tests (tests/conftest.py)
-    doesn't yet know how to answer the new supervisor call (that's a later task's
-    responsibility), so driving the real closure end-to-end is out of scope here. Instead
-    this test reads the actual comparison out of the source file, so a regression back to
-    `>=` is caught even though the closure itself can't be unit-invoked in isolation, and
-    separately pins the intended semantics with concrete iteration counts.
+    (src/runtime/langgraph_runtime.py), not a separately importable function, so driving
+    the real closure end-to-end is out of scope here even though the fixture-backed
+    FakeModelGateway (src/adapters/fake_model.py) does know how to answer the supervisor
+    call. Instead this test reads the actual comparison out of the source file, so a
+    regression back to `>=` is caught even though the closure itself can't be
+    unit-invoked in isolation, and separately pins the intended semantics with concrete
+    iteration counts.
     """
     source = Path(__file__).parents[1] / "src/runtime/langgraph_runtime.py"
     lines = source.read_text().splitlines()

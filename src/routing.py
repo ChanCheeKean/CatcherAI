@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from deepagents import create_deep_agent
@@ -43,7 +43,7 @@ async def route_case(
     context = {
         **case,
         **features,
-        "billing_total": float(Decimal(str(case.get("dispute_amount") or "0"))),
+        "billing_total": _safe_billing_total(case.get("dispute_amount")),
     }
     menu = [
         {
@@ -76,7 +76,10 @@ async def route_case(
     reply = await router.ainvoke(
         {"messages": [HumanMessage(content=json.dumps({"case": context, "menu": menu}))]}
     )
-    raw = _parse_object(str(reply["messages"][-1].content))
+    try:
+        raw = _parse_object(str(reply["messages"][-1].content))
+    except IndexError:
+        raw = None
     if raw is not None and not _well_typed(raw):
         raw = None  # case content is untrusted; a type mismatch is treated like unparseable output
     known = {route.id for route in config.routes}
@@ -144,15 +147,19 @@ def _parse_object(text: str) -> dict[str, Any] | None:
 
 
 def _well_typed(raw: dict[str, Any]) -> bool:
-    """route_id/depth must be strings and budget a mapping before any membership test,
-    dict lookup, or iteration touches them — otherwise a hostile or malformed case
-    could crash routing instead of falling back."""
+    """route_id/depth must be strings, budget a mapping, and agents/skills lists of
+    strings before any membership test, dict lookup, or iteration touches them —
+    otherwise a hostile or malformed case could crash routing or silently corrupt a
+    loaded skill list instead of falling back."""
 
     route_id, depth, budget = raw.get("route_id"), raw.get("depth"), raw.get("budget")
+    agents, skills = raw.get("agents"), raw.get("skills")
     return (
         (route_id is None or isinstance(route_id, str))
         and (depth is None or isinstance(depth, str))
         and (budget is None or isinstance(budget, dict))
+        and (agents is None or (isinstance(agents, list) and all(isinstance(item, str) for item in agents)))
+        and (skills is None or (isinstance(skills, list) and all(isinstance(item, str) for item in skills)))
     )
 
 
@@ -160,6 +167,13 @@ def _safe_float(value: object) -> float:
     try:
         return float(value)  # type: ignore[arg-type]
     except (TypeError, ValueError):
+        return 0.0
+
+
+def _safe_billing_total(dispute_amount: object) -> float:
+    try:
+        return float(Decimal(str(dispute_amount or "0")))
+    except InvalidOperation:
         return 0.0
 
 
