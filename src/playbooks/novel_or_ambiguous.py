@@ -5,6 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
+import governance
 from domain.case import Adjudication, CardholderResolution, DecisionRecord
 from runtime.context import RunContext
 
@@ -12,14 +13,15 @@ STEPS: list[str] = []
 
 
 def investigate(ctx: RunContext, state: dict[str, Any]) -> dict[str, Any]:
-    """Minimal investigation for ambiguous cases."""
+    """No route-specific investigation for an unclassifiable case."""
     return {}
 
 
 def decide(ctx: RunContext, state: dict[str, Any]) -> DecisionRecord:
-    """Conservative decision for novel or ambiguous cases — deny the dispute."""
+    """Conservative, cardholder-favorable default: file nothing uncertain, absorb the loss."""
     case = state["case"]
-    return DecisionRecord(
+    amount = Decimal(str(case.get("dispute_amount") or "0"))
+    proposal = DecisionRecord(
         case_id=case["case_id"],
         regime=case["regime"],
         is_dispute=True,
@@ -38,8 +40,10 @@ def decide(ctx: RunContext, state: dict[str, Any]) -> DecisionRecord:
         ),
         citations=[],
         confidence=0.0,
-        explanation_for_cardholder=(
-            "We could not definitively categorize your dispute. "
-            "The claim has been processed as unknown with conservative outcome."
-        ),
+        explanation_for_cardholder="Placeholder; will be overwritten by conservative default.",
+    )
+    return governance.apply_conservative_default(
+        proposal,
+        disputed_amount=amount,
+        reason="case did not match any known dispute category",
     )
