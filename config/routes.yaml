@@ -2,360 +2,168 @@ schema_version: 1
 route_confidence_threshold: 0.80
 routes:
   - id: descriptor_confusion_l1
-    priority: 10
-    match:
-      claim_family_initial: fraud_card_present
-      descriptor_history_count_min: 1
-    output:
-      depth: L1
-      graph_path: clarification_fast_path
-      agents: [lead_investigator]
-      skills: [eligibility-check]
-      budget:
-        tool_calls: 7
-        model_input_tokens: 30000
-        model_output_tokens: 4000
-        wall_seconds: 60
-        replans: 0
-        no_progress_iterations: 1
+    depth: L1
+    description: >
+      Repeated fraud-card-present claims against a merchant with prior descriptor-history
+      hits — likely descriptor confusion, not fraud.
+    required_skills: [eligibility-check]
 
   - id: duplicate_processing_l2
-    priority: 20
-    match:
-      claim_family_initial: duplicate
-    output:
-      depth: L2
-      graph_path: duplicate_investigation
-      agents: [lead_investigator]
-      skills: [eligibility-check]
-      budget:
-        tool_calls: 10
-        model_input_tokens: 50000
-        model_output_tokens: 6000
-        wall_seconds: 120
-        replans: 1
-        no_progress_iterations: 2
+    depth: L2
+    description: Claim family is duplicate processing.
+    required_skills: [eligibility-check]
 
   - id: bundled_not_received_l2
-    priority: 15
-    match:
-      claim_family_initial: not_received
-      transaction_count_min: 2
-    output:
-      depth: L2
-      graph_path: split_low_value_and_investigate
-      agents: [lead_investigator]
-      skills: [eligibility-check, not-received]
-      budget:
-        tool_calls: 12
-        model_input_tokens: 50000
-        model_output_tokens: 6000
-        wall_seconds: 120
-        replans: 1
-        no_progress_iterations: 2
+    depth: L2
+    description: >
+      Not-received claim bundling two or more disputed transactions that should be
+      evaluated together.
+    required_skills: [eligibility-check, not-received]
 
   - id: recurring_trial_l3
-    priority: 30
-    match:
-      claim_family_initial: cancelled_recurring
-    output:
-      depth: L3
-      graph_path: recurring_verify_replan
-      agents: [lead_investigator]
-      skills: [eligibility-check, recurring-trial]
-      budget:
-        tool_calls: 14
-        model_input_tokens: 70000
-        model_output_tokens: 8000
-        wall_seconds: 180
-        replans: 2
-        no_progress_iterations: 2
+    depth: L3
+    description: Claim family is a cancelled recurring/trial subscription.
+    required_skills: [eligibility-check, recurring-trial]
 
   - id: debit_fraud_l3
-    priority: 25
-    match:
-      regime: REG_E
-      claim_family_initial: fraud_cnp
-    output:
-      depth: L3
-      graph_path: debit_fraud_parallel_specialists
-      agents: [lead_investigator, reg_e_clock_analyst, graph_link_analyst]
-      skills: [eligibility-check, reg-e-clocks, fraud-cnp]
-      budget:
-        tool_calls: 25
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 2
-        no_progress_iterations: 2
+    depth: L3
+    description: >
+      Reg E card-not-present fraud claim, possibly a cross-customer compromise point.
+    required_skills: [eligibility-check, reg-e-clocks, fraud-cnp]
 
   - id: high_value_cnp_ato_l4
-    priority: 35
-    match:
-      regime: REG_Z
-      claim_family_initial: fraud_cnp
-      billing_total_min: 500
-    output:
-      depth: L4
-      graph_path: ato_parallel_specialists
-      agents: [lead_investigator, security_events_analyst, merchant_evidence_analyst, graph_link_analyst]
-      skills: [eligibility-check, fraud-cnp, automated-adjudication]
-      budget:
-        tool_calls: 30
-        model_input_tokens: 120000
-        model_output_tokens: 16000
-        wall_seconds: 300
-        replans: 3
-        no_progress_iterations: 2
+    depth: L4
+    description: >
+      High-value (>= $500) Reg Z card-not-present fraud claim that may be an account
+      takeover.
+    required_skills: [eligibility-check, fraud-cnp, automated-adjudication]
 
   - id: single_not_received_graph_check_l2
-    priority: 40
-    match:
-      claim_family_initial: not_received
-      transaction_count: 1
-    output:
-      depth: L2
-      graph_path: delivery_then_graph_escalation
-      agents: [lead_investigator, graph_link_analyst, linked_case_analyst]
-      skills: [eligibility-check, not-received]
-      budget:
-        tool_calls: 35
-        model_input_tokens: 140000
-        model_output_tokens: 18000
-        wall_seconds: 300
-        replans: 2
-        no_progress_iterations: 2
+    depth: L2
+    description: >
+      Single-transaction not-received claim that needs a graph check for shared-delivery
+      or linked-case patterns before deciding.
+    required_skills: [eligibility-check, not-received]
 
   - id: agentic_transaction_novel_l4
-    priority: 5
-    match:
-      transaction_channels_contains: agentic_commerce
-    output:
-      depth: L4
-      graph_path: novel_type_wait_for_provider_record
-      agents: [lead_investigator, cardholder_advocate, issuer_advocate, panel_adjudicator]
-      skills: [eligibility-check, agentic-transactions, automated-adjudication]
-      budget:
-        tool_calls: 20
-        model_input_tokens: 120000
-        model_output_tokens: 16000
-        wall_seconds: 300
-        replans: 1
-        no_progress_iterations: 2
+    depth: L4
+    description: >
+      Transaction was placed through an agentic-commerce channel — a novel transaction
+      type with no settled network rule yet.
+    required_skills: [eligibility-check, agentic-transactions, automated-adjudication]
 
   - id: recurring_mid_lifecycle_l3
-    priority: 28
-    match:
-      claim_family_initial: cancelled_recurring
-      stage: pre_arb_decision_due
-    output:
-      depth: L3
-      graph_path: parallel_case_tracks_after_late_response
-      agents: [lead_investigator, lifecycle_track_analyst]
-      skills: [dispute-lifecycle, recurring-trial]
-      budget:
-        tool_calls: 24
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L3
+    description: >
+      Cancelled recurring/trial claim that is already mid-lifecycle, at the
+      pre-arbitration decision-due stage, after a late response.
+    required_skills: [dispute-lifecycle, recurring-trial]
 
   - id: household_authority_l4
-    priority: 33
-    match:
-      regime: REG_Z
-      claim_family_initial: fraud_cnp
-      transaction_count_min: 5
-      prior_merchant_purchases_min: 1
-    output:
-      depth: L4
-      graph_path: household_authority_review_panel
-      agents: [lead_investigator, graph_link_analyst, merchant_evidence_analyst, cardholder_advocate, issuer_advocate, panel_adjudicator]
-      skills: [fraud-cnp, household-authority, automated-adjudication]
-      budget:
-        tool_calls: 24
-        model_input_tokens: 120000
-        model_output_tokens: 16000
-        wall_seconds: 300
-        replans: 1
-        no_progress_iterations: 2
+    depth: L4
+    description: >
+      High-transaction-count Reg Z CNP fraud claim with prior merchant purchases —
+      possible household-authority dispute rather than fraud.
+    required_skills: [fraud-cnp, household-authority, automated-adjudication]
 
   - id: merchant_pattern_not_received_l2
-    priority: 38
-    match:
-      claim_family_initial: not_received
-      transaction_count: 1
-      merchant_closed_same_family_disputes_min: 3
-    output:
-      depth: L2
-      graph_path: verify_merchant_pattern_then_curate
-      agents: [lead_investigator]
-      skills: [not-received, memory-hygiene]
-      budget:
-        tool_calls: 18
-        model_input_tokens: 60000
-        model_output_tokens: 8000
-        wall_seconds: 180
-        replans: 1
-        no_progress_iterations: 2
+    depth: L2
+    description: >
+      Single-transaction not-received claim against a merchant with a pattern of closed
+      same-family disputes (3+).
+    required_skills: [not-received, memory-hygiene]
 
   - id: reg_e_not_received_credit_check_l1
-    priority: 14
-    match:
-      regime: REG_E
-      claim_family_initial: not_received
-    output:
-      depth: L1
-      graph_path: check_late_merchant_credit_first
-      agents: [lead_investigator]
-      skills: [eligibility-check, reg-e-clocks]
-      budget:
-        tool_calls: 10
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L1
+    description: >
+      Reg E not-received claim — check for a late merchant credit before opening a full
+      investigation.
+    required_skills: [eligibility-check, reg-e-clocks]
 
   - id: credit_shortfall_fx_l2
-    priority: 16
-    match:
-      claim_family_initial: credit_not_processed
-    output:
-      depth: L2
-      graph_path: fx_reconciliation_and_fee_sop
-      agents: [lead_investigator]
-      skills: [eligibility-check]
-      budget:
-        tool_calls: 10
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L2
+    description: Claim family is a credit-not-processed / FX or fee shortfall dispute.
+    required_skills: [eligibility-check]
 
   - id: lodging_folio_amount_l3
-    priority: 18
-    match:
-      claim_family_initial: incorrect_amount
-    output:
-      depth: L3
-      graph_path: folio_line_fan_out
-      agents: [lead_investigator, folio_line_analyst]
-      skills: [lodging-te, eligibility-check]
-      budget:
-        tool_calls: 24
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L3
+    description: >
+      Lodging/travel claim disputing the billed amount — needs a folio line-item
+      breakdown.
+    required_skills: [lodging-te, eligibility-check]
 
   - id: lodging_cancellation_l2
-    priority: 19
-    match:
-      claim_family_initial: cancelled_merch
-    output:
-      depth: L2
-      graph_path: timezone_cancellation_check
-      agents: [lead_investigator]
-      skills: [lodging-te, eligibility-check]
-      budget:
-        tool_calls: 14
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L2
+    description: >
+      Lodging/travel claim disputing a cancelled reservation, possibly a timezone
+      cancellation-cutoff issue.
+    required_skills: [lodging-te, eligibility-check]
 
   - id: not_as_described_l2
-    priority: 21
-    match:
-      claim_family_initial: not_as_described
-    output:
-      depth: L2
-      graph_path: as_of_listing_snapshot
-      agents: [lead_investigator]
-      skills: [eligibility-check]
-      budget:
-        tool_calls: 14
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L2
+    description: >
+      Claim family is not-as-described — check the merchant's listing as of the purchase
+      date.
+    required_skills: [eligibility-check]
 
   - id: stale_claim_timeliness_l2
-    priority: 36
-    match:
-      claim_family_initial: not_received
-      transaction_age_days_min: 150
-    output:
-      depth: L2
-      graph_path: value_of_information_stop
-      agents: [lead_investigator]
-      skills: [eligibility-check, not-received]
-      budget:
-        tool_calls: 12
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L2
+    description: >
+      Not-received claim opened long after the transaction (150+ days) — timeliness /
+      value-of-information concern.
+    required_skills: [eligibility-check, not-received]
 
   - id: cnp_fraud_ce3_digital_l3
-    priority: 37
-    match:
-      regime: REG_Z
-      claim_family_initial: fraud_cnp
-      transaction_count: 1
-      prior_merchant_purchases_min: 1
-    output:
-      depth: L3
-      graph_path: evidence_review_then_reroute
-      agents: [lead_investigator]
-      skills: [fraud-cnp, eligibility-check]
-      budget:
-        tool_calls: 22
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L3
+    description: >
+      Single-transaction Reg Z CNP fraud claim against a merchant with prior purchases —
+      likely CE 3.0 digital-goods evidence, may need rerouting after review.
+    required_skills: [fraud-cnp, eligibility-check]
 
   - id: merchant_nonperformance_not_received_l2
-    priority: 39
-    match:
-      claim_family_initial: not_received
-      transaction_count: 1
-      evidence_has_proof_of_delivery: false
-    output:
-      depth: L2
-      graph_path: research_waiver_and_file
-      agents: [lead_investigator]
-      skills: [not-received, eligibility-check]
-      budget:
-        tool_calls: 14
-        model_input_tokens: 90000
-        model_output_tokens: 12000
-        wall_seconds: 240
-        replans: 1
-        no_progress_iterations: 2
+    depth: L2
+    description: >
+      Single-transaction not-received claim where the merchant has no proof of delivery
+      on file — possible merchant nonperformance.
+    required_skills: [not-received, eligibility-check]
 
   - id: novel_or_ambiguous
-    priority: 10000
-    match:
-      fallback: true
-    output:
-      depth: L4
-      graph_path: full_investigation
-      agents: [lead_investigator]
-      skills: [eligibility-check, automated-adjudication]
-      budget:
-        tool_calls: 24
-        model_input_tokens: 120000
-        model_output_tokens: 16000
-        wall_seconds: 300
-        replans: 3
-        no_progress_iterations: 2
+    depth: L4
+    description: >
+      Fallback for cases that don't clearly fit any other route — full conservative
+      investigation.
+    required_skills: [eligibility-check, automated-adjudication]
+
+depth_bounds:
+  L1:
+    tool_calls: [3, 12]
+    model_input_tokens: [10000, 100000]
+    model_output_tokens: [2000, 14000]
+    wall_seconds: [30, 240]
+    replans: [0, 2]
+    no_progress_iterations: [1, 2]
+    max_agent_calls: [3, 6]
+  L2:
+    tool_calls: [5, 40]
+    model_input_tokens: [30000, 150000]
+    model_output_tokens: [4000, 20000]
+    wall_seconds: [60, 320]
+    replans: [0, 3]
+    no_progress_iterations: [1, 3]
+    max_agent_calls: [4, 8]
+  L3:
+    tool_calls: [8, 30]
+    model_input_tokens: [50000, 100000]
+    model_output_tokens: [6000, 14000]
+    wall_seconds: [90, 260]
+    replans: [1, 3]
+    no_progress_iterations: [1, 3]
+    max_agent_calls: [6, 10]
+  L4:
+    tool_calls: [15, 35]
+    model_input_tokens: [100000, 140000]
+    model_output_tokens: [12000, 20000]
+    wall_seconds: [200, 320]
+    replans: [1, 4]
+    no_progress_iterations: [1, 3]
+    max_agent_calls: [8, 16]

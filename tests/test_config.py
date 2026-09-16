@@ -53,3 +53,36 @@ def test_routes_config_rejects_duplicate_ids() -> None:
         assert "unique" in str(exc)
     else:
         raise AssertionError("expected duplicate route ids to be rejected")
+
+
+from config import load_routes_config
+
+
+def test_real_routes_yaml_loads_and_has_all_known_routes(project_root: Path) -> None:
+    routes = load_routes_config(project_root / "config/routes.yaml")
+    ids = {route.id for route in routes.routes}
+    assert ids == {
+        "descriptor_confusion_l1",
+        "duplicate_processing_l2",
+        "bundled_not_received_l2",
+        "recurring_trial_l3",
+        "debit_fraud_l3",
+        "high_value_cnp_ato_l4",
+        "single_not_received_graph_check_l2",
+        "agentic_transaction_novel_l4",
+        "recurring_mid_lifecycle_l3",
+        "household_authority_l4",
+        "merchant_pattern_not_received_l2",
+        "reg_e_not_received_credit_check_l1",
+        "credit_shortfall_fx_l2",
+        "lodging_folio_amount_l3",
+        "lodging_cancellation_l2",
+        "not_as_described_l2",
+        "stale_claim_timeliness_l2",
+        "cnp_fraud_ce3_digital_l3",
+        "merchant_nonperformance_not_received_l2",
+        "novel_or_ambiguous",
+    }
+    novel = next(route for route in routes.routes if route.id == "novel_or_ambiguous")
+    assert novel.depth == "L4"
+    assert set(routes.depth_bounds) == {"L1", "L2", "L3", "L4"}
