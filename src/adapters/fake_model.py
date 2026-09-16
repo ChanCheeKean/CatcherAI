@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import AsyncIterator
 
+from adapters import fake_routing
 from domain.model import (
     Capability,
     ModelRequest,
@@ -11,6 +12,13 @@ from domain.model import (
     NeutralToolCall,
     Usage,
 )
+
+
+def _last_user_message(request: ModelRequest) -> str:
+    return next(
+        (message.content for message in reversed(request.messages) if message.role == "user"),
+        "{}",
+    )
 
 
 class FakeModelGateway:
@@ -47,18 +55,32 @@ class FakeModelGateway:
     def _response(self, request: ModelRequest, case_id: str) -> tuple[str, list[NeutralToolCall]]:
         if case_id in self.responses:
             return self.responses[case_id], []
+        if request.actor == "case_router":
+            payload = json.loads(_last_user_message(request))
+            route_id, depth = fake_routing.classify(payload["case"])
+            return (
+                json.dumps(
+                    {
+                        "route_id": route_id,
+                        "depth": depth,
+                        "confidence": 1.0,
+                        "agents": [],
+                        "skills": [],
+                        "budget": fake_routing.BUDGETS[route_id],
+                        "rationale": "fake-deterministic route classification",
+                    }
+                ),
+                [],
+            )
+        if request.actor == "assess_progress":
+            payload = json.loads(_last_user_message(request))
+            steps = payload.get("available_actions", [])
+            next_step = steps[0] if steps else "verify"
+            return json.dumps({"next_step": next_step, "rationale": "fake-deterministic"}), []
         if request.actor == "specialist_supervisor":
             if any(message.role == "tool" for message in request.messages):
                 return json.dumps({"status": "complete", "specialists_synthesized": True}), []
-            user_content = next(
-                (
-                    message.content
-                    for message in reversed(request.messages)
-                    if message.role == "user"
-                ),
-                "{}",
-            )
-            payload = json.loads(user_content)
+            payload = json.loads(_last_user_message(request))
             calls = [
                 NeutralToolCall(
                     id=f"{request.call_id}-task-{index}",
