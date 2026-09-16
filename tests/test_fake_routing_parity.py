@@ -25,6 +25,7 @@ def test_classify_prefers_the_lowest_priority_number_on_overlap() -> None:
             "claim_family_initial": "fraud_cnp",
             "regime": "REG_Z",
             "transaction_channels": ["agentic_commerce"],
+            "billing_total": 600,
         }
     )
     assert route_id == "agentic_transaction_novel_l4"
