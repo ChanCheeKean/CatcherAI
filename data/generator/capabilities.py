@@ -17,8 +17,8 @@ CAPABILITIES = {
         trajectory_signals=["plan_created", "plan_updated (agent-initiated)", "hypothesis_updated"]),
     "router": dict(
         label="Router",
-        definition="Config-driven routing: not-a-dispute, regime (Reg Z/Reg E), claim family, depth, case split, novel type, portfolio priority.",
-        trajectory_signals=["route_decision {route_id, method: rule|llm, confidence}"]),
+        definition="LLM classification over a described menu of routes (not-a-dispute, regime, claim family, depth, case split, novel type, portfolio priority), with a confidence-gated conservative fallback.",
+        trajectory_signals=["route_decision {route_id, method: llm|fallback, confidence}"]),
     "loop_termination": dict(
         label="Loop engineering (real termination conditions)",
         definition="Explicit stop reasons: decision complete + verified, early stop, suspend/resume on external events, budget, no-progress, max re-plans, conservative default.",

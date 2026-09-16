@@ -86,3 +86,13 @@ def test_real_routes_yaml_loads_and_has_all_known_routes(project_root: Path) -> 
     novel = next(route for route in routes.routes if route.id == "novel_or_ambiguous")
     assert novel.depth == "L4"
     assert set(routes.depth_bounds) == {"L1", "L2", "L3", "L4"}
+
+
+def test_router_capability_describes_llm_classification() -> None:
+    import sys
+    sys.path.insert(0, "data/generator")
+    from capabilities import CAPABILITIES
+
+    router = CAPABILITIES["router"]
+    assert "llm" in router["definition"].casefold()
+    assert "match" not in router["definition"].casefold()
