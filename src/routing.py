@@ -34,8 +34,10 @@ async def route_case(
 ) -> RouteDecision:
     """Ask the model to classify the case against the configured route menu.
 
-    Low confidence, an unknown route_id, or unparseable output conservatively falls back
-    to the `novel_or_ambiguous` route with `method="fallback"`.
+    Low confidence, an unknown route_id, a wrong-typed route_id/depth/budget, or
+    unparseable output conservatively falls back to the `novel_or_ambiguous` route with
+    `method="fallback"` and `confidence=0.0` — case content is untrusted, so malformed
+    output must fall back cleanly rather than raise.
     """
 
     context = {
@@ -75,6 +77,8 @@ async def route_case(
         {"messages": [HumanMessage(content=json.dumps({"case": context, "menu": menu}))]}
     )
     raw = _parse_object(str(reply["messages"][-1].content))
+    if raw is not None and not _well_typed(raw):
+        raw = None  # case content is untrusted; a type mismatch is treated like unparseable output
     known = {route.id for route in config.routes}
     fallback_route = next(route for route in config.routes if route.id == "novel_or_ambiguous")
 
@@ -85,6 +89,8 @@ async def route_case(
     selected = next((r for r in config.routes if r.id == route_id), None) if trustworthy else None
     selected = selected or fallback_route
     method = "llm" if trustworthy else "fallback"
+    if method == "fallback":
+        confidence = 0.0
     depth = raw.get("depth") if trustworthy and raw else None
     if depth not in config.depth_bounds:
         depth = selected.depth
@@ -135,6 +141,19 @@ def _parse_object(text: str) -> dict[str, Any] | None:
     except json.JSONDecodeError:
         return None
     return value if isinstance(value, dict) else None
+
+
+def _well_typed(raw: dict[str, Any]) -> bool:
+    """route_id/depth must be strings and budget a mapping before any membership test,
+    dict lookup, or iteration touches them — otherwise a hostile or malformed case
+    could crash routing instead of falling back."""
+
+    route_id, depth, budget = raw.get("route_id"), raw.get("depth"), raw.get("budget")
+    return (
+        (route_id is None or isinstance(route_id, str))
+        and (depth is None or isinstance(depth, str))
+        and (budget is None or isinstance(budget, dict))
+    )
 
 
 def _safe_float(value: object) -> float:

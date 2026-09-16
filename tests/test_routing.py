@@ -186,6 +186,29 @@ async def test_route_case_falls_back_on_unknown_route_id(tmp_path: Path) -> None
     )
     assert decision.route_id == "novel_or_ambiguous"
     assert decision.method == "fallback"
+    assert decision.confidence == 0.0
+
+
+async def test_route_case_falls_back_on_malformed_field_types(tmp_path: Path) -> None:
+    """Case content is untrusted: valid JSON with the wrong shape (budget as a scalar,
+    depth as a list) must fall back cleanly rather than crash with a TypeError from an
+    `in`/membership check or from iterating a non-dict budget."""
+
+    body = {
+        "route_id": "debit_fraud_l3",
+        "depth": ["L3"],
+        "agents": [],
+        "skills": [],
+        "budget": 5000,
+        "confidence": 0.95,
+        "rationale": "x",
+    }
+    decision = await route_case(
+        CASE, FEATURES, ROUTES, _chat_model(body), _emitter(tmp_path / "events.sqlite")
+    )
+    assert decision.route_id == "novel_or_ambiguous"
+    assert decision.method == "fallback"
+    assert decision.confidence == 0.0
 
 
 async def test_route_case_falls_back_on_unparseable_output(tmp_path: Path) -> None:
