@@ -91,12 +91,12 @@ async def route_case(
     method = "llm" if trustworthy else "fallback"
     if method == "fallback":
         confidence = 0.0
-    depth = raw.get("depth") if trustworthy and raw else None
+    depth = raw.get("depth") if trustworthy else None
     if depth not in config.depth_bounds:
         depth = selected.depth
     budget = _clamp_budget(raw.get("budget") if raw else None, config.depth_bounds[depth], conservative=not trustworthy)
-    agents = list(raw.get("agents", [])) if trustworthy and raw else []
-    skills = sorted(set(raw.get("skills", []) if trustworthy and raw else []) | set(selected.required_skills))
+    agents = list(raw.get("agents", [])) if trustworthy else []
+    skills = sorted(set(raw.get("skills", []) if trustworthy else []) | set(selected.required_skills))
     rationale = (raw.get("rationale") if raw else None) or (
         "Could not classify with sufficient confidence; used the conservative fallback route."
     )

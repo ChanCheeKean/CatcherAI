@@ -18,8 +18,9 @@ def test_classify_matches_the_original_high_value_ato_rule() -> None:
 
 
 def test_classify_prefers_the_lowest_priority_number_on_overlap() -> None:
-    # agentic_transaction_novel_l4 (priority 5) must win over any claim_family-based rule
-    # when the transaction channel is agentic_commerce, exactly as the old engine did.
+    # agentic_transaction_novel_l4 is first in _RULES, so it must win over any
+    # claim_family-based rule when the transaction channel is agentic_commerce,
+    # exactly as the old engine did.
     route_id, _ = classify(
         {
             "claim_family_initial": "fraud_cnp",

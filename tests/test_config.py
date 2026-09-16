@@ -1,19 +1,18 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
-from config import load_models_config
+import pytest
+import yaml
+
+from config import RoutesConfig, load_models_config, load_routes_config
 
 
 def test_concurrency_config_has_no_dead_model_calls_field(project_root: Path) -> None:
     models = load_models_config(project_root / "config/models.yaml")
     assert models.concurrency.per_run == 4
     assert not hasattr(models.concurrency, "model_calls")
-
-
-import yaml
-
-from config import RoutesConfig
 
 
 ROUTES_FIXTURE = """
@@ -47,15 +46,8 @@ def test_routes_config_has_no_match_or_priority_fields() -> None:
 def test_routes_config_rejects_duplicate_ids() -> None:
     raw = yaml.safe_load(ROUTES_FIXTURE)
     raw["routes"].append(raw["routes"][0])
-    try:
+    with pytest.raises(ValueError, match="unique"):
         RoutesConfig.model_validate(raw)
-    except ValueError as exc:
-        assert "unique" in str(exc)
-    else:
-        raise AssertionError("expected duplicate route ids to be rejected")
-
-
-from config import load_routes_config
 
 
 def test_real_routes_yaml_loads_and_has_all_known_routes(project_root: Path) -> None:
@@ -89,7 +81,6 @@ def test_real_routes_yaml_loads_and_has_all_known_routes(project_root: Path) -> 
 
 
 def test_router_capability_describes_llm_classification() -> None:
-    import sys
     sys.path.insert(0, "data/generator")
     from capabilities import CAPABILITIES
 
