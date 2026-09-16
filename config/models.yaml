@@ -15,7 +15,6 @@ default:
     - usage_reporting
     - prompt_caching
 concurrency:
-  model_calls: 8
   per_run: 4
 retry:
   initial_backoff_ms: 500

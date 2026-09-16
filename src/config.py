@@ -34,7 +34,6 @@ class RetryConfig(BaseModel):
 class ConcurrencyConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    model_calls: int = 8
     per_run: int = 4
 
 
