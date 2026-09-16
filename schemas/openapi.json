@@ -2834,53 +2834,28 @@
             "type": "string",
             "title": "Id"
           },
-          "priority": {
-            "type": "integer",
-            "title": "Priority"
-          },
-          "match": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Match"
-          },
           "depth": {
             "type": "string",
             "title": "Depth"
           },
-          "graph_path": {
+          "description": {
             "type": "string",
-            "title": "Graph Path"
+            "title": "Description"
           },
-          "agents": {
+          "required_skills": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Agents"
-          },
-          "skills": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Skills"
-          },
-          "budget": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Budget"
+            "title": "Required Skills"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "priority",
-          "match",
           "depth",
-          "graph_path",
-          "agents",
-          "skills",
-          "budget"
+          "description",
+          "required_skills"
         ],
         "title": "RouteSummary"
       },

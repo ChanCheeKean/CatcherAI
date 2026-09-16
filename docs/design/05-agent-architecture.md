@@ -354,7 +354,6 @@ routes:
       regime: from_product
       claim_family: descriptor_inquiry
       depth: L1
-      graph_path: clarification_fast_path
       budget: {tool_calls: 6, model_input_tokens: 30000, wall_seconds: 60, replans: 0}
       agents: [lead_investigator]
       skills: [eligibility-check]
@@ -365,7 +364,6 @@ routes:
     match: {fallback: true}
     output:
       depth: L4
-      graph_path: full_investigation
       agents: [lead_investigator, policy_analyst, research_analyst]
       skills: [eligibility-check, automated-adjudication]
       governance: required
@@ -833,7 +831,7 @@ Payload examples below show required fields; the envelope supplies actor, timest
 | `checkpoint_saved` | `{"checkpoint_id":"chk...","state_hash":"...","reason":"before_external_wait"}` | checkpointer wrapper | time travel |
 | `checkpoint_restored` | `{"checkpoint_id":"chk...","state_hash":"...","reason":"external_event_resume"}` | checkpointer wrapper | time travel |
 | `state_snapshot` | `{"checkpoint_id":"chk...","state_blob":"sha256:...","state_hash":"..."}` | checkpointer wrapper | replay |
-| `route_decision` | `{"candidates":[...],"evaluated_rules":[...],"method":"rule","chosen":"descriptor_confusion_l1","depth":"L1","budget":{},"agents":[...],"skills":[...],"rationale":"..."}` | router | route inspector |
+| `route_decision` | `{"candidates":[...],"method":"llm","chosen":"descriptor_confusion_l1","depth":"L1","budget":{},"agents":[...],"skills":[...],"rationale":"..."}` | router | route inspector |
 | `portfolio_ranked` | `{"scores":[{"case_id":"...","score":"8.5","factors":{}}],"order":["..."]}` | router | queue view |
 | `plan_created` | `{"plan_id":"p1","steps":[...],"stop_tests":[...],"open_questions":[...]}` | lead middleware | plan |
 | `plan_updated` | `{"from":"p1","to":"p2","diff":[...],"reason_event_ids":["evt..."]}` | lead middleware | plan diff |
