@@ -71,13 +71,9 @@ def routes(
     return [
         RouteSummary(
             id=route.id,
-            priority=route.priority,
-            match=route.match,
-            depth=route.output.depth,
-            graph_path=route.output.graph_path,
-            agents=route.output.agents,
-            skills=route.output.skills,
-            budget=route.output.budget.model_dump(mode="json"),
+            depth=route.depth,
+            description=route.description,
+            required_skills=route.required_skills,
         )
         for route in routes_config.routes
     ]

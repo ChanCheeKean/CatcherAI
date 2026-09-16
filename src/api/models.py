@@ -115,13 +115,9 @@ class MetaResponse(BaseModel):
 
 class RouteSummary(BaseModel):
     id: str
-    priority: int
-    match: dict[str, Any]
     depth: str
-    graph_path: str
-    agents: list[str]
-    skills: list[str]
-    budget: dict[str, Any]
+    description: str
+    required_skills: list[str]
 
 
 class AgentSummary(BaseModel):
