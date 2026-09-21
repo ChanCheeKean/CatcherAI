@@ -2,8 +2,10 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import type { EvidenceLink } from '../api/types'
 import { Canvas } from '../run/Canvas'
 import { Conclusion } from '../run/Conclusion'
+import { deriveFlow } from '../run/flow'
 import { Inspector } from '../run/Inspector'
 import { type CanvasTab, type Highlight, RunPanelsContext, type Selection } from '../run/RunContext'
 import { useRunEvents } from '../run/useRunEvents'
@@ -24,20 +26,18 @@ export function RunPage() {
   const [highlight, setHighlight] = useState<Highlight>(NO_HIGHLIGHT)
   const [tab, setTab] = useState<CanvasTab>('flow')
 
-  const showEvidence = useCallback(
-    (link: { node_ids: string[]; edge_ids: string[] }) => {
-      setHighlight({ nodeIds: new Set(link.node_ids), edgeIds: new Set(link.edge_ids) })
-      setTab('graph')
-    },
-    [],
-  )
+  const showEvidence = useCallback((link: Pick<EvidenceLink, 'node_ids' | 'edge_ids'>) => {
+    setHighlight({ nodeIds: new Set(link.node_ids), edgeIds: new Set(link.edge_ids) })
+    setTab('graph')
+  }, [])
   const rerun = useMutation({
     mutationFn: () => api.startRun(caseId),
     onSuccess: (run) => navigate(`/cases/${run.case_id}/runs/${run.run_id}`),
   })
+  const flow = useMemo(() => deriveFlow(view.events), [view.events])
   const panels = useMemo(
-    () => ({ view, selection, select, highlight, showEvidence, tab, setTab }),
-    [view, selection, highlight, showEvidence, tab],
+    () => ({ view, flow, selection, select, highlight, showEvidence, tab, setTab }),
+    [view, flow, selection, highlight, showEvidence, tab],
   )
 
   return (

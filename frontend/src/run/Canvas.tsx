@@ -1,3 +1,4 @@
+import { AgentFlow } from './AgentFlow'
 import { useRunPanels, type CanvasTab } from './RunContext'
 
 const TABS: { id: CanvasTab; label: string }[] = [
@@ -6,7 +7,7 @@ const TABS: { id: CanvasTab; label: string }[] = [
 ]
 
 export function Canvas() {
-  const { tab, setTab } = useRunPanels()
+  const { tab, setTab, flow, view } = useRunPanels()
   return (
     <section aria-label="Run canvas" className="flex min-h-0 flex-col border-b lg:border-r lg:border-b-0">
       <div role="tablist" className="flex gap-1 border-b bg-vellum px-3 pt-2">
@@ -25,32 +26,10 @@ export function Canvas() {
           </button>
         ))}
       </div>
-      <div role="tabpanel" className="min-h-0 flex-1 overflow-auto p-4">
-        {tab === 'flow' ? <AgentFlowStub /> : <EvidenceGraphStub />}
+      <div role="tabpanel" className={`min-h-0 flex-1 ${tab === 'flow' ? '' : 'overflow-auto p-4'}`}>
+        {tab === 'flow' ? <AgentFlow flow={flow} running={view.status === 'running'} /> : <EvidenceGraphStub />}
       </div>
     </section>
-  )
-}
-
-/** Stand-in until the agent map arrives: the actors that have run, with their visit counts. */
-function AgentFlowStub() {
-  const { view, selection, select } = useRunPanels()
-  if (!view.visits.size) return <p className="text-graphite">Waiting for the first agent to start…</p>
-  return (
-    <ul className="flex flex-wrap gap-2">
-      {[...view.visits].map(([name, visits]) => (
-        <li key={name}>
-          <button
-            type="button"
-            onClick={() => select({ kind: 'actor', name })}
-            aria-pressed={selection?.kind === 'actor' && selection.name === name}
-            className="cursor-pointer rounded-sm border bg-vellum px-3 py-2 text-sm aria-pressed:border-ink"
-          >
-            {name} <span className="text-graphite tabular-nums">×{visits}</span>
-          </button>
-        </li>
-      ))}
-    </ul>
   )
 }
 

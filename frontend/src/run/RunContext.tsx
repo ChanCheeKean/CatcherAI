@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
 import type { EvidenceLink } from '../api/types'
+import type { Flow } from './flow'
 import type { RunView } from './store'
 
 export type Selection = { kind: 'actor'; name: string } | { kind: 'node'; id: string } | null
@@ -14,6 +15,8 @@ export type CanvasTab = 'flow' | 'graph'
 /** Everything the run page's panels share: the derived run plus the two cross-panel selections. */
 export interface RunPanels {
   view: RunView
+  /** The agent map derived from the same events. */
+  flow: Flow
   selection: Selection
   select: (selection: Selection) => void
   highlight: Highlight

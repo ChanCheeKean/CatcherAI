@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S11 frontend shell complete; S9 tuning partly done (3/10 cases verified)**
-Next stage: **S12 — Frontend part 2: agent-flow graph + inspector** (S9 case tuning is queued and will be revisited; see §8)
+Current phase: **S12 agent-flow graph + inspector complete; S9 tuning partly done (3/10 cases verified)**
+Next stage: **S13 — Frontend part 3: evidence graph, highlighting, E2E** (S9 case tuning is queued and will be revisited; see §8)
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -434,7 +434,7 @@ Do:
 Checks: `npx tsc -b`, `npx vitest run` (tests for event → store derivation and the conclusion
 panel with a fixture `CaseReport`), `npm run build`.
 
-### S12 — Frontend part 2: agent-flow graph + inspector  ☐
+### S12 — Frontend part 2: agent-flow graph + inspector  ☑
 **Complexity: Complex**
 
 Goal: the region-segmented agent map where every node can be opened to see what it did.
@@ -827,3 +827,10 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   inspector, and evidence-chip highlight into the graph tab.
 - Verification: `npx tsc -b`, `npx vitest run` (9 tests: store derivation, conclusion panel), `npm run
   build`, `npm run lint`. No design decision changed and no spec update was required.
+
+### 2026-09-21 — S12 frontend part 2 complete
+
+- Added `@xyflow/react`. `run/flow.ts` derives the whole agent map from trajectory events alone (`deriveFlow`): nodes by region (Planning, Investigation, Tools and memory, Decision) in order of first appearance, per-actor visits (input, output, duration, tokens, skills, tool calls, plan after each supervisor turn, exit reasons), aggregated edges (`forward`, `return`, `self`, `tool`, `decision`) with counts, active visits and last edge. `layout()` gives deterministic positions. `run/AgentFlow.tsx` renders it: dashed return arcs, a self-loop for rejected `Decide` (also a "↻ N rejected" chip), an underpass edge labelled `Decide` or `forced: ...`, `×N` visit badges, pulsing active node, animated last edge while running, ad-hoc roles dashed and tagged, selection dims unrelated edges, refit on new nodes or pane resize. `run/ActorPanel.tsx` + `run/Fields.tsx` are the inspector: every visit as a collapsible block with readable fields for input/output (generic renderer, raw JSON toggle), plan checklist, skills, tool calls; tool nodes list all their calls.
+- Deviations: (1) Investigation wraps into another column after 6 roles (real runs invented up to 22 ad-hoc roles), so regions right of it shift one slot when that happens; nothing else moves. (2) Crowded maps (more than 16 edges) draw edges at half opacity and hide count labels until a node is selected. (3) The "selected agent publishes touched node ids" hook was removed by the simplifier as unused; S13 should derive it from `Flow.visits[name].tools` / `Flow.toolCalls[tool]` (each call has `nodeIds`/`edgeIds`) and add it to `RunPanels`. (4) Ad hoc = the supervisor gave the task `instructions`; tool calls by `memory_keeper` without a delegation parent are filed under `consolidate_memory`.
+- Verified in a browser against stored real runs (C04 and C08 replays; C08 has 22 roles). Playwright is not yet a project dependency (S13 adds it).
+- Verification: `npx tsc -b`, `npx vitest run` (20 tests: flow derivation, layout stability and wrapping, inspector), `npm run lint`, `npm run build`; `uv run pytest` passes. No design decision changed.

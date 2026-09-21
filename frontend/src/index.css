@@ -57,6 +57,29 @@ body {
   }
 }
 
+/* The agent that is working right now. */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(169 106 18 / 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgb(169 106 18 / 0);
+  }
+}
+.pulse {
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+
+/* The edge the run took last, while the run is live. */
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+.flow-edge-live {
+  animation: flow-dash 0.8s linear infinite;
+}
+
 /* One deliberate moment: the run status dot breathes while agents are working. */
 @keyframes breathe {
   50% {

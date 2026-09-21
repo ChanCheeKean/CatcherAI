@@ -1,35 +1,37 @@
-import type { TrajectoryEvent } from '../api/types'
+import { ActorPanel } from './ActorPanel'
 import { useRunPanels } from './RunContext'
 
 const MAX_EVENTS = 100
+const PANEL = 'min-h-0 overflow-auto bg-vellum p-4'
 
-/** Selection-driven side panel. For now it shows the raw events behind the selection. */
+/** Selection-driven side panel: an agent or tool shows what it did; a graph item shows the raw events that touched it. */
 export function Inspector() {
-  const { view, selection } = useRunPanels()
+  const { view, flow, selection } = useRunPanels()
 
-  let heading = 'Inspector'
-  let events: TrajectoryEvent[] = []
-  let note = 'Select an agent or a graph item to see what happened.'
-
-  if (selection?.kind === 'actor') {
-    heading = selection.name
-    events = view.events.filter(
-      (e) => e.actor.name === selection.name || e.payload.caller === selection.name,
+  if (selection?.kind === 'actor')
+    return (
+      <aside aria-label="Inspector" className={PANEL}>
+        <ActorPanel name={selection.name} flow={flow} />
+      </aside>
     )
-    note = ''
-  } else if (selection?.kind === 'node') {
-    heading = selection.id
-    const found = view.touched.get(selection.id)
-    events = view.events.filter((e) => e.refs.includes(selection.id))
-    note = found ? `Found by ${found.actor} with ${found.tool} in turn ${found.turn}.` : ''
-  }
+  if (!selection)
+    return (
+      <aside aria-label="Inspector" className={PANEL}>
+        <h2 className="mb-2 font-semibold">Inspector</h2>
+        <p className="mb-3 text-sm text-graphite">Select an agent or a graph item to see what happened.</p>
+      </aside>
+    )
 
+  const found = view.touched.get(selection.id)
+  const events = view.events.filter((e) => e.refs.includes(selection.id))
   return (
-    <aside aria-label="Inspector" className="min-h-0 overflow-auto bg-vellum p-4">
-      <h2 className={`mb-2 font-semibold ${selection?.kind === 'node' ? 'id-chip text-sm' : ''}`}>
-        {heading}
-      </h2>
-      {note && <p className="mb-3 text-sm text-graphite">{note}</p>}
+    <aside aria-label="Inspector" className={PANEL}>
+      <h2 className="id-chip mb-2 text-sm font-semibold">{selection.id}</h2>
+      {found && (
+        <p className="mb-3 text-sm text-graphite">
+          Found by {found.actor} with {found.tool} in turn {found.turn}.
+        </p>
+      )}
       <ol className="space-y-1.5">
         {events.slice(-MAX_EVENTS).map((event) => (
           <li key={event.seq}>

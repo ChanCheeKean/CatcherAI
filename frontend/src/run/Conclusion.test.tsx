@@ -3,12 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Conclusion } from './Conclusion'
 import { evidence, event, report } from './fixtures'
+import { deriveFlow } from './flow'
 import { emptyRun, reduceEvent } from './store'
 import { RunPanelsContext, type RunPanels } from './RunContext'
 
 function renderWith(events: ReturnType<typeof event>[], showEvidence = vi.fn()) {
   const panels: RunPanels = {
     view: events.reduce(reduceEvent, emptyRun()),
+    flow: deriveFlow(events),
     selection: null,
     select: vi.fn(),
     highlight: { nodeIds: new Set(), edgeIds: new Set() },
