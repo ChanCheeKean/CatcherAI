@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S1 — Graph foundation complete**
-Next stage: **S2 — Background world generator**
+Current phase: **S2 — Background world generator complete**
+Next stage: **S3 — Case kit, validation, and cases 1–5**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -173,7 +173,7 @@ a tiny fixture graph loads; `schema()` counts; `query` returns IDs and rejects e
 
 Done when the tests pass and the whole API of `graph_store.py` fits comfortably on a screen or two.
 
-### S2 — Background world generator  ☐
+### S2 — Background world generator  ☑
 **Complexity: Medium**
 
 Goal: a realistic, deterministic world that hides the cases in noise.
@@ -565,3 +565,27 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
 - Notes for S2: Ladybug returns empty strings as NULL, so temporal filters treat NULL as open;
   `query` ids include id-shaped string values (e.g. `RETURN a.id`); edges from `neighbors` are
   compact dicts. Deviations listed in §7.
+
+### 2026-09-21 — S2 background world generator complete
+
+- Built `data/generator/world.py`: deterministic seeded identity, commerce and dispute background
+  data with production defaults of 2,500 customers, 250 merchants, 50,000 transactions over about
+  six months, and 300 ordinary disputes. The world includes credit/debit accounts, authorized
+  users, tokens, orders/shipments, merchant accounts, terminals/descriptors, evidence requests,
+  communications, account events and historical memory/findings.
+- Added benign graph ambiguity: shared household addresses and family devices, same-street
+  different-unit addresses, office and CGNAT IPs, a recycled phone with non-overlapping ownership,
+  marketplace sub-merchants, refunds and agent-provider mandates. Every one of the 26 node labels
+  and 38 edge types is present in the background graph.
+- Built `data/generator/gen.py`: `uv run python data/generator/gen.py` writes deterministic JSONL,
+  loads `data/generated/evidence.lbug`, and prints sorted node/edge counts. Generated artifacts are
+  now wholly ignored through `.gitignore` rather than partially ignored by file extension.
+- Added `tests/test_generator_world.py` for byte determinism, full ontology coverage, referential
+  integrity, valid temporal intervals and stats output. The code-simplifier pass removed unused
+  generator parameters/accumulators and tightened minimum custom counts without changing output.
+- Verification: `uv run ruff check src tests data/generator` clean; `uv run ruff format --check src
+  tests data/generator` clean; `uv run pytest` **26 passed** with one upstream Starlette warning.
+  The production generator completed in about five seconds, produced a 154 MB ignored artifact set,
+  loaded successfully into LadybugDB, and reported 2,500 customers / 50,000 transactions / 300
+  disputes. A variable-length Cypher query against the resulting store returned connected IDs.
+- No design decisions changed and no spec update was required.

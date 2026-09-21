@@ -217,12 +217,8 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Dispute Observatory generated artifacts
-data/generated/*.sqlite
-data/generated/*.lbug
-data/generated/*.lbug.wal
-data/generated/eval/
-data/generated/ui/
+# Generated evidence, knowledge, evaluation, and run artifacts
+data/generated/
 frontend/playwright-report/
 frontend/test-results/
 .DS_Store
