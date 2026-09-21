@@ -1,4 +1,4 @@
-# CatcherAI — agentic graph-discovery revamp: handoff
+# DisputeAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
 Current phase: **S13 evidence graph, highlighting and E2E complete; S9 tuning partly done (3/10 cases verified)**

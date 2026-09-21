@@ -1,4 +1,4 @@
-# CatcherAI frontend
+# DisputeAI frontend
 
 React + TypeScript + Vite. Two pages: the case list (`/`) and the run page
 (`/cases/:caseId/runs/:runId`) with the agent-flow and evidence-graph canvas, the inspector and the
