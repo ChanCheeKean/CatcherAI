@@ -45,7 +45,7 @@ START → route → plan → supervisor ─┬─ delegate ──Send──▶ w
                          ▲         ├─ load_skill                               │
                          │         ├─ challenge ─▶ critic ─────────────────────┤
                          └─────────┴──────────── findings merged ◀─────────────┘
-                                   └─ decide ─▶ decide ─▶ consolidate_memory ─▶ END
+                                   └─ decide ─▶ adjudicator (CaseReport) ─▶ consolidate_memory ─▶ END
 ```
 
 ### 3.1 Router — `route` node
@@ -115,14 +115,71 @@ One factory builds a Deep Agent (`create_deep_agent`, `response_format=Findings`
 - returns `Findings{facts, hypothesis_updates, suggested_next, node_ids, edge_ids}`.
 
 Catalog roles (`config/agents/*.yaml`: id, description, prompt, default skills): `graph_analyst`,
-`transaction_analyst`, `evidence_analyst`, `policy_researcher`, `memory_keeper`, `critic`.
+`transaction_analyst`, `evidence_analyst`, `policy_researcher`, `memory_keeper`, `critic`,
+`adjudicator`.
 
-### 3.5 Decision — `decide` node
+### 3.5 Final adjudicator — `decide` node
 
-One LLM call with `response_format=DecisionRecord`: claim family, is_dispute, per-transaction
-network actions, cardholder resolution (amounts), account actions, confidence, flip fact,
-citations, and `evidence_path` (node/edge IDs that justify it). The missing-evidence
-cardholder-favourable default is taught by a skill and policy text, not coded.
+The final output is the product the demo is judged on, so it is produced by a dedicated
+`adjudicator` Deep Agent (`response_format=CaseReport`). It receives the plan, the final
+`InvestigationSummary`, all findings and any critique, and it has read-only graph and knowledge
+tools so it can re-check every cited node or policy before committing. One agent produces both the
+decision and its explanation, so the reasoning cannot drift from the outcome.
+
+```python
+class Verdict(StrEnum):
+    ACCEPTED = "accepted"                 # cardholder credited in full
+    PARTIALLY_ACCEPTED = "partially_accepted"
+    REJECTED = "rejected"
+    NOT_A_DISPUTE = "not_a_dispute"       # e.g. descriptor confusion, resolved by explanation
+
+class EvidenceLink(BaseModel):
+    claim: str                            # what this evidence shows
+    node_ids: list[str]
+    edge_ids: list[str]
+    source_excerpt: str | None            # quoted property/text when relevant
+
+class TransactionDecision(BaseModel):
+    txn_id: str
+    verdict: Verdict
+    disputed_amount: Decimal
+    credit_amount: Decimal
+    cardholder_liability: Decimal
+    network_action: Literal["file_dispute", "no_dispute", "pre_arbitration", "none"]
+    reason_code: str | None               # e.g. Visa 10.4 / 13.1
+    rationale: str                        # why this transaction got this outcome
+    evidence: list[EvidenceLink]
+
+class HypothesisAssessment(BaseModel):
+    hypothesis: str
+    status: Literal["accepted", "rejected"]
+    why: str
+    evidence: list[EvidenceLink]
+
+class CaseReport(BaseModel):
+    case_id: str
+    verdict: Verdict
+    claim_family: str
+    headline: str                         # one-sentence outcome
+    executive_summary: str                # 3-6 sentences for an analyst/manager
+    detailed_reasoning: str               # step-by-step argument from evidence to verdict
+    transactions: list[TransactionDecision]
+    hypotheses: list[HypothesisAssessment]  # incl. the misleading surface story and why it fails
+    decoys_ruled_out: list[str]           # near-miss links considered and why they don't apply
+    missing_evidence: list[str]           # what was unavailable and how it was treated
+    policy_basis: list[Citation]          # policy/precedent doc IDs + why each applies
+    account_actions: list[AccountAction]  # e.g. card reissue, reopen linked case, watchlist
+    memory_updates: list[str]             # notes written/superseded/retracted and why
+    confidence: float
+    flip_fact: str                        # the fact that would change the verdict
+    cardholder_letter: str                # plain-language explanation to the customer
+```
+
+Rules: every `rationale`/`why` must be backed by at least one `EvidenceLink`; totals across
+`transactions` must reconcile with the dispute amount (checked by a Pydantic validator, with the
+error returned to the agent for a retry). The missing-evidence cardholder-favourable default is
+taught by a skill and policy text, not coded. The `CaseReport` is persisted as the run result and
+emitted in the `decision` event.
 
 ### 3.6 Memory consolidation — `consolidate_memory` node
 
@@ -232,7 +289,9 @@ endpoints for Cypher-backed neighbourhoods; evaluation results. Queue endpoints 
 
 - Run Observatory: supervisor timeline with plan checklist (status + evidence refs); **live evidence
   subgraph** growing from `tool_result` node/edge IDs, with solution-subgraph overlay in eval mode;
-  delegation tree (parallel workers, ad-hoc roles highlighted); decision panel with evidence path.
+  delegation tree (parallel workers, ad-hoc roles highlighted); **case report view** rendering the
+  `CaseReport` (verdict, summary, per-transaction rationale, accepted/rejected hypotheses, decoys
+  ruled out, cardholder letter) with every `EvidenceLink` clickable into the subgraph.
 - Graph Lab: neighbourhood explorer over the new ontology.
 - Removed: queue launcher/visualization, wait/clock and governance-panel views.
 
@@ -241,7 +300,9 @@ endpoints for Cypher-backed neighbourhoods; evaluation results. Queue endpoints 
 - **Deterministic pytest**: generator validation (proof/decoy patterns, referential integrity),
   tool contracts and read-only Cypher guard, Pydantic schemas, event hash chain, API, and a loop
   smoke test with a stub model returning fixed Pydantic objects (plumbing only, never answers).
-- **Real-LLM eval CLI** (`inspect eval`): per case — outcome/amount/action match; solution-subgraph
+- **Real-LLM eval CLI** (`inspect eval`): per case — verdict/amount/action match; report
+  grounding (every cited node/edge ID exists, and the report cites the solution subgraph and names
+  the decoys it ruled out); solution-subgraph
   coverage by trajectory node IDs; decoy non-flip; cardholder-favourable default on
   missing-evidence cases; required-capability signals present; pass@k.
 - The fake model adapter with the routing/supervisor oracle is deleted.
