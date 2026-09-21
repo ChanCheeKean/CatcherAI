@@ -57,7 +57,7 @@ Five node kinds in total. Everything else (critique, skill loading, memory work)
 ### 3.1 Router + planner — `triage` node
 
 One LLM call does routing and planning together (they need the same inputs). Input: the dispute
-intake, its first-hop graph neighbourhood, the graph schema and the case-type menu. Output:
+intake, its first-hop graph neighbourhood, and the graph schema. Output:
 
 ```python
 class Triage(BaseModel):
