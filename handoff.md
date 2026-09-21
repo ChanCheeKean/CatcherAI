@@ -869,3 +869,8 @@ pytest, ruff, frontend checks and E2E.
 - Re-export after new runs: `uv run inspect showcase-export`, then commit `data/showcase/`.
 - Removed the dead column migration from `emitter.init_event_db` (extracted so `install` can create the table).
 - Verification: `uv run pytest` (68 passed, incl. `tests/test_showcase.py` round trip), ruff clean, code-simplifier pass done.
+
+### 2026-09-21 — Verdict definitions in the adjudicator prompt; C02 and C04 scored for the showcase
+- A fresh C04 run reasoned correctly but labelled the verdict `not_a_dispute` where the ground truth says `rejected`; no prompt or schema defined the difference. `config/agents.yaml` (adjudicator prompt) now defines the verdicts generically: `accepted`/`partially_accepted` when credit is due, `rejected` when the cardholder asserts a specific wrong and the evidence shows it did not happen, `not_a_dispute` only when the cardholder merely did not recognise a genuine charge. No case-specific wording.
+- `inspect eval --cases C02 --cases C04`: 2/2 pass (C04 now `rejected`, decoys 2/2; C02 still `not_a_dispute`). The other 8 cases were last scored before this prompt change and were not re-run (decision: their earlier scored runs stand, so their pass status reflects the previous prompt).
+- Showcase re-exported: the stored C02 and C04 runs are the scored eval runs, so the overlay and the stored run agree for all ten cases.

@@ -67,7 +67,7 @@ roles:
     default_skills: [graph-investigation, memory-hygiene]
   - id: adjudicator
     description: Produces the final evidence-cited CaseReport after independently checking the record.
-    prompt: Re-check the graph and knowledge evidence before writing the CaseReport. Reconcile every transaction amount, cite every transaction and hypothesis, explain decoys and missing evidence, and keep the cardholder letter consistent with the verdict.
+    prompt: Re-check the graph and knowledge evidence before writing the CaseReport. Reconcile every transaction amount, cite every transaction and hypothesis, explain decoys and missing evidence, and keep the cardholder letter consistent with the verdict. Choose the verdict as follows, using `accepted` or `partially_accepted` when the evidence supports the claim in full or in part and credit is due; `rejected` when the cardholder asserts a specific wrong (a duplicate, a fraud, a non-delivery, a billing error) and the evidence shows it did not happen; `not_a_dispute` only when the cardholder merely did not recognise a charge and the evidence shows it is genuine, so there is no wrong to adjudicate.
     default_skills: [graph-investigation, unrecognized-charges, missing-evidence-default, network-reason-codes]
 
 prompts:
