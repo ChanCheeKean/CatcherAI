@@ -21,9 +21,29 @@ describe('ActorPanel', () => {
     expect(screen.getByText('fact 2')).toBeVisible()
   })
 
-  it('switches an output to the raw JSON the agent produced', async () => {
-    render(<ActorPanel name="supervisor" flow={flow} />)
-    await userEvent.click(screen.getAllByRole('button', { name: 'Raw JSON' })[1])
-    expect(screen.getByText(/"key_facts"/)).toBeInTheDocument()
+  it('opens the exact JSON in its own capsule', async () => {
+    render(<ActorPanel name="supervisor" flow={deriveFlow(supervisorVisit(1))} />)
+    await userEvent.click(screen.getAllByText('Raw JSON')[0])
+    expect(screen.getAllByText(/"key_facts"/)[0]).toBeVisible()
+  })
+
+  it('pulls reasoning, next step and plan out of a supervisor answer', () => {
+    const answer = {
+      reasoning: 'Nothing is proven yet.',
+      plan_edits: [],
+      summary: { key_facts: [] },
+      action: { tasks: [{ role: 'graph_analyst', objective: 'Trace the shared address', plan_item_ids: ['P1'], instructions: null }] },
+    }
+    const rich = deriveFlow([
+      event('node_entered', 'supervisor', { input: {} }, at(1, 1)),
+      event('model_call', 'supervisor', { schema: 'SupervisorTurn', input_tokens: 1, output_tokens: 1 }, at(1, 1)),
+      event('node_exited', 'supervisor', { output: answer }, at(1, 1)),
+    ])
+    render(<ActorPanel name="supervisor" flow={rich} />)
+    for (const title of ['Model output', 'Reasoning', 'Next step', 'Plan edits', 'Investigation summary'])
+      expect(screen.getByText(title)).toBeVisible()
+    expect(screen.getByText('SupervisorTurn')).toBeVisible()
+    expect(screen.getByText('Delegate 1 task')).toBeVisible()
+    expect(screen.getByText('Trace the shared address')).toBeVisible()
   })
 })

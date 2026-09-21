@@ -11,6 +11,9 @@ export interface CaseSummary {
   claim_type: string
   amount: number
   summary: string
+  /** Newest finished run of this case, when there is one: opening the case shows it without running. */
+  latest_run_id: string | null
+  latest_verdict: Verdict | null
 }
 
 export interface EvidenceLink {

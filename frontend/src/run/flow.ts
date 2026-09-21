@@ -29,6 +29,8 @@ export interface Visit {
   startedAt: string
   durationMs: number | null
   tokens: number
+  /** Pydantic schema the model was forced to answer with, from model_call. */
+  schema: string | null
   skills: string[]
   tools: ToolCall[]
   /** Plan as it stood when the supervisor finished this turn. */
@@ -139,6 +141,7 @@ export function deriveFlow(events: TrajectoryEvent[]): Flow {
         startedAt: event.ts_wall,
         durationMs: null,
         tokens: 0,
+        schema: null,
         skills: [],
         tools: [],
         plan: null,
@@ -175,9 +178,16 @@ export function deriveFlow(events: TrajectoryEvent[]): Flow {
     } else if (event.type === 'skill_loaded') {
       visitsByKey.get(visitKey(nodeOfCaller(name, event.parent_id), event.visit))?.skills.push(String(payload.skill))
     } else if (event.type === 'model_call') {
-      const { input_tokens, output_tokens } = payload as { input_tokens?: number; output_tokens?: number }
+      const { input_tokens, output_tokens, schema } = payload as {
+        input_tokens?: number
+        output_tokens?: number
+        schema?: string
+      }
       const visit = visitsByKey.get(visitKey(name, event.visit))
-      if (visit) visit.tokens += (input_tokens ?? 0) + (output_tokens ?? 0)
+      if (visit) {
+        visit.tokens += (input_tokens ?? 0) + (output_tokens ?? 0)
+        visit.schema = schema ?? visit.schema
+      }
     } else if (event.type === 'tool_call') {
       const caller = nodeOfCaller(String(payload.caller), event.parent_id)
       const tool = String(payload.tool)

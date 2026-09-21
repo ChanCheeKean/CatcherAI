@@ -1,5 +1,6 @@
 import type { GraphEdge, GraphNode } from '../api/types'
-import { Fields } from './Fields'
+import { Capsule } from './Capsule'
+import { Fields, Json } from './Fields'
 import { Icon } from './GraphIcon'
 import { caption, isAgentWritten, labelStyle } from './graphModel'
 import { useRunPanels } from './RunContext'
@@ -43,23 +44,26 @@ export function GraphItemPanel({ id }: { id: string }) {
       )}
       {node && <NodeEdges node={node} />}
       {events.length > 0 && (
-        <section className="mt-4">
-          <h3 className="mb-1.5 text-sm font-semibold">Events that touched it</h3>
-          <ol className="space-y-1.5">
-            {events.slice(-MAX_EVENTS).map((event) => (
-              <li key={event.seq}>
-                <details className="rounded-sm border bg-paper">
-                  <summary className="cursor-pointer px-2 py-1 text-sm">
-                    <span className="text-graphite tabular-nums">{event.seq}</span> {event.summary}
-                  </summary>
-                  <pre className="id-chip overflow-x-auto border-t p-2 whitespace-pre-wrap">
-                    {JSON.stringify(event.payload, null, 2)}
-                  </pre>
-                </details>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <div className="mt-2">
+          <Capsule tone="input" title="Events that touched it" pill={events.length}>
+            <ol className="space-y-2">
+              {events.slice(-MAX_EVENTS).map((event) => (
+                <li key={event.seq}>
+                  <Capsule
+                    tone="input"
+                    title={
+                      <span>
+                        <span className="tabular-nums">{event.seq}</span> {event.summary}
+                      </span>
+                    }
+                  >
+                    <Json value={event.payload} max="max-h-60" />
+                  </Capsule>
+                </li>
+              ))}
+            </ol>
+          </Capsule>
+        </div>
       )}
     </>
   )
@@ -81,8 +85,10 @@ function NodeHeader({ node }: { node: GraphNode }) {
         </div>
         {isAgentWritten(node) && <span className="ml-auto rounded-sm border border-agent px-1 text-xs text-agent">agent-written</span>}
       </div>
-      <div className="my-3 text-sm">
-        <Fields value={node.properties} />
+      <div className="my-3">
+        <Capsule tone="facts" title="Properties" pill={Object.keys(node.properties).length} open>
+          <Fields value={node.properties} />
+        </Capsule>
       </div>
     </>
   )
@@ -103,8 +109,10 @@ function EdgeHeader({ edge }: { edge: GraphEdge }) {
         {end(edge.src)} <span aria-label="to">to</span> {end(edge.dst)}
       </p>
       {valid && <p className="mb-2 text-sm">Valid {valid}</p>}
-      <div className="my-3 text-sm">
-        <Fields value={Object.fromEntries(Object.entries(edge.properties).filter(([key]) => !TIME_KEYS.has(key)))} />
+      <div className="my-3">
+        <Capsule tone="facts" title="Properties" open>
+          <Fields value={Object.fromEntries(Object.entries(edge.properties).filter(([key]) => !TIME_KEYS.has(key)))} />
+        </Capsule>
       </div>
     </>
   )
@@ -115,9 +123,8 @@ function NodeEdges({ node }: { node: GraphNode }) {
   const around = [...graph.edges.values()].filter((e) => e.src === node.id || e.dst === node.id)
   if (!around.length) return <p className="text-sm text-graphite">No connections loaded. Double-click the node to expand it.</p>
   return (
-    <section>
-      <h3 className="mb-1.5 text-sm font-semibold">Connections ({around.length})</h3>
-      <ul className="space-y-1.5 text-sm">
+    <Capsule tone="tools" title="Connections" pill={around.length} open>
+      <ul className="space-y-1.5">
         {around.map((edge) => {
           const out = edge.src === node.id
           const otherId = out ? edge.dst : edge.src
@@ -135,6 +142,6 @@ function NodeEdges({ node }: { node: GraphNode }) {
           )
         })}
       </ul>
-    </section>
+    </Capsule>
   )
 }

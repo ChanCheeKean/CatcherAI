@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { CaseSummary } from '../api/types'
-import { money, words } from '../run/format'
+import { money, verdictLabel, verdictTone, words } from '../run/format'
 
 export function CasesPage() {
   const navigate = useNavigate()
@@ -11,14 +11,19 @@ export function CasesPage() {
     mutationFn: (caseId: string) => api.startRun(caseId),
     onSuccess: (run) => navigate(`/cases/${run.case_id}/runs/${run.run_id}`),
   })
+  /** A case that has already been investigated opens its last run; a fresh one starts an investigation. */
+  function openCase(item: CaseSummary) {
+    if (item.latest_run_id) navigate(`/cases/${item.case_id}/runs/${item.latest_run_id}`)
+    else start.mutate(item.case_id)
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
       <header className="mb-8 max-w-2xl">
         <h1 className="font-serif text-4xl leading-tight font-semibold">Disputed card charges</h1>
         <p className="mt-2 text-graphite">
-          Pick a case. The agents investigate it in the evidence graph and write up their decision
-          while you watch.
+          Pick a case. A case that has been investigated before opens its last decision; run it
+          again to watch the agents investigate the evidence graph from scratch.
         </p>
       </header>
 
@@ -37,7 +42,12 @@ export function CasesPage() {
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cases.data?.map((item) => (
           <li key={item.case_id}>
-            <CaseCard item={item} busy={start.isPending} onOpen={() => start.mutate(item.case_id)} />
+            <CaseCard
+              item={item}
+              busy={start.isPending}
+              onOpen={() => openCase(item)}
+              onRerun={() => start.mutate(item.case_id)}
+            />
           </li>
         ))}
       </ul>
@@ -45,21 +55,45 @@ export function CasesPage() {
   )
 }
 
-function CaseCard({ item, busy, onOpen }: { item: CaseSummary; busy: boolean; onOpen: () => void }) {
+interface CaseCardProps {
+  item: CaseSummary
+  busy: boolean
+  onOpen: () => void
+  onRerun: () => void
+}
+
+function CaseCard({ item, busy, onOpen, onRerun }: CaseCardProps) {
+  const verdict = item.latest_verdict
   return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onOpen}
-      className="flex h-full w-full cursor-pointer flex-col rounded-sm border border-rule bg-vellum p-5 text-left transition-colors hover:border-ink disabled:cursor-wait disabled:opacity-60"
-    >
-      <span className="text-lg leading-snug font-semibold">{item.title}</span>
-      <span className="mt-1 text-sm text-graphite">{words(item.claim_type)}</span>
-      <span className="mt-3 flex-1 text-[0.95rem] leading-relaxed">{item.summary}</span>
-      <span className="mt-5 flex items-baseline justify-between border-t pt-3 text-sm">
+    <div className="flex h-full flex-col rounded-sm border border-rule bg-vellum transition-colors hover:border-ink">
+      <button
+        type="button"
+        disabled={busy}
+        onClick={onOpen}
+        className="flex w-full flex-1 cursor-pointer flex-col p-5 pb-3 text-left disabled:cursor-wait disabled:opacity-60"
+      >
+        <span className="text-lg leading-snug font-semibold">{item.title}</span>
+        <span className="mt-1 text-sm text-graphite">{words(item.claim_type)}</span>
+        <span className="mt-3 flex-1 text-[0.95rem] leading-relaxed">{item.summary}</span>
+      </button>
+      <div className="flex items-baseline justify-between gap-3 border-t px-5 py-3 text-sm">
         <span className="tabular-nums font-semibold">{money(item.amount)}</span>
-        <span className="text-graphite">Investigate</span>
-      </span>
-    </button>
+        {item.latest_run_id ? (
+          <span className="flex items-baseline gap-3">
+            {verdict && <span className={`font-medium ${verdictTone[verdict].text}`}>{verdictLabel[verdict]}</span>}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onRerun}
+              className="cursor-pointer text-graphite underline-offset-4 hover:text-ink hover:underline disabled:opacity-60"
+            >
+              Run again
+            </button>
+          </span>
+        ) : (
+          <span className="text-graphite">Not run yet</span>
+        )}
+      </div>
+    </div>
   )
 }

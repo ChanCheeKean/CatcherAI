@@ -15,6 +15,8 @@ class CaseSummary(BaseModel):
     claim_type: str
     amount: float
     summary: str
+    latest_run_id: str | None = None
+    latest_verdict: str | None = None
 
 
 class StartRun(BaseModel):

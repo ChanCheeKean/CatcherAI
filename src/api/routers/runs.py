@@ -35,9 +35,33 @@ def _events(ctx: ApiContext, run_id: str, after_seq: int = 0) -> list[EventEnvel
         return []
 
 
+def _latest_completed(ctx: ApiContext) -> dict[str, tuple[str, str]]:
+    """Per case, the newest finished run that reached a decision and still has its graph copy."""
+    if not ctx.paths.trajectory_db.exists():
+        return {}
+    try:
+        with sqlite3.connect(ctx.paths.trajectory_db) as connection:
+            rows = connection.execute(
+                "SELECT case_id, run_id, json_extract(payload_json, '$.report.verdict') "
+                "FROM run_events WHERE type = 'decision' ORDER BY ts_wall"
+            ).fetchall()
+    except sqlite3.OperationalError:  # no run has created the event table yet
+        return {}
+    return {
+        case_id: (run_id, verdict)
+        for case_id, run_id, verdict in rows
+        if not ctx.is_active(run_id) and (ctx.paths.run_dir / f"{run_id}.lbug").exists()
+    }
+
+
 @router.get("/cases", response_model=list[CaseSummary])
 def list_cases(ctx: Ctx) -> list[dict]:
-    return _cases(ctx)
+    latest = _latest_completed(ctx)
+    cases = []
+    for case in _cases(ctx):
+        run_id, verdict = latest.get(case["case_id"], (None, None))
+        cases.append({**case, "latest_run_id": run_id, "latest_verdict": verdict})
+    return cases
 
 
 @router.post("/runs", response_model=RunStatus, status_code=202)

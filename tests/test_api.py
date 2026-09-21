@@ -112,6 +112,20 @@ def test_run_streams_events_and_returns_report(client: TestClient) -> None:
     assert run["report"]["transactions"][0]["txn_id"] == TXN_ID
 
 
+def test_cases_point_at_the_latest_completed_run(client: TestClient) -> None:
+    assert client.get("/cases").json()[0]["latest_run_id"] is None
+
+    first = client.post("/runs", json={"case_id": CASE_ID}).json()["run_id"]
+    sse_events(client.get(f"/runs/{first}/events").text)
+    latest = client.get("/cases").json()[0]
+    assert (latest["latest_run_id"], latest["latest_verdict"]) == (first, "accepted")
+
+    client.app.state.context.model = StructuredModel({Triage: []})  # the next run fails
+    failed = client.post("/runs", json={"case_id": CASE_ID}).json()["run_id"]
+    sse_events(client.get(f"/runs/{failed}/events").text)
+    assert client.get("/cases").json()[0]["latest_run_id"] == first
+
+
 def test_failed_run_reports_error(client: TestClient) -> None:
     client.app.state.context.model = StructuredModel({Triage: []})
     run_id = client.post("/runs", json={"case_id": CASE_ID}).json()["run_id"]

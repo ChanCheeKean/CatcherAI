@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-@theme {
+@theme static {
   --font-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Newsreader', ui-serif, Georgia, serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
@@ -14,6 +14,16 @@
   --color-highlighter: #ffd84a;
   /* Written by an agent rather than found in the source data. */
   --color-agent: #6b3fd4;
+
+  /* Inspector capsules: one hue per kind of content, so a section is recognised before it is read. */
+  --color-model: #131d2e;
+  --color-reason: #2563a8;
+  --color-next: #0f7b6c;
+  --color-plan: #96610f;
+  --color-hypo: #a23b72;
+  --color-facts: #4d7c0f;
+  --color-tools: #3f4b5e;
+  --color-input: #6a7688;
 
   --color-accepted: #1c7a57;
   --color-partial: #a96a12;
@@ -113,4 +123,71 @@ body {
 /* Nodes glide to their new place when the layout settles again. */
 .react-flow__node-entity {
   transition: transform 0.4s ease;
+}
+
+/* Inspector capsule: a collapsible section whose colour says what kind of content it holds. */
+@layer components {
+  .capsule {
+    border: 1px solid color-mix(in srgb, var(--tone) 28%, var(--color-rule));
+    border-left: 4px solid var(--tone);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--tone) 5%, var(--color-vellum));
+  }
+  .capsule > summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.65rem;
+    cursor: pointer;
+    list-style: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--tone);
+  }
+  .capsule > summary::-webkit-details-marker {
+    display: none;
+  }
+  .capsule > summary::before {
+    content: '';
+    flex: none;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.15s;
+  }
+  .capsule[open] > summary::before {
+    transform: rotate(45deg);
+  }
+  .capsule-body {
+    border-top: 1px solid color-mix(in srgb, var(--tone) 16%, transparent);
+    padding: 0.55rem 0.75rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .capsule-pill {
+    margin-left: auto;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
+    padding: 0 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+  /* The model's own answer: a solid header so it is the first thing the eye lands on. */
+  .capsule-strong {
+    border-color: var(--tone);
+    background: var(--color-vellum);
+  }
+  .capsule-strong > summary {
+    background: var(--tone);
+    color: white;
+    border-radius: 2px 5px 0 0;
+    padding-block: 0.5rem;
+  }
+  .capsule-strong:not([open]) > summary {
+    border-radius: 2px 5px 5px 2px;
+  }
+  .capsule-strong > summary .capsule-pill {
+    background: rgb(255 255 255 / 0.18);
+  }
 }

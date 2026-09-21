@@ -79,7 +79,7 @@ function RunView() {
           </button>
         </header>
 
-        <div className="grid min-h-[28rem] flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid min-h-[28rem] flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(26rem,32%)]">
           <Canvas />
           <Inspector />
         </div>

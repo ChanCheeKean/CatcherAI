@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import { words } from './format'
 
-const ID = /^[A-Z]{2,4}-[\w-]+$/
+const ID = /^[A-Z]{1,4}-[\w-]+$/
 
 /** Any structured value as readable fields: labelled rows, bullet lists, and ids as chips. */
 export function Fields({ value }: { value: unknown }) {
@@ -44,32 +43,11 @@ export function Fields({ value }: { value: unknown }) {
   )
 }
 
-/** Readable fields with a switch to the raw JSON the agent actually produced. */
-export function Structured({ title, value }: { title: string; value: unknown }) {
-  const [raw, setRaw] = useState(false)
-  if (value === null || value === undefined) return null
+/** The exact JSON, scrollable, for copying into a bug report. */
+export function Json({ value, max = 'max-h-72' }: { value: unknown; max?: string }) {
   return (
-    <section className="mt-3">
-      <div className="mb-1 flex items-center gap-2">
-        <h4 className="text-sm font-semibold">{title}</h4>
-        <button
-          type="button"
-          aria-pressed={raw}
-          onClick={() => setRaw(!raw)}
-          className="ml-auto cursor-pointer rounded-sm border px-1.5 text-xs text-graphite hover:border-ink aria-pressed:border-ink aria-pressed:text-ink"
-        >
-          Raw JSON
-        </button>
-      </div>
-      {raw ? (
-        <pre className="id-chip max-h-72 overflow-auto rounded-sm border bg-paper p-2 whitespace-pre-wrap">
-          {JSON.stringify(value, null, 2)}
-        </pre>
-      ) : (
-        <div className="text-sm">
-          <Fields value={value} />
-        </div>
-      )}
-    </section>
+    <pre className={`id-chip ${max} overflow-auto rounded-sm border bg-paper p-2 whitespace-pre-wrap`}>
+      {JSON.stringify(value, null, 2)}
+    </pre>
   )
 }
