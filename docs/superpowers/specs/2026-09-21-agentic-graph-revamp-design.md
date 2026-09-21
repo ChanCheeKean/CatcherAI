@@ -37,42 +37,43 @@ portfolio queue scheduling.
 5. **Few layers.** Plain functions, one worker factory, one graph builder; no per-case code.
 6. **Everything observable.** Every step emits a replayable trajectory event carrying the node and
    edge IDs it touched.
+7. **Robust, not over-engineered.** This is a POC that will grow. Add a node, action, tool, schema
+   field or config file only when a case or the demo needs it; prefer one generic mechanism (e.g.
+   "delegate to a role") over a special-purpose one. Extensibility comes from config and prompts,
+   not from abstraction layers.
 
 ## 3. Agent core
 
 ```text
-START → route → plan → supervisor ─┬─ delegate ──Send──▶ worker (×N, parallel) ─┐
-                         ▲         ├─ load_skill                               │
-                         │         ├─ challenge ─▶ critic ─────────────────────┤
-                         └─────────┴──────────── findings merged ◀─────────────┘
-                                   └─ decide ─▶ adjudicator (CaseReport) ─▶ consolidate_memory ─▶ END
+START → triage → supervisor ─┬─ delegate ──Send──▶ worker (×N, parallel) ─┐
+                    ▲          │                                             │
+                    └──────────┴──────────── findings merged ◀───────────────┘
+                               └─ decide ─▶ adjudicator (CaseReport) ─▶ consolidate_memory ─▶ END
 ```
 
-### 3.1 Router — `route` node
+Five node kinds in total. Everything else (critique, skill loading, memory work) is a worker task.
 
-One LLM call. Input: the dispute intake plus its first-hop graph neighbourhood. Output:
+### 3.1 Router + planner — `triage` node
+
+One LLM call does routing and planning together (they need the same inputs). Input: the dispute
+intake, its first-hop graph neighbourhood, the graph schema and the case-type menu. Output:
 
 ```python
-class RouteDecision(BaseModel):
-    case_type: str                 # a config case type, or "novel"
+class Triage(BaseModel):
+    case_type: str                 # a menu case type, or "novel"
     case_type_description: str     # required when novel
     suggested_skills: list[str]
-    suggested_specialists: list[str]
-    initial_hypotheses: list[Hypothesis]
+    suggested_roles: list[str]
+    hypotheses: list[Hypothesis]
+    plan: list[PlanItem]           # id, question, status: open|done|waived, evidence_refs, waiver_reason
     rationale: str
 ```
 
-No depth, budget, confidence threshold or fallback route. `config/case_types.yaml` holds short
-descriptions plus default skill/specialist suggestions; unknown skills/specialists are allowed and
-simply become supervisor context.
+No depth, budget, confidence threshold or fallback route. Suggestions are context, not a
+whitelist; unknown skills/roles are allowed. The plan is state the supervisor must close out, not a
+log line.
 
-### 3.2 Planner — `plan` node
-
-One LLM call producing `Plan{items: [PlanItem{id, question, status: open|done|waived,
-evidence_refs, waiver_reason}]}` from the intake, route decision and graph schema. The plan is
-state, not a log line.
-
-### 3.3 Supervisor — `supervisor` node
+### 3.2 Supervisor — `supervisor` node
 
 Input each turn: the plan with item status, `InvestigationSummary`, and the latest worker findings.
 
@@ -87,26 +88,25 @@ class Task(BaseModel):
     role: str                         # catalog role or ad-hoc name
     instructions: str | None          # required for ad-hoc roles
     objective: str
+    skills: list[str]                 # any skill from the library
     plan_item_ids: list[str]
 
 class SupervisorTurn(BaseModel):
     reasoning: str
     plan_edits: list[PlanEdit]        # add / drop / mark done (with evidence refs) / waive
     summary: InvestigationSummary
-    action: Delegate | LoadSkill | Challenge | Decide
+    action: Delegate | Decide
 ```
 
 - `Delegate{tasks: list[Task]}` fans out with LangGraph `Send`; results merge through a reducer.
-- `LoadSkill{skill}` adds any skill in the library to the supervisor's and later workers' context.
-- `Challenge{hypothesis}` runs an LLM critic that argues against the leading hypothesis and
-  returns `Critique{weaknesses, missing_checks, would_change_outcome}`.
+  Skills are attached per task; a devil's-advocate review is just a task for the `critic` role.
 - `Decide` is accepted only when every plan item is `done` or `waived`; otherwise the runtime
   returns the rejection to the supervisor as the next turn's input.
 
 Termination reasons: `decided`, `max_turns` (then forced `decide` with a note), `no_progress`
 (N turns with no new facts/node IDs; then forced `decide`).
 
-### 3.4 Workers — `worker` node
+### 3.3 Workers — `worker` node
 
 One factory builds a Deep Agent (`create_deep_agent`, `response_format=Findings`) per task:
 
@@ -114,11 +114,12 @@ One factory builds a Deep Agent (`create_deep_agent`, `response_format=Findings`
 - same full toolset for every worker (section 5);
 - returns `Findings{facts, hypothesis_updates, suggested_next, node_ids, edge_ids}`.
 
-Catalog roles (`config/agents/*.yaml`: id, description, prompt, default skills): `graph_analyst`,
-`transaction_analyst`, `evidence_analyst`, `policy_researcher`, `memory_keeper`, `critic`,
-`adjudicator`.
+All configuration lives in one file, `config/agents.yaml`: the case-type menu (id, description,
+suggested skills/roles) and the role catalog (id, description, prompt, default skills):
+`graph_analyst`, `transaction_analyst`, `evidence_analyst`, `policy_researcher`, `memory_keeper`,
+`critic`, `adjudicator`. Adding a role or case type is a YAML entry.
 
-### 3.5 Final adjudicator — `decide` node
+### 3.4 Final adjudicator — `decide` node
 
 The final output is the product the demo is judged on, so it is produced by a dedicated
 `adjudicator` Deep Agent (`response_format=CaseReport`). It receives the plan, the final
@@ -169,7 +170,6 @@ class CaseReport(BaseModel):
     missing_evidence: list[str]           # what was unavailable and how it was treated
     policy_basis: list[Citation]          # policy/precedent doc IDs + why each applies
     account_actions: list[AccountAction]  # e.g. card reissue, reopen linked case, watchlist
-    memory_updates: list[str]             # notes written/superseded/retracted and why
     confidence: float
     flip_fact: str                        # the fact that would change the verdict
     cardholder_letter: str                # plain-language explanation to the customer
@@ -181,7 +181,7 @@ error returned to the agent for a retry). The missing-evidence cardholder-favour
 taught by a skill and policy text, not coded. The `CaseReport` is persisted as the run result and
 emitted in the `decision` event.
 
-### 3.6 Memory consolidation — `consolidate_memory` node
+### 3.5 Memory consolidation — `consolidate_memory` node
 
 One `memory_keeper` pass: write/supersede/retract/merge `MemoryNote`s and graph findings touched
 in this run; expire notes past `valid_until`.
@@ -199,12 +199,15 @@ in this run; expire notes past `valid_until`.
   checkpoints.
 - API runs copy the pristine graph per run (existing `copy_scenario_store` pattern).
 
-### 4.2 Ontology (~22 labels, ~40 edge types; temporal properties on edges)
+### 4.2 Ontology (~21 labels, ~38 edge types; temporal properties on edges)
+
+Every label and edge type must be used by at least one case's proof or decoy pattern or by the
+realistic background; anything unused is cut.
 
 | Area | Nodes | Edges |
 |---|---|---|
 | Identity | Customer, Account, Card, Token, Device, IP, Phone, Email, Address, MerchantAccount | HOLDS{role,from,to}, ISSUED_ON, CARRIES, TOKENIZED_AS, BOUND_TO_DEVICE, LIVES_AT{from,to}, WORKS_AT, HAS_PHONE{from,to}, HAS_EMAIL, LOGGED_IN_FROM{ts,ip}, MERCHANT_LOGIN_FROM{ts} |
-| Commerce | Merchant, Terminal, Descriptor, Acquirer, Authorization, Transaction, Order, Shipment, AgentProvider, Mandate | PAID_WITH, AT_MERCHANT, VIA_TERMINAL, CLEARS{seq}, FOR_ORDER, SHIPPED_AS, DELIVERED_TO{pod,signer}, REFUNDS, FROM_DEVICE, FROM_IP, DESCRIBES{from,to}, SUB_MERCHANT_OF, ACQUIRED_BY, ACTING_FOR, AUTHORIZED_BY_MANDATE |
+| Commerce | Merchant, Terminal, Descriptor, Authorization, Transaction, Order, Shipment, AgentProvider, Mandate | PAID_WITH, AT_MERCHANT, VIA_TERMINAL, CLEARS{seq}, FOR_ORDER, SHIPPED_AS, DELIVERED_TO{pod,signer}, REFUNDS, FROM_DEVICE, FROM_IP, DESCRIBES{from,to}, SUB_MERCHANT_OF, ACTING_FOR, AUTHORIZED_BY_MANDATE |
 | Case | Dispute, EvidenceItem, EvidenceRequest, Communication, AccountEvent, MemoryNote, Finding | FILED_BY, DISPUTES{amount}, RELATED_TO, HAS_EVIDENCE, ASSERTS, REQUESTED{status,deadline,responded_at}, TRIGGERED_BY, CHANGED_PHONE_TO, ABOUT, SUPPORTS, CONTRADICTS, SAME_ACTOR, COMPROMISED_AT |
 
 Rules: every node has a stable prefixed key; every relationship that can change over time carries
@@ -256,13 +259,15 @@ decoy pattern at build time and fails if any case is not uniquely resolvable.
 | Tool | Purpose |
 |---|---|
 | `graph_schema` | labels, edge types, properties, counts (also injected in prompts) |
-| `graph_query(cypher, params)` | read-only Cypher; write clauses rejected; row cap; returns node/edge IDs |
+| `graph_query(cypher, params)` | read-only Cypher (incl. paths); write clauses rejected; row cap; returns node/edge IDs |
 | `graph_neighbors(id, rel_types?, direction?, since?, until?)` | temporal-filtered expansion |
-| `graph_paths(src, dst, max_hops, rel_types?)` | shortest/all simple paths |
 | `graph_write_finding(finding, edges)` | Finding node + inferred edges with provenance |
 | `search_knowledge(query, kinds?, as_of?)` | hybrid FTS + vector over policies, precedents, memory notes |
-| `memory_read(subject_ids?, status?)` / `memory_write(op, note)` | note lifecycle; a write must cite source node IDs |
+| `memory_write(op, note)` | write / supersede / retract / merge a `MemoryNote`; must cite source node IDs |
 | `python(code)` | restricted subprocess with timeout for arithmetic, dates, FX, aggregation |
+
+Memory notes are graph nodes, so reading them is just `graph_query` or `search_knowledge` — no
+separate read tool. Six tools in total.
 
 Skills use Deep Agents' native `skills=` support with the `skills/` directory. Skills are rewritten
 as generic domain knowledge: graph-investigation techniques, fraud/ATO signals, household
@@ -271,11 +276,12 @@ transactions, memory hygiene.
 
 ## 6. Trajectory and API
 
-Kept: hash-chained append-only SQLite event log, redaction, blobs, SSE.
+Kept: append-only SQLite event log, blobs for large payloads, SSE. Dropped as production concerns
+with no demo value: the hash chain and its verification, and payload redaction.
 
-Event types: `run_started`, `route_decision`, `plan_created`, `plan_updated`, `supervisor_turn`,
+Event types: `run_started`, `triage`, `plan_updated`, `supervisor_turn`,
 `delegation_started`, `delegation_finished`, `skill_loaded`, `tool_call`, `tool_result`
-(`node_ids`, `edge_ids`), `graph_write`, `memory_read`, `memory_write`, `challenge`,
+(`node_ids`, `edge_ids`), `graph_write`, `memory_write`,
 `decision`, `termination`, `node_entered`/`node_exited`, `edge_taken`, `model_call`.
 
 Removed: wait/clock/persona/evidence-arrival, guardrail/verifier/panel/adjudication, todo events.
@@ -329,7 +335,7 @@ Each stage ends with tests green, a `code-simplifier` pass, and a commit + push.
 1. **Graph data**: new generator (ontology, background, 10 cases, decoys, ground truth, validation),
    LadybugDB load, knowledge store rebuild.
 2. **Tools**: graph tools, knowledge search, memory tools, python sandbox; contract tests.
-3. **Agent core**: route, plan, supervisor, workers (Send), critic, decide, consolidate; Pydantic
+3. **Agent core**: triage, supervisor, workers (Send), adjudicator, consolidate; Pydantic
    schemas; termination; trajectory events; removal of old runtime pieces.
 4. **Eval**: real-LLM eval CLI with subgraph coverage and decoy checks; first full run.
 5. **API + frontend**: new projections and endpoints, live evidence subgraph, cleanup.
@@ -338,7 +344,7 @@ Each stage ends with tests green, a `code-simplifier` pass, and a commit + push.
 ## 11. Risks
 
 - **LLM variance** on hard cases → pass@k reporting, strong graph-technique skill, schema injected
-  up front, critic available to the supervisor.
+  up front, `critic` role available to the supervisor.
 - **Cypher errors from the model** → errors returned to the agent as tool results so it can retry;
   schema tool always available.
 - **Token cost of large query results** → row caps and compact result formatting (IDs + key props).
