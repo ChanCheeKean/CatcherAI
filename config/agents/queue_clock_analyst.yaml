@@ -1,6 +1,0 @@
-id: queue_clock_analyst
-version: 1
-description: Independently re-checks the governing clock for one high-priority open case in the portfolio queue.
-tools: [compute_portfolio_clocks]
-skills: []
-max_iterations: 2

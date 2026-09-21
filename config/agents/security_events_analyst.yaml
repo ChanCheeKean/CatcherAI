@@ -1,6 +1,0 @@
-id: security_events_analyst
-version: 1
-description: Reconstructs issuer-side account takeover sequences from timestamped security events.
-tools: [get_account_events]
-skills: [fraud-cnp]
-max_iterations: 5

@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from domain.events import EventEnvelope, event_from_row, verify_event_chain
+from domain.events import EventEnvelope, event_from_row
 
 
 def load_events(db_path: Path, run_id: str, to_seq: int | None = None) -> list[EventEnvelope]:
@@ -19,15 +19,6 @@ def load_events(db_path: Path, run_id: str, to_seq: int | None = None) -> list[E
     return [event_from_row(row) for row in rows]
 
 
-def verify_hash_chain(db_path: Path, run_id: str) -> bool:
-    with sqlite3.connect(db_path) as connection:
-        connection.row_factory = sqlite3.Row
-        rows = connection.execute(
-            "SELECT * FROM run_events WHERE run_id=? ORDER BY seq", (run_id,)
-        ).fetchall()
-    return verify_event_chain(rows)
-
-
 def render_timeline(events: list[EventEnvelope]) -> str:
     lines: list[str] = []
     depth_by_span: dict[str, int] = {}
@@ -37,7 +28,7 @@ def render_timeline(events: list[EventEnvelope]) -> str:
         depth_by_span[event.span_id] = depth
         indent = "  " * min(depth, 8)
         lines.append(
-            f"{event.seq:04d} {event.ts_virtual.isoformat()} "
+            f"{event.seq:04d} {event.ts_wall.isoformat()} "
             f"{indent}{event.actor.kind.value}:{event.actor.name} "
             f"[{event.type}] {event.summary}"
         )

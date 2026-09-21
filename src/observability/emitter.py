@@ -18,13 +18,11 @@ from domain.events import (
     EventEnvelope,
     RuntimeSnapshot,
     event_from_row,
-    verify_event_chain,
 )
-from observability.redaction import redact
 
 
 class EventEmitter:
-    """Validate, redact, persist, and retrieve the canonical append-only trajectory."""
+    """Persist and stream the append-only trajectory for one run."""
 
     def __init__(
         self,
@@ -33,13 +31,11 @@ class EventEmitter:
         run_id: str,
         case_id: str | None,
         runtime: RuntimeSnapshot,
-        virtual_now: datetime,
     ) -> None:
         self.db_path = db_path
         self.run_id = run_id
         self.case_id = case_id
         self.runtime = runtime
-        self.virtual_now = virtual_now
         self._lock = threading.RLock()
         self._root_span = f"span-run-{run_id}"
         self._span_stack: ContextVar[tuple[str, ...]] = ContextVar(
@@ -66,7 +62,6 @@ class EventEmitter:
                     span_id TEXT NOT NULL,
                     parent_span_id TEXT,
                     ts_wall TEXT NOT NULL,
-                    ts_virtual TEXT NOT NULL,
                     actor_kind TEXT NOT NULL,
                     actor_name TEXT NOT NULL,
                     type TEXT NOT NULL,
@@ -75,9 +70,6 @@ class EventEmitter:
                     refs_json TEXT NOT NULL,
                     runtime_json TEXT NOT NULL,
                     usage_json TEXT NOT NULL,
-                    redactions_json TEXT NOT NULL,
-                    event_hash TEXT NOT NULL,
-                    previous_event_hash TEXT,
                     UNIQUE(run_id, seq)
                 );
                 CREATE TABLE IF NOT EXISTS run_blobs (
@@ -102,15 +94,11 @@ class EventEmitter:
         finally:
             self._span_stack.reset(token)
 
-    def set_virtual_now(self, value: datetime) -> None:
-        self.virtual_now = value
-
     def put_blob(self, value: Any, media_type: str = "application/json") -> str:
-        redacted, _ = redact(value)
         content = (
-            json.dumps(redacted, sort_keys=True, default=str, separators=(",", ":")).encode()
+            json.dumps(value, sort_keys=True, default=str, separators=(",", ":")).encode()
             if media_type == "application/json"
-            else str(redacted).encode()
+            else str(value).encode()
         )
         digest = hashlib.sha256(content).hexdigest()
         with self._connect() as connection:
@@ -122,15 +110,11 @@ class EventEmitter:
 
     def emit(self, draft: EventDraft) -> EventEnvelope:
         with self._lock, self._connect() as connection:
-            payload, redactions = redact(draft.payload)
-            refs, ref_redactions = redact(draft.refs)
-            redactions.extend(ref_redactions)
             last = connection.execute(
-                "SELECT seq, event_hash FROM run_events WHERE run_id=? ORDER BY seq DESC LIMIT 1",
+                "SELECT seq FROM run_events WHERE run_id=? ORDER BY seq DESC LIMIT 1",
                 (self.run_id,),
             ).fetchone()
             seq = 1 if last is None else int(last["seq"]) + 1
-            previous_hash = None if last is None else str(last["event_hash"])
             span_id = draft.span_id or self.current_span
             parent_span_id = draft.parent_span_id
             if (
@@ -147,21 +131,16 @@ class EventEmitter:
                 span_id=span_id,
                 parent_span_id=parent_span_id,
                 ts_wall=datetime.now(UTC),
-                ts_virtual=self.virtual_now,
                 actor=draft.actor,
                 type=draft.type,
                 summary=draft.summary,
-                payload=payload,
-                refs=refs,
+                payload=draft.payload,
+                refs=draft.refs,
                 runtime=self.runtime,
                 usage=draft.usage,
-                redactions=redactions,
             )
-            serialized = envelope.model_dump(mode="json")
-            canonical = json.dumps(serialized, sort_keys=True, separators=(",", ":"))
-            event_hash = hashlib.sha256(f"{previous_hash or ''}{canonical}".encode()).hexdigest()
             connection.execute(
-                """INSERT INTO run_events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                """INSERT INTO run_events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     envelope.event_id,
                     envelope.run_id,
@@ -170,7 +149,6 @@ class EventEmitter:
                     envelope.span_id,
                     envelope.parent_span_id,
                     envelope.ts_wall.isoformat(),
-                    envelope.ts_virtual.isoformat(),
                     envelope.actor.kind.value,
                     envelope.actor.name,
                     envelope.type,
@@ -179,9 +157,6 @@ class EventEmitter:
                     json.dumps(envelope.refs),
                     json.dumps(envelope.runtime.model_dump(mode="json")),
                     json.dumps(envelope.usage.model_dump(mode="json")),
-                    json.dumps([item.model_dump(mode="json") for item in envelope.redactions]),
-                    event_hash,
-                    previous_hash,
                 ),
             )
             for subscriber in self._subscribers:
@@ -225,31 +200,9 @@ class EventEmitter:
             ).fetchall()
         return [event_from_row(row) for row in rows]
 
-    def verify_chain(self) -> bool:
-        with self._connect() as connection:
-            rows = connection.execute(
-                "SELECT * FROM run_events WHERE run_id=? ORDER BY seq", (self.run_id,)
-            ).fetchall()
-        return verify_event_chain(rows)
-
     def last_event(self) -> EventEnvelope | None:
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT * FROM run_events WHERE run_id=? ORDER BY seq DESC LIMIT 1", (self.run_id,)
             ).fetchone()
         return event_from_row(row) if row else None
-
-    def restore_virtual_now(self) -> None:
-        """Continue a persisted run at the virtual time of its last event."""
-
-        last = self.last_event()
-        if last is not None:
-            self.virtual_now = last.ts_virtual
-
-    def last_budget_used(self, dimension: str) -> int:
-        used = [
-            int(event.payload["used"])
-            for event in self.events()
-            if event.type == "budget_update" and event.payload.get("dimension") == dimension
-        ]
-        return used[-1] if used else 0

@@ -1,5 +1,0 @@
-code,meaning
-0,CVV2 not provided
-1,CVV2 value present
-2,CVV2 on card but illegible
-9,Cardholder states CVV2 not present on card

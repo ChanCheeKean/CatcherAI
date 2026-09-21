@@ -1,6 +1,0 @@
-id: cardholder_advocate
-version: 1
-description: Independently challenges adverse or high-impact findings from the cardholder-protective position.
-tools: []
-skills: [automated-adjudication]
-max_iterations: 3

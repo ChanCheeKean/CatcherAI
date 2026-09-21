@@ -1,6 +1,0 @@
-{"step": 1, "ts": "2026-09-01T15:00:00Z", "agent": "dispute-assistant@0.3", "type": "plan", "content": "No-show dispute; check cancellation timing and nights billed."}
-{"step": 2, "ts": "2026-09-01T15:01:00Z", "type": "tool_call", "tool": "sandbox.run", "args": {"code": "convert 16:30 America/Denver -> America/New_York"}, "result_summary": "18:30 ET"}
-{"step": 3, "ts": "2026-09-01T15:02:00Z", "type": "reasoning", "content": "Call after 18:00 ET deadline → first night valid; 2 nights billed → second night disputable."}
-{"step": 4, "ts": "2026-09-01T15:03:00Z", "type": "decision", "content": "File 13.7 for 304.09.", "confidence": 0.9}
-{"step": 5, "ts": "2026-09-01T15:04:00Z", "type": "memory_write", "note_id": "MEM-0221"}
-{"step": 6, "ts": "2026-09-01T15:30:00Z", "type": "human_approval", "approver": "analyst.abanerjee", "decision": "approved"}

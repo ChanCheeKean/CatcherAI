@@ -1,7 +1,0 @@
-{"step": 1, "ts": "2026-06-02T20:40:00Z", "agent": "dispute-assistant@0.3", "type": "plan", "content": "Pre-arb received for 10.4. Evaluate compelling evidence."}
-{"step": 2, "ts": "2026-06-02T20:41:10Z", "type": "tool_call", "tool": "get_evidence_packet", "args": {"packet_id": "MEP-04471-PA"}, "result_summary": "login matches; ip 198.18.201.x; AVS Y"}
-{"step": 3, "ts": "2026-06-02T20:42:00Z", "type": "reasoning", "content": "Login and IP match prior orders → CE satisfied → likely first-party misuse."}
-{"step": 4, "ts": "2026-06-02T20:43:30Z", "type": "decision", "content": "Recommend accept pre-arb; re-bill cardholder.", "confidence": 0.72}
-{"step": 5, "ts": "2026-06-02T21:05:00Z", "type": "memory_write", "note_id": "MEM-0142"}
-{"step": 6, "ts": "2026-06-02T21:06:00Z", "type": "human_approval", "approver": "analyst.lpetrov", "decision": "approved"}
-{"step": 7, "ts": "2026-09-12T10:00:00Z", "type": "qa_review", "reviewer": "qa.mnguyen", "sampled": false, "note": "not sampled"}

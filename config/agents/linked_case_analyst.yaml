@@ -1,6 +1,0 @@
-id: linked_case_analyst
-version: 1
-description: Evaluates one linked dispute on its own evidence without inferring liability from graph linkage.
-tools: [read_evidence_packet, get_case]
-skills: [not-received]
-max_iterations: 4

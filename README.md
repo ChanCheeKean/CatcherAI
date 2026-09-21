@@ -1,3 +1,5 @@
+# This README is being rewritten for the agentic graph-discovery revamp.
+
 # Dispute Observatory — an agentic card-dispute investigator
 
 Dispute Observatory is a proof-of-concept of an AI agent system that **investigates and resolves credit and debit card disputes end to end** from the card issuer's side: it receives a cardholder's claim, works out what actually happened, applies the correct network rule *and* the correct regulation as of the right date, recovers money from the merchant when that's justified, protects the cardholder when that's required, and does all of it **fully automatically, with no human in the loop**. High-impact and uncertain decisions are challenged by an automated review panel and fail safe in the cardholder's favor.

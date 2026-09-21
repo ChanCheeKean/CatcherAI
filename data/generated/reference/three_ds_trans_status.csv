@@ -1,8 +1,0 @@
-code,meaning
-Y,Authenticated
-A,Attempts processing performed
-N,Not authenticated
-U,Authentication could not be performed
-R,Rejected
-C,Challenge required
-I,Informational only

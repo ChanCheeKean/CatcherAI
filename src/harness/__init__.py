@@ -1,1 +1,0 @@
-"""Virtual-time scenario harness."""

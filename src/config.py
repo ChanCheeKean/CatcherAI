@@ -4,12 +4,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from domain.model import Capability
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DefaultModelConfig(BaseModel):
@@ -20,7 +18,7 @@ class DefaultModelConfig(BaseModel):
     timeout_seconds: float = 60
     max_attempts: int = 3
     max_output_tokens: int = 12000
-    required_capabilities: frozenset[Capability]
+    required_capabilities: frozenset[str] = frozenset()
 
 
 class RetryConfig(BaseModel):
@@ -55,59 +53,6 @@ class ModelsConfig(BaseModel):
         return f"sha256:{hashlib.sha256(raw.encode()).hexdigest()}"
 
 
-class AgentConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    id: str
-    version: int
-    description: str
-    tools: list[str] = Field(default_factory=list)
-    skills: list[str] = Field(default_factory=list)
-    max_iterations: int = 4
-
-
-class RouteConfig(BaseModel):
-    id: str
-    depth: Literal["L1", "L2", "L3", "L4"]
-    description: str
-    required_skills: list[str] = Field(default_factory=list)
-
-
-class DepthBoundsConfig(BaseModel):
-    tool_calls: tuple[int, int]
-    model_input_tokens: tuple[int, int]
-    model_output_tokens: tuple[int, int]
-    wall_seconds: tuple[float, float]
-    replans: tuple[int, int]
-    no_progress_iterations: tuple[int, int]
-    max_agent_calls: tuple[int, int]
-
-
-class RoutesConfig(BaseModel):
-    schema_version: int
-    route_confidence_threshold: float
-    routes: list[RouteConfig]
-    depth_bounds: dict[str, DepthBoundsConfig]
-
-    @model_validator(mode="after")
-    def unique_routes(self) -> RoutesConfig:
-        ids = [route.id for route in self.routes]
-        if len(ids) != len(set(ids)):
-            raise ValueError("route ids must be unique")
-        return self
-
-
-class ScenarioConfig(BaseModel):
-    id: str
-    manifest: Path
-    agent_root: Path
-    policy_root: Path
-    skill_root: Path
-    sqlite_path: Path
-    virtual_clock: str
-    deny: list[str]
-
-
 def _load_yaml(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as handle:
         value = yaml.safe_load(handle)
@@ -129,25 +74,3 @@ def load_models_config(path: Path) -> ModelsConfig:
     if "REASONING_EFFORT".lower() in overrides:
         raw["default"]["reasoning_effort"] = overrides["reasoning_effort"]
     return ModelsConfig.model_validate(raw)
-
-
-def load_routes_config(path: Path) -> RoutesConfig:
-    return RoutesConfig.model_validate(_load_yaml(path))
-
-
-def load_agent_configs(path: Path) -> dict[str, AgentConfig]:
-    agents = {
-        config.id: config
-        for file_path in sorted(path.glob("*.yaml"))
-        for config in [AgentConfig.model_validate(_load_yaml(file_path))]
-    }
-    if len(agents) != len(list(path.glob("*.yaml"))):
-        raise ValueError("agent ids must be unique")
-    return agents
-
-
-def load_scenario(path: Path, root: Path) -> ScenarioConfig:
-    raw = _load_yaml(path)
-    for key in ("manifest", "agent_root", "policy_root", "skill_root", "sqlite_path"):
-        raw[key] = (root / raw[key]).resolve()
-    return ScenarioConfig.model_validate(raw)

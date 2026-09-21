@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: design approved; implementation not started
-Next stage: **S0 — Teardown**
+Current phase: **S0 — Teardown complete**
+Next stage: **S1 — Graph foundation**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -99,7 +99,7 @@ model is fine. **Medium** = some design judgement within a clear contract, Sonne
 Order matters: each stage lists what it consumes. The app is intentionally not runnable end to end
 from S0 until S8, and the frontend until S11 (graphs complete in S13).
 
-### S0 — Teardown of the old design  ☐
+### S0 — Teardown of the old design  ☑
 **Complexity: Simple**
 
 Goal: delete everything the new design replaces, so later stages build forward without legacy code.
@@ -500,7 +500,11 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
 
 ## 7. Open questions and conflicts
 
-(none yet)
+- The handoff calls the design approved, while the spec header still says “pending written-spec
+  review.” No architecture conflict was found; this stage follows the handoff's approved-design
+  status.
+- The spec removal list includes `handoff.md`, while the stage protocol requires updating and
+  committing this file after every stage. The handoff is retained as the active execution record.
 
 ## 8. Stage history
 
@@ -517,3 +521,25 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   (tabs: region-segmented agent flow, and the evidence graph), the inspector on the right, and the
   conclusion (`CaseReport`) at the bottom. Split into S11–S13; docs moved to S14.
 - Baseline before teardown: HEAD `56d9380` plus the spec commits.
+
+### 2026-09-21 — S0 teardown complete
+
+- Removed the legacy playbooks, routing, governance, action/decision, simulation harness, old
+  runtime, adapters, operational data access, graph/memory helpers, old API projections/run
+  manager/SSE layers, route and agent config, old generator/generated artifacts, duplicate skills,
+  stale design/plan/technical docs, and tests tied to those modules. Removed the obsolete
+  `domain.case` records as part of the replaced model layer.
+- Reduced the surviving API to `GET /health`, the CLI to replay/schema export, and config loading to
+  `ModelsConfig` only. Added a small smoke suite for the surviving modules.
+- Simplified trajectory persistence to an append-only SQLite event/blob log: removed hash-chain
+  columns and verification, payload redaction, virtual time, and legacy event plumbing. Removed
+  `networkx` from project dependencies and kept the frontend untouched for S11.
+- Files changed directly: `src/domain/events.py`, `src/observability/emitter.py`, `src/replay.py`,
+  `src/config.py`, `src/cli.py`, `src/api/app.py`, `src/api/routers/meta.py`, `pyproject.toml`,
+  `uv.lock`, `README.md`, and `tests/test_surviving_modules.py`; deletion scope is recorded by git.
+- Verification: `uv run ruff check src tests data/generator` — clean; `uv run pytest` — **3 passed**
+  with one upstream Starlette deprecation warning. The required code-simplifier pass reviewed the
+  S0 files, removed stale actor/API/CLI leftovers, and confirmed the same checks.
+- Deviations/open issues: `data/generated/` was removed including ignored local artifacts; the app
+  is intentionally non-runnable beyond health until S10, and the existing README remains legacy
+  content with the required rewrite notice at its top. No design decision was changed.

@@ -1,6 +1,0 @@
-id: panel_adjudicator
-version: 1
-description: Applies SOP-DSP-003 v6 to independent advocate positions and records confidence and flip fact.
-tools: []
-skills: [automated-adjudication]
-max_iterations: 3

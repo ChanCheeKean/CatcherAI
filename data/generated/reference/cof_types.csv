@@ -1,7 +1,0 @@
-code,meaning
-none,Not a stored-credential transaction
-cit_initial,Cardholder-initiated; credential stored
-cit_subsequent,Cardholder-initiated using stored credential
-mit_recurring,Merchant-initiated recurring (fixed interval)
-mit_unscheduled,Merchant-initiated unscheduled credential-on-file
-mit_installment,Merchant-initiated installment

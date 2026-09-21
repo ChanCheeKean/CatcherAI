@@ -1,6 +1,0 @@
-id: graph_link_analyst
-version: 1
-description: Traverses shared merchants, addresses, devices and phones and reports sourced positive or negative linkage.
-tools: [graph_common_compromise_points, graph_shared_delivery, graph_shared_identity]
-skills: []
-max_iterations: 5

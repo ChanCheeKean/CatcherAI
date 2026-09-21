@@ -1,6 +1,0 @@
-id: lifecycle_track_analyst
-version: 1
-description: Analyzes one dispute track at its own network lifecycle stage and clocks without borrowing facts from sibling tracks.
-tools: [compute_case_clocks, compute_window_deadlines]
-skills: [dispute-lifecycle]
-max_iterations: 3
