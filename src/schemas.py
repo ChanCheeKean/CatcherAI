@@ -4,15 +4,19 @@ from __future__ import annotations
 
 from decimal import Decimal
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import (
     AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
+    WithJsonSchema,
     model_validator,
 )
+
+# Strict structured output rejects pydantic's Decimal regex, so advertise a plain number.
+Money = Annotated[Decimal, Field(ge=0), WithJsonSchema({"type": "number", "minimum": 0})]
 
 
 class SchemaModel(BaseModel):
@@ -152,9 +156,9 @@ class EvidenceLink(SchemaModel):
 class TransactionDecision(SchemaModel):
     txn_id: str
     verdict: Verdict
-    disputed_amount: Decimal = Field(ge=0)
-    credit_amount: Decimal = Field(ge=0)
-    cardholder_liability: Decimal = Field(ge=0)
+    disputed_amount: Money
+    credit_amount: Money
+    cardholder_liability: Money
     network_action: Literal["file_dispute", "no_dispute", "pre_arbitration", "none"]
     reason_code: str | None = None
     rationale: str

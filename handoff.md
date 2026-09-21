@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S8 — Agent runtime (LangGraph) complete**
-Next stage: **S9 — Real-LLM evaluation and tuning**
+Current phase: **S10 API complete; S9 evaluation tooling shipped, tuning partly done (3/10 cases verified)**
+Next stage: **S11 — Frontend part 1** (S9 case tuning is queued and will be revisited; see §8)
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -369,7 +369,7 @@ schema; a second test scans `src/` and fails on `json.loads` applied to model ou
 call outside `invoke_structured`. One `@pytest.mark.llm`
 smoke run on C04.
 
-### S9 — Real-LLM evaluation and tuning  ☐
+### S9 — Real-LLM evaluation and tuning  ◐ (tooling done; 3/10 cases verified, 7 queued)
 **Complexity: Complex**
 
 Goal: prove the agent solves the cases, and tune prompts and skills (never case code) until it does.
@@ -759,4 +759,35 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
 - Verification: `uv run pytest` 66 passed, ruff clean. Tests use the stub model (`tests/test_api.py`, 8).
 - S9 changes that touch shared code (`graph_store` now shares one `Database` per file, `schemas.Money`)
   must keep S10 and later stages passing.
+
+### 2026-09-21 — S9 partial: eval tooling shipped, 3/10 cases verified (to be revisited)
+
+- Built `src/evaluation.py` and `inspect eval [--cases C02 --cases C04 ...] [--k N] [--parallel N]`.
+  Per attempt it scores verdict and per-transaction verdict/credit, account-action overlap, solution-node
+  coverage of the trajectory, report grounding (cited ids exist, solution ids cited, decoy ids named),
+  the missing-evidence default, and required-capability signals. Each attempt runs in its own process with
+  a 900 s alarm so a hang becomes a scored failure with a traceback. Output: `summary.json` and
+  `summary.md` under `data/generated/eval/<timestamp>/` (git-ignored). `tests/test_evaluation.py` covers
+  scoring with a stub store. The CLI loads `.env` (`python-dotenv` is now a declared dependency).
+- Fixes found by real runs: `schemas.Money` (Decimal advertised as a plain JSON number, because OpenAI
+  strict schemas reject the regex pydantic emits for Decimal); `graph_store` shares one LadybugDB
+  `Database` per file per process (each reserves ~8 TB of address space, so per-worker databases hit
+  "Mmap ... failed" after about 15); new generic skill `unrecognized-charges`; `missing-evidence-default`
+  now applies only when an unanswered `EvidenceRequest` exists (the agent had used it for data that was
+  merely absent from the graph); the skill is a default for `graph_analyst` and `adjudicator`.
+- Results with the real model (`gpt-5.6-luna`, one attempt each; verdict and amounts correct, solution
+  coverage 1.00 in all three): **C02** not_a_dispute (~7 min), **C04** rejected as expected (~4 min),
+  **C08** accepted, 642.90 credit, both decoys named, but it ended by `max_turns` (9 supervisor turns).
+- **Queue (not yet run with the real model):** C10, C11, C12, C13, C18, C19, C12b. Then the targets: at
+  least 8/10 at pass@1, 10/10 at pass@3, mean coverage at least 0.7. Nothing here should block S11+.
+- Known issues to revisit: (1) one C02 run hung after the last `memory_write` in `consolidate_memory`
+  (no events for 6 minutes, cause not found; the mmap fix may or may not explain it, the eval alarm
+  will now expose it); (2) runs take 4-10 minutes, mostly sequential supervisor and worker calls, and
+  C08 used up its turn limit, so consider lower worker reasoning effort or fewer supervisor turns;
+  (3) the scorer reports some agent-written edge ids (`E-<hash>`) as "missing" (seen in C02 and C08),
+  likely a mapping gap for edges written by `graph_write_finding`; (4) parallel `--parallel N>1` was
+  crashy before the mmap fix and has not been retried.
+- If S9 tuning changes shared contracts (`CaseReport`, event payloads, `graph_store`), the S10 API and the
+  S11+ frontend must be kept working in the same change.
+- Verification: `uv run pytest` and ruff pass (see the commit).
 

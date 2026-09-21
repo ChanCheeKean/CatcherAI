@@ -3,11 +3,14 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from dotenv import load_dotenv
 
 from domain.events import event_json_schema
+from evaluation import evaluate, load_truth, write_summary
 from replay import load_events, render_timeline
 from runtime import RuntimePaths, run_case
 
+load_dotenv()
 app = typer.Typer(no_args_is_help=True, help="Replay card-dispute investigation trajectories.")
 
 
@@ -43,6 +46,23 @@ def run(
         ),
     )
     typer.echo(report.model_dump_json(indent=2))
+
+
+@app.command("eval")
+def eval_cases(
+    cases: Annotated[list[str] | None, typer.Option("--cases", help="Case codes or ids")] = None,
+    k: Annotated[int, typer.Option(help="Attempts per case (pass@k)")] = 1,
+    parallel: Annotated[int, typer.Option(help="Concurrent runs")] = 3,
+) -> None:
+    """Run cases with the real model and score them against the ground truth."""
+
+    truths = load_truth(cases)
+    if not truths:
+        raise typer.BadParameter("no matching cases")
+    summary = evaluate(truths, k=k, parallel=parallel)
+    out = write_summary(summary)
+    typer.echo((out / "summary.md").read_text())
+    typer.echo(f"written to {out}")
 
 
 @app.command("replay")

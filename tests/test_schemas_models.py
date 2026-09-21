@@ -131,7 +131,7 @@ def test_agents_config_loads() -> None:
         "adjudicator",
     }
     assert config.case_type_map["novel"].description
-    assert config.role_map["graph_analyst"].default_skills == ["graph-investigation"]
+    assert "graph-investigation" in config.role_map["graph_analyst"].default_skills
     assert config.runtime.max_parallel_tasks == 4
 
 

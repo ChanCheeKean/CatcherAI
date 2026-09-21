@@ -1,7 +1,7 @@
 case_types:
   - id: descriptor_confusion
     description: The merchant descriptor may identify a payment facilitator or parent merchant rather than the storefront the cardholder recognizes.
-    suggested_skills: [graph-investigation, network-reason-codes]
+    suggested_skills: [graph-investigation, unrecognized-charges, network-reason-codes]
     suggested_roles: [graph_analyst, transaction_analyst, policy_researcher]
   - id: split_clearing
     description: Multiple clearings may belong to one authorization and one order rather than represent a duplicate charge.
@@ -44,7 +44,7 @@ roles:
   - id: graph_analyst
     description: Finds connected evidence and separates meaningful temporal paths from superficial links.
     prompt: Explore the evidence graph from the dispute, pivot on shared identifiers, and report only facts grounded in node or edge IDs. Check temporal validity and actively test a plausible decoy path.
-    default_skills: [graph-investigation]
+    default_skills: [graph-investigation, unrecognized-charges]
   - id: transaction_analyst
     description: Reconciles authorizations, transactions, clearings, refunds, orders, and mandates.
     prompt: Trace every disputed transaction through authorization, order, shipment, refund, token, and mandate relationships. Reconcile amounts and dates with graph evidence; do not infer a result from the intake alone.
@@ -68,7 +68,7 @@ roles:
   - id: adjudicator
     description: Produces the final evidence-cited CaseReport after independently checking the record.
     prompt: Re-check the graph and knowledge evidence before writing the CaseReport. Reconcile every transaction amount, cite every transaction and hypothesis, explain decoys and missing evidence, and keep the cardholder letter consistent with the verdict.
-    default_skills: [graph-investigation, missing-evidence-default, network-reason-codes]
+    default_skills: [graph-investigation, unrecognized-charges, missing-evidence-default, network-reason-codes]
 
 prompts:
   triage: Inspect the dispute intake, its first-hop graph neighbourhood, the graph schema, and the case-type menu. Classify the case, state any novel-case description, propose hypotheses, and create an evidence-seeking plan. Suggestions are starting context, not restrictions.
