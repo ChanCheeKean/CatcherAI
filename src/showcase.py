@@ -95,11 +95,12 @@ def _apply(store: GraphStore, added: dict) -> None:
 
 
 def _merged_eval(eval_dir: Path) -> dict:
-    """The newest evaluated result of every case across all batches."""
+    """The newest completed evaluation of every case across all batches (crashed attempts skipped)."""
     latest: dict[str, dict] = {}
     for path in sorted(eval_dir.glob("*/summary.json")):
         for case in json.loads(path.read_text())["cases"]:
-            latest[case["code"]] = case
+            if not any("error" in run for run in case["runs"]):
+                latest[case["code"]] = case
     cases = list(latest.values())
     return {
         "k": 1,
