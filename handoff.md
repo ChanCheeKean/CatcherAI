@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S6 — Schemas, config and model setup complete**
-Next stage: **S7 — Agent tools**
+Current phase: **S7 — Agent tools complete**
+Next stage: **S8 — Agent runtime (LangGraph)**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -312,7 +312,7 @@ Build:
 Tests: schema validators accept good and reject bad examples; config loads; `chat_model` builds
 without network; `invoke_structured` retries once on a validation error, then raises.
 
-### S7 — Agent tools  ☐
+### S7 — Agent tools  ☑
 **Complexity: Medium**
 
 Goal: the seven tools every worker gets, each emitting `tool_call`/`tool_result` events with
@@ -683,3 +683,27 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   deprecation warning. The required code-simplifier review found no safe reductions; the
   provider-strategy helper is intentionally retained for S8's Deep Agent construction. No design
   decisions changed and no spec update was required.
+
+### 2026-09-21 — S7 agent tools complete
+
+- Added `src/tools.py`: `Run` (store, emitter, run_id, knowledge_db, as_of, `actor`) and `make_tools(run)`
+  returning the seven tools (`graph_schema`, `graph_query`, `graph_neighbors`, `graph_write_finding`,
+  `search_knowledge`, `memory_write`, `python`), each with a Pydantic `args_schema`. Every call emits
+  `tool_call` then `tool_result` (actor kind `tool`; payload has `caller`, `tool`, `call_id`, `args`,
+  `result`, `node_ids`, `edge_ids`; ids also in `refs`); writes additionally emit `graph_write` /
+  `memory_write`. Errors are returned as `{"error": ...}` JSON text. Strings are clipped to 1,200 chars;
+  Cypher rows are capped by the store. S8 should use `dataclasses.replace(run, actor=role)` per worker
+  and add `visit`/`turn`/`parent_id` (the emitter draft has no such fields yet; put them in the payload
+  or extend `EventDraft`).
+- `python` runs in an isolated subprocess (10 s timeout) with imports restricted to `datetime, decimal,
+  math, statistics, collections, json, zoneinfo` (a convenience guard, not a security boundary).
+- `search_knowledge` combines `retrieval.search` (policy/precedent, `as_of` defaults to the run's date)
+  with keyword-ranked active `MemoryNote` graph nodes (kind `memory_note`).
+- `graph_store.py`: `write_finding` refactored onto shared `_check_edges`/`_create_edge`, now rejects
+  dangling endpoints; added `write_note` (MemoryNote + `ABOUT` edges, marks replaced notes
+  `superseded`/`merged`) and `set_note_status` (retract). No SUPERSEDES edge exists in the ontology, so
+  the supersede link is recorded only in the `memory_write` event payload.
+- Deleted stale empty `src/{adapters,data,evaluation,harness,playbooks,runtime,tools}` dirs (only
+  `__pycache__`; `src/tools/` would have shadowed `tools.py`).
+- Tests: `tests/test_tools.py` (10). `uv run ruff check src tests data/generator` clean; `uv run pytest`
+  **51 passed**. Code-simplifier pass done. No design decisions changed.

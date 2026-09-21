@@ -9,6 +9,7 @@ import shutil
 import tempfile
 import uuid
 from collections import defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -191,49 +192,84 @@ class GraphStore:
         kind: str = "",
         edges: list[dict] | None = None,
     ) -> dict:
-        """Create a Finding plus inferred edges `{type, src, dst}`; agents may only add edges whose
-        ontology type carries provenance (`run_id`, `confidence`, `evidence_path`)."""
-        edges = edges or []
+        """Create a Finding plus inferred edges `{type, src, dst}`; src defaults to the finding."""
         finding_id = f"FND-{uuid.uuid4().hex[:10]}"
+        provenance = {"run_id": run_id, "confidence": confidence, "evidence_path": evidence_path}
+        edges = [{**e, "src": e.get("src", finding_id)} for e in edges or []]
+        self._check_edges(edges, {finding_id: "Finding"})
+        self.conn.execute(
+            "CREATE (:Finding {id: $id, text: $text, kind: $kind, run_id: $run_id, "
+            "confidence: $confidence, evidence_path: $evidence_path})",
+            {"id": finding_id, "text": text, "kind": kind, **provenance},
+        )
+        return {
+            "finding_id": finding_id,
+            "edge_ids": [self._create_edge(e, provenance) for e in edges],
+        }
+
+    def write_note(
+        self,
+        text: str,
+        run_id: str,
+        confidence: float,
+        about: list[str],
+        supersedes: list[str] | None = None,
+        status: str = "active",
+    ) -> dict:
+        """Create an active MemoryNote with ABOUT edges; the notes it replaces get `status`."""
+        note_id = f"MEM-{uuid.uuid4().hex[:10]}"
+        supersedes = supersedes or []
+        provenance = {"run_id": run_id, "confidence": confidence, "evidence_path": ""}
+        edges = [{"type": "ABOUT", "src": note_id, "dst": dst} for dst in about]
+        self._check_edges(edges, {note_id: "MemoryNote"})
+        for old in supersedes:
+            self._require(old, "MemoryNote")
+        self.conn.execute(
+            "CREATE (:MemoryNote {id: $id, text: $text, status: 'active', "
+            "created_at: $now, run_id: $run_id, confidence: $confidence})",
+            {"id": note_id, "text": text, "now": datetime.now(UTC).isoformat(), **provenance},
+        )
+        for old in supersedes:
+            self.set_note_status(old, status)
+        return {"note_id": note_id, "edge_ids": [self._create_edge(e, provenance) for e in edges]}
+
+    def set_note_status(self, note_id: str, status: str) -> None:
+        self._require(note_id, "MemoryNote")
+        self.conn.execute(
+            "MATCH (m:MemoryNote {id: $id}) SET m.status = $status",
+            {"id": note_id, "status": status},
+        )
+
+    def _require(self, node_id: str, label: str | None = None) -> str:
+        found = self.label_of(node_id)
+        if label and found != label:
+            raise ValueError(f"{node_id} is a {found}, expected {label}")
+        if not self.conn.execute(
+            f"MATCH (n:{found} {{id: $id}}) RETURN count(n)", {"id": node_id}
+        ).get_next()[0]:
+            raise ValueError(f"no such node {node_id}")
+        return found
+
+    def _check_edges(self, edges: list[dict], new_nodes: dict[str, str]) -> None:
+        """Agents may only add edges whose ontology type carries provenance, between real nodes."""
         for e in edges:
             spec = self.ontology["edges"].get(e["type"])
             if spec is None or "run_id" not in spec["props"]:
                 raise ValueError(f"agents may not write edge type {e['type']!r}")
-            labels = [self.label_of(e.get("src", finding_id)), self.label_of(e["dst"])]
+            labels = [new_nodes.get(n) or self._require(n) for n in (e["src"], e["dst"])]
             if labels not in [list(p) for p in spec["pairs"]]:
                 raise ValueError(f"{e['type']} cannot connect {labels[0]} -> {labels[1]}")
+
+    def _create_edge(self, edge: dict, provenance: dict) -> str:
+        edge_id = f"E-{uuid.uuid4().hex[:10]}"
+        src, dst = edge["src"], edge["dst"]
         self.conn.execute(
-            "CREATE (:Finding {id: $id, text: $text, kind: $kind, run_id: $run_id, "
-            "confidence: $confidence, evidence_path: $path})",
-            {
-                "id": finding_id,
-                "text": text,
-                "kind": kind,
-                "run_id": run_id,
-                "confidence": confidence,
-                "path": evidence_path,
-            },
+            f"MATCH (a:{self.label_of(src)} {{id: $src}}), (b:{self.label_of(dst)} {{id: $dst}}) "
+            f"CREATE (a)-[:{edge['type']} {{id: $id, run_id: $run_id, confidence: $confidence, "
+            "evidence_path: $evidence_path}]->(b)",
+            {"src": src, "dst": dst, "id": edge_id, **provenance},
         )
-        edge_ids = []
-        for e in edges:
-            src, dst = e.get("src", finding_id), e["dst"]
-            s_label, d_label = self.label_of(src), self.label_of(dst)
-            edge_id = f"E-{uuid.uuid4().hex[:10]}"
-            self.conn.execute(
-                f"MATCH (a:{s_label} {{id: $src}}), (b:{d_label} {{id: $dst}}) "
-                f"CREATE (a)-[:{e['type']} {{id: $id, run_id: $run_id, confidence: $confidence, "
-                "evidence_path: $path}]->(b)",
-                {
-                    "src": src,
-                    "dst": dst,
-                    "id": edge_id,
-                    "run_id": run_id,
-                    "confidence": confidence,
-                    "path": evidence_path,
-                },
-            )
-            edge_ids.append(edge_id)
-        return {"finding_id": finding_id, "edge_ids": edge_ids}
+        return edge_id
 
     def close(self) -> None:
         self.conn.close()
