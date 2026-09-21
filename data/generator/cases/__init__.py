@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 from typing import TypedDict
 
+from capabilities import required_capabilities
 from graph_builder import Graph
 
 
@@ -20,6 +21,7 @@ class CaseTruth(TypedDict):
     decoy_patterns: list[dict]
     missing_evidence: bool
     human_effort: dict
+    required_capabilities: list[dict]
 
 
 def transaction_expected(
@@ -41,8 +43,19 @@ def transaction_expected(
 
 
 def build_cases(g: Graph, rng: random.Random) -> list[CaseTruth]:
-    """Add every S3 case to an existing world in stable presentation order."""
-    from . import c02_descriptor, c04_split, c08_pump, c10_tablet, c11_ato
+    """Add every showcase case to an existing world in stable presentation order."""
+    from . import (
+        c02_descriptor,
+        c04_split,
+        c08_pump,
+        c10_tablet,
+        c11_ato,
+        c12_porch,
+        c12b_wrong_house,
+        c13_agent,
+        c18_refund,
+        c19_reputation,
+    )
 
     builders = (
         c02_descriptor.build,
@@ -50,8 +63,18 @@ def build_cases(g: Graph, rng: random.Random) -> list[CaseTruth]:
         c08_pump.build,
         c10_tablet.build,
         c11_ato.build,
+        c12_porch.build,
+        c12b_wrong_house.build,
+        c13_agent.build,
+        c18_refund.build,
+        c19_reputation.build,
     )
-    return [_check_case(build(g, rng)) for build in builders]
+    cases = []
+    for build in builders:
+        case = build(g, rng)
+        case["required_capabilities"] = required_capabilities(case["code"])
+        cases.append(_check_case(case))
+    return cases
 
 
 def _check_case(case: dict) -> CaseTruth:

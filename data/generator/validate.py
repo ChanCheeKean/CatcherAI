@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from capabilities import coverage
 from cases import CaseTruth
 
 
@@ -51,4 +52,7 @@ def write_case_outputs(output_dir: Path, cases: list[CaseTruth], graph) -> None:
     ]
     (Path(output_dir) / "case_catalog.json").write_text(
         json.dumps(catalog, indent=2, sort_keys=True) + "\n"
+    )
+    (Path(output_dir) / "ground_truth" / "capability_coverage.json").write_text(
+        json.dumps(coverage(), indent=2, sort_keys=True) + "\n"
     )

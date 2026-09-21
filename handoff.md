@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S3 — Case kit, validation, and cases 1–5 complete**
-Next stage: **S4 — Cases 6–10, missing evidence, capability map**
+Current phase: **S4 — Cases 6–10, missing evidence, capability map complete**
+Next stage: **S5 — Knowledge store and skills**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -239,7 +239,7 @@ Tests (`tests/test_cases.py`): validation passes for all built cases; ground-tru
 field that leaks into the graph (e.g. `expected` text is not on any node); each case has at least
 one decoy.
 
-### S4 — Cases 6–10, missing evidence, capability map  ☐
+### S4 — Cases 6–10, missing evidence, capability map  ☑
 **Complexity: Complex**
 
 Goal: complete the case set and the capability coverage mapping.
@@ -612,3 +612,28 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   graph-property mutation and made catalog display data derive from graph intake facts.
 - No design decisions changed and no spec update was required. Generated graph, ground truth,
   catalog and LadybugDB files remain ignored build artifacts.
+
+### 2026-09-21 — S4 cases 6–10, missing evidence, and capability map complete
+
+- Added the remaining five graph-first showcases: C12 coordinated porch-claim ring, C12b wrong-
+  house control, C13 agent-provider mandate overrun, C18 unlinked partial refund, and C19 stale
+  merchant reputation. Each has executable proof paths, at least one matched decoy, a bounded
+  solution subgraph, evaluator outcomes, and a human-effort note.
+- C12b uses non-overlapping recycled-phone ownership plus a delivery-address mismatch; C18 matches
+  an otherwise unlinked credit through its order. Both model missing merchant evidence as
+  `EvidenceRequest{status:'no_response', deadline_passed:true}` and expect the remaining uncertainty
+  to resolve in the cardholder's favour.
+- Rewrote `data/generator/capabilities.py` around the new architecture: agents, router/triage,
+  termination, agent graph, subagents, typed tools, harness, skills, persistent/graph/semantic
+  memory, sandbox, and selective read/write paths. Every capability is primary for at least one
+  case. Case ground truth now includes `required_capabilities`, and generation writes evaluator-only
+  `ground_truth/capability_coverage.json`.
+- Extended `tests/test_cases.py` for all ten cases, missing-evidence and misleading-surface minima,
+  required-capability validity, and primary coverage. The required code-simplifier pass removed an
+  unused C13 device/edge and found no other safe reductions or contract violations.
+- Verification: `uv run pytest` — **30 passed** with one upstream Starlette warning;
+  `uv run ruff check src tests data/generator` clean; `uv run ruff format --check src tests
+  data/generator` clean. The production generator completed in about six seconds with 2,568
+  customers, 50,079 transactions, and 364 disputes; all ten cases' proof and decoy patterns passed.
+- No design decisions changed and no spec update was required. Generated graph, ground truth,
+  capability coverage, catalog, and LadybugDB files remain ignored build artifacts.

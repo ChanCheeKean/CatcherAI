@@ -4,6 +4,7 @@ import json
 import random
 
 import pytest
+from capabilities import CAPABILITIES
 from cases import build_cases
 from validate import validate_cases, write_case_outputs
 from world import build_world
@@ -30,10 +31,21 @@ def built_cases(tmp_path_factory):
     return graph, truths, root
 
 
-def test_all_five_cases_validate_and_have_decoys(built_cases) -> None:
+def test_all_ten_cases_validate_and_have_decoys(built_cases) -> None:
     _, truths, _ = built_cases
 
-    assert [case["code"] for case in truths] == ["C02", "C04", "C08", "C10", "C11"]
+    assert [case["code"] for case in truths] == [
+        "C02",
+        "C04",
+        "C08",
+        "C10",
+        "C11",
+        "C12",
+        "C12b",
+        "C13",
+        "C18",
+        "C19",
+    ]
     for case in truths:
         assert case["decoy_patterns"]
         assert 5 <= len(case["solution_node_ids"]) <= 25
@@ -59,19 +71,29 @@ def test_ground_truth_is_separate_from_graph_and_catalog_is_neutral(built_cases)
         assert written == case
 
     catalog = json.loads((root / "case_catalog.json").read_text())
-    assert len(catalog) == 5
+    assert len(catalog) == 10
     forbidden = {"accepted", "rejected", "not_a_dispute", "compromise", "takeover"}
     assert all(not (forbidden & set(item["summary"].lower().split())) for item in catalog)
-    assert [item["claim_type"] for item in catalog] == [
-        "fraud",
-        "duplicate",
-        "fraud",
-        "fraud",
-        "fraud",
-    ]
     assert all(
         set(item) == {"case_id", "title", "claim_type", "amount", "summary"} for item in catalog
     )
+
+
+def test_missing_evidence_misleading_surfaces_and_capability_coverage(built_cases) -> None:
+    _, truths, root = built_cases
+
+    assert sum(case["missing_evidence"] for case in truths) >= 2
+    assert sum(bool(case["misleading_surface"]) for case in truths) >= 6
+    assert all(case["required_capabilities"] for case in truths)
+
+    coverage = json.loads((root / "ground_truth" / "capability_coverage.json").read_text())
+    assert set(coverage) == set(CAPABILITIES)
+    assert all(row["primary_cases"] for row in coverage.values())
+    for case in truths:
+        assert all(
+            requirement["capability"] in CAPABILITIES
+            for requirement in case["required_capabilities"]
+        )
 
 
 def test_validation_rejects_broken_proof_and_missing_solution_node(built_cases) -> None:
