@@ -81,6 +81,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "deepagents" },
+    { name = "ladybug" },
     { name = "langchain" },
     { name = "langchain-openai" },
     { name = "langgraph" },
@@ -104,16 +105,13 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "ruff" },
 ]
-graph = [
-    { name = "ladybug" },
-]
 
 [package.metadata]
 requires-dist = [
     { name = "deepagents", specifier = ">=0.5.3,<0.6" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.115" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
-    { name = "ladybug", marker = "extra == 'graph'", specifier = ">=0.20,<0.21" },
+    { name = "ladybug", specifier = ">=0.20,<0.21" },
     { name = "langchain", specifier = ">=1.0" },
     { name = "langchain-openai", specifier = ">=1.0" },
     { name = "langgraph", specifier = ">=1.0" },
@@ -129,7 +127,7 @@ requires-dist = [
     { name = "typer", specifier = ">=0.15" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.32" },
 ]
-provides-extras = ["graph", "api", "dev"]
+provides-extras = ["api", "dev"]
 
 [[package]]
 name = "certifi"

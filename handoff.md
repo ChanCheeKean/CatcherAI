@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S0 — Teardown complete**
-Next stage: **S1 — Graph foundation**
+Current phase: **S1 — Graph foundation complete**
+Next stage: **S2 — Background world generator**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -139,7 +139,7 @@ If a kept module imports a deleted one, delete that code path. Do not stub it.
 Done when: `uv run pytest` passes (the surviving tests only), ruff is clean, `rg` finds no imports
 of deleted modules, and the repo contains no playbook, governance, harness or routing code.
 
-### S1 — Graph foundation: ontology, builder, LadybugDB store  ☐
+### S1 — Graph foundation: ontology, builder, LadybugDB store  ☑
 **Complexity: Medium**
 
 Goal: one small, typed way to build and query the evidence graph. Later stages just add data.
@@ -503,6 +503,11 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
 - The handoff calls the design approved, while the spec header still says “pending written-spec
   review.” No architecture conflict was found; this stage follows the handoff's approved-design
   status.
+- Ontology deviations (S1): Cypher reserves `Order` and `LIMIT`, so the label is `PurchaseOrder`
+  (id prefix still `ORD-`) and `Account.limit` is `credit_limit`. The spec's `REQUESTED{status,
+  deadline,responded_at}` edge properties live on the `EvidenceRequest` node (as in §4.2's missing-
+  evidence example); the edge only carries `requested_at`. Several edge types connect more than one
+  label pair (`pairs` list in `ontology.py`). Update the spec if these stick.
 - The spec removal list includes `handoff.md`, while the stage protocol requires updating and
   committing this file after every stage. The handoff is retained as the active execution record.
 
@@ -543,3 +548,20 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
 - Deviations/open issues: `data/generated/` was removed including ignored local artifacts; the app
   is intentionally non-runnable beyond health until S10, and the existing README remains legacy
   content with the required rewrite notice at its top. No design decision was changed.
+
+### 2026-09-21 — S1 graph foundation complete
+
+- Built `data/generator/ontology.py` (26 labels, 38 edge types, plain dicts; `pairs` per edge type;
+  provenance props `run_id/confidence/evidence_path` on agent-writable edges), `graph_builder.py`
+  (`Graph.node/edge/write`, validates labels, props, id prefixes, endpoints and label pairs; writes
+  `nodes.jsonl`, `edges.jsonl`, `ontology.json`) and `src/graph_store.py` (`load`, `copy_store`,
+  `GraphStore.schema/query/neighbors/write_finding/close`). The store is generic: it reads the
+  ontology from `ontology.json`, kept beside the DB as `<db>.ontology.json`, so `src/` does not import
+  the generator. Bulk load uses CSV `COPY`; the write guard strips string literals/comments first.
+- `ladybug` is now a required dependency; `pytest` gets `pythonpath = ["data/generator"]`.
+- Tests: `tests/test_graph_store.py` (19 cases). `uv run ruff check src tests data/generator` clean;
+  `uv run pytest` 22 passed. Code-simplifier pass done (removed dead helpers, validate-before-write in
+  `write_finding`).
+- Notes for S2: Ladybug returns empty strings as NULL, so temporal filters treat NULL as open;
+  `query` ids include id-shaped string values (e.g. `RETURN a.id`); edges from `neighbors` are
+  compact dicts. Deviations listed in §7.
