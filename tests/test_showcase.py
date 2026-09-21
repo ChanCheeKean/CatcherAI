@@ -35,7 +35,9 @@ def test_export_then_install_restores_run_and_agent_written_graph(
     (generated / "ground_truth").mkdir()
     (generated / "eval" / "batch").mkdir(parents=True)
     (generated / "eval" / "batch" / "summary.json").write_text(
-        json.dumps({"k": 1, "cases": [{"code": "C00", "pass_at_1": True, "pass_at_k": True}]})
+        json.dumps(
+            {"k": 1, "cases": [{"code": "C00", "pass_at_1": True, "pass_at_k": True, "runs": [{}]}]}
+        )
     )
 
     run_id = "run-showcase"

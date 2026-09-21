@@ -9,7 +9,7 @@ from domain.events import event_json_schema
 from evaluation import evaluate, load_truth, write_summary
 from replay import load_events, render_timeline
 from runtime import RuntimePaths, run_case
-from showcase import export
+from showcase import export, install
 
 load_dotenv()
 app = typer.Typer(no_args_is_help=True, help="Replay card-dispute investigation trajectories.")
@@ -72,6 +72,14 @@ def showcase_export() -> None:
 
     for case_id, run_id in sorted(export().items()):
         typer.echo(f"{case_id}: {run_id}")
+
+
+@app.command("showcase-install")
+def showcase_install() -> None:
+    """Restore data/generated/ and the stored runs from the committed data/showcase/."""
+
+    install()
+    typer.echo("showcase restored")
 
 
 @app.command("replay")

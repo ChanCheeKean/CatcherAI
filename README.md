@@ -99,27 +99,59 @@ for live runs.
    cd frontend && npm ci && cd ..
    ```
 
-2. Build the dataset (about six seconds). It creates the graph, the case catalogue and the
-   policy library.
-
-   ```
-   uv run python data/generator/gen.py
-   ```
-
-3. Put your key in a file named `.env` at the repository root.
-
-   ```
-   OPENAI_API_KEY=your-key
-   ```
-
-4. Start everything.
+2. Start everything. The first start restores the committed showcase (see below) into
+   `data/generated/`, which takes about 15 seconds. Nothing has to be built or unzipped by hand.
 
    ```
    ./dev.sh
    ```
 
-   Open http://127.0.0.1:5173, choose a case and watch it run. A run takes a few minutes. Finished
-   runs can be reopened and replayed without a key.
+   Open http://127.0.0.1:5173. Every case already shows its last run: click a case to open the
+   stored trajectory, agent flow, evidence graph and conclusion, with no key and no model call.
+   "Run again" starts a fresh live run, which needs the key (step 3) and takes a few minutes.
+
+3. Only for live runs, put your key in a file named `.env` at the repository root.
+
+   ```
+   OPENAI_API_KEY=your-key
+   ```
+
+### The committed showcase
+
+`data/showcase/` (about 12 MB) is what makes a fresh clone usable. It holds the latest completed
+run of each of the ten cases, plus the data around them:
+
+| File | Content |
+|---|---|
+| `graph/nodes.jsonl.gz`, `graph/edges.jsonl.gz`, `graph/ontology.json` | The base evidence graph (gzipped JSONL) |
+| `runs/<run_id>.events.jsonl.gz` | The full trajectory of a run: every plan, delegation, tool call with inputs and outputs, finding and decision |
+| `runs/<run_id>.graph.json` | What the agents wrote into that run's graph (findings, memory notes, inferred edges) |
+| `case_catalog.json`, `ground_truth/`, `eval.json` | Case list, evaluator-only answers and the latest score per case, for the evaluation overlay |
+| `knowledge.sqlite` | The policy and precedent search index used by live runs |
+
+The `.gz` files are plain gzip: `gunzip -k data/showcase/graph/nodes.jsonl.gz` or
+`zcat data/showcase/runs/<run_id>.events.jsonl.gz | head` lets you read them. The API restores
+the showcase by itself when it starts and `data/generated/` is missing. To do it without starting
+the API:
+
+```
+uv run inspect showcase-install
+```
+
+It rebuilds the graph database from the JSONL, loads the events into `trajectory.sqlite` and
+recreates one graph copy per run under `data/generated/runs/`. It only fills in what is missing,
+so it is safe to run again. To delete the restored data and start over, remove `data/generated/`
+and `trajectory.sqlite`.
+
+After you make new runs you want to keep, refresh the snapshot and commit it:
+
+```
+uv run inspect showcase-export
+git add data/showcase && git commit -m "Update showcase"
+```
+
+To rebuild the dataset from scratch instead (about six seconds, identical every time):
+`uv run python data/generator/gen.py`. That does not include stored runs.
 
 The model is set in `config/models.yaml`. The specialist roles and case types are in
 `config/agents.yaml`, and the knowledge documents are in `skills/`.
