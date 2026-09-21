@@ -34,7 +34,7 @@ done
 (
   cd "$OBS_ROOT"
   uv run python -c "import fastapi, sse_starlette, uvicorn" >/dev/null
-) || fail "backend API dependencies missing; run: uv sync --extra dev --extra graph --extra api"
+) || fail "backend API dependencies missing; run: uv sync --extra dev --extra api"
 
 echo "DisputeAI: starting backend on http://127.0.0.1:8000"
 (

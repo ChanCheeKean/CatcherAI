@@ -63,7 +63,7 @@ No playbooks, no rule-based governance, no simulation or time advancement, no hu
 
 ## 4. Environment and commands
 
-- Python env: `uv sync --extra dev --extra graph --extra api` (LadybugDB comes from the `graph`
+- Python env: `uv sync --extra dev --extra api` (LadybugDB comes from the `graph`
   extra; S1 makes it a required dependency).
 - Tests: `uv run pytest`; lint: `uv run ruff check src tests data/generator`; format:
   `uv run ruff format src tests data/generator`.

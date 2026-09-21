@@ -95,7 +95,7 @@ for live runs.
 1. Install the backend and the frontend.
 
    ```
-   uv sync --extra dev --extra graph --extra api
+   uv sync --extra dev --extra api
    cd frontend && npm ci && cd ..
    ```
 
