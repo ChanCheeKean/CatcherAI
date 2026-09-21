@@ -97,7 +97,7 @@ model is fine. **Medium** = some design judgement within a clear contract, Sonne
 ## 6. Stages
 
 Order matters: each stage lists what it consumes. The app is intentionally not runnable end to end
-from S0 until S8, and the frontend until S11.
+from S0 until S8, and the frontend until S11 (graphs complete in S13).
 
 ### S0 — Teardown of the old design  ☐
 **Complexity: Simple**
@@ -121,7 +121,7 @@ Delete:
 - `data/generator/` (all), `data/generated/` (all), `data/corpus/skills/` (duplicate of `skills/`),
   `schemas/openapi.json`
 - `docs/design/`, `docs/prompts/`, `docs/superpowers/specs/2026-09-16-*`,
-  `docs/superpowers/plans/2026-09-16-*`, `docs/technical.md` (rewritten in S13)
+  `docs/superpowers/plans/2026-09-16-*`, `docs/technical.md` (rewritten in S14)
 - Every test in `tests/` whose subject was deleted. Keep tests only for surviving modules.
 
 Keep: `src/domain/events.py`, `src/observability/emitter.py`, `src/replay.py`, `src/storage.py`,
@@ -129,7 +129,7 @@ Keep: `src/domain/events.py`, `src/observability/emitter.py`, `src/replay.py`, `
 `ModelsConfig` loading only), `src/cli.py` (reduce to commands that still work, or to an empty
 Typer app), `src/api/app.py`, `src/api/errors.py`, `src/api/routers/meta.py`, `data/corpus/`
 (except `skills/`), `skills/` (rewritten in S5), `config/models.yaml`, `frontend/` (untouched until
-S11), `README.md` (rewritten in S13; add one line at the top saying it is being rewritten).
+S11), `README.md` (rewritten in S14; add one line at the top saying it is being rewritten).
 
 In `events.py`/`emitter.py`, remove the hash chain, its verification and redaction calls; keep an
 append-only SQLite event log with blobs. Remove event types listed as removed in spec §6.
@@ -227,7 +227,9 @@ Build:
 - `data/generator/validate.py`: after load, runs every proof pattern (must return ≥ `min_rows`)
   and every decoy pattern (must return rows, proving the decoy exists), checks all
   `solution_node_ids` exist, and fails the build otherwise. `gen.py` calls it and writes
-  `data/generated/ground_truth/cases/<case_id>.json`.
+  `data/generated/ground_truth/cases/<case_id>.json`, plus the UI-only
+  `data/generated/case_catalog.json` (`case_id`, `title`, `claim_type`, `amount`, `summary`); the
+  summary is a neutral one-liner of what the cardholder says and must not reveal the answer.
 - Cases 1–5 from spec §4.4: C02 descriptor confusion, C04 split-not-double, C08 Pump Six
   compromise point, C10 family tablet, C11 ATO drop-address ring (about 40 accounts).
 - For each case, write a short "human effort" note in the ground truth: the number of hops and
@@ -350,7 +352,11 @@ Build `src/runtime.py` (split into at most two or three files if it grows past a
   `no_progress` (the last two force the adjudicator with a note).
 - Events per spec §6, including `node_entered`/`node_exited`/`edge_taken`, `triage`,
   `plan_updated`, `supervisor_turn`, `delegation_started/finished`, `skill_loaded`, `decision`,
-  `termination`. The run result is the `CaseReport`, persisted with the run.
+  `termination`. Every event carries `actor` (node or role), `visit` (1-based per actor),
+  `turn` (supervisor turn) and `parent_id` (spawning delegation); `node_exited` carries the node's
+  structured output; `delegation_started` carries the `Task`, `delegation_finished` the `Findings`
+  (the frontend builds both graphs from these alone; see spec §7.5). The run result is the
+  `CaseReport`, persisted with the run.
 - Per-run graph isolation via `graph_store.copy_store`. LangGraph SQLite checkpointer.
 - CLI (`src/cli.py`): `inspect run <case_id>`, `inspect replay <run_id>`.
 
@@ -385,63 +391,110 @@ ambiguous, fix the data (and its proof patterns), not the agent.
 ### S10 — API  ☐
 **Complexity: Medium**
 
-Goal: the backend the frontend needs, over the new data and runtime.
+Goal: exactly the endpoints the two-page frontend needs (spec §6, §7.5).
 
-Read: spec §6–7; `src/api/app.py`; `git show 56d9380:src/api/` for patterns (run registry, SSE).
+Read: spec §6–7; `src/api/app.py`; `git show 56d9380:src/api/run_manager.py` and
+`git show 56d9380:src/api/sse.py` for the run-registry and SSE patterns (reuse ideas, not code).
 
-Build: `GET /cases`, `GET /cases/{id}` (intake + 1-hop graph), `POST /runs`, `GET /runs/{id}`,
-`GET /runs/{id}/events` (SSE, reconnectable), `GET /runs/{id}/subgraph` (touched nodes/edges
-with properties), `GET /runs/{id}/report`, `GET /graph/neighbors/{node_id}`, `GET /graph/schema`,
-`GET /eval/latest`. Background runs in-process with per-run isolated stores. Regenerate
-`schemas/openapi.json` and `schemas/trajectory-event.schema.json`. Solution-subgraph overlay data
-only from `/eval` endpoints.
+Build: `GET /cases` (from `case_catalog.json`), `POST /runs {case_id}` (starts a background run
+with an isolated graph store, returns `run_id`), `GET /runs/{id}` (status + `CaseReport` when
+done), `GET /runs/{id}/events` (SSE; replays stored events then streams live; reconnect with
+`Last-Event-ID`), `GET /graph/nodes?ids=` (properties of nodes/edges, batch),
+`GET /graph/neighbors/{id}`, `GET /eval/latest` (solution/decoy IDs for the overlay; only
+after an eval run). Regenerate `schemas/openapi.json` and `schemas/trajectory-event.schema.json`.
 
-Tests: `tests/test_api.py` with the stub model (FastAPI TestClient): list cases, start a run,
-stream events to completion, fetch subgraph and report.
+Tests: `tests/test_api.py` with the stub model (FastAPI TestClient): list cases; start a run;
+stream events to completion; every event has `actor`/`visit`/`turn`; fetch report; batch node
+lookup; neighbours.
 
-### S11 — Frontend part 1: adapt to the new trajectory  ☐
+### S11 — Frontend part 1: shell, cases page, run page layout, conclusion  ☐
 **Complexity: Medium**
 
-Goal: the existing UI works against the new API, with dead views removed.
+Goal: the simple two-page app with the final layout, without the graphs yet.
 
-Read: `frontend/src/api/*`, `frontend/src/projections/runProjection.ts`,
-`frontend/src/features/*`; spec §6–7.
-
-Do: update `api/types.ts` and `client.ts` to the new endpoints and events; rewrite
-`runProjection.ts` for the new events; delete the queue launcher/visualization, wait/clock views,
-governance/panel views and anything else unused; add the **plan checklist** (status + evidence
-refs), a **supervisor timeline** (reasoning + action per turn) and a **delegation tree**
-(parallel workers, ad-hoc roles highlighted). Tsc, vitest and build must be clean; update tests.
-
-### S12 — Frontend part 2: live evidence subgraph and case report  ☐
-**Complexity: Complex**
-
-Goal: the two views that sell the demo.
-
-Read: S11 output; `frontend/src/features/graph/*`, `WorkflowCanvas.tsx`; the `frontend-design`
-skill.
+Read: spec §7 (all); `frontend/package.json`, `frontend/src/api/*`, `frontend/src/app/*`.
 
 Do:
-- **Live evidence subgraph** (React Flow, already a dependency): grows as `tool_result` events
-  arrive; nodes coloured by label, edges labelled by type with temporal props on hover; highlight
-  nodes cited in the `CaseReport`; eval-mode toggle overlays `solution_node_ids` and decoys.
-- **Case report view**: verdict banner, headline, executive summary, detailed reasoning,
-  per-transaction table, hypotheses accepted/rejected, decoys ruled out, missing evidence,
-  policy basis, cardholder letter; every `EvidenceLink` is clickable and focuses the subgraph.
-- Update the Playwright E2E: launch a case, see the subgraph grow, reach the report. Keep
-  `./dev.sh` working.
+- Delete everything not in the new design: `features/mission-control`, `features/evaluation`,
+  `features/memory`, `features/graph`, all of `features/run-observatory` except code you
+  deliberately reuse, `CommandPalette`, `NavigationRail`, `Inspector*`, queue code, and their
+  tests. Remove unused dependencies.
+- `api/types.ts` + `client.ts` for the S10 endpoints; `useRunEvents(runId)` hook (SSE with
+  reconnect) feeding one small store: events, derived plan, per-actor visits, touched node/edge
+  IDs, report.
+- Page 1 `/`: case cards (title, claim type, amount, summary); click → `POST /runs` → navigate.
+- Page 2 `/cases/:caseId/runs/:runId`: header (back, title, status, "Run again"); left canvas
+  with `Agent flow | Evidence graph` tabs (placeholders in this stage); right inspector panel
+  (selection-driven; shows raw event data for now); bottom **conclusion panel** fully built from
+  `CaseReport`: verdict badge, headline, executive summary, detailed reasoning (collapsible),
+  per-transaction table, hypotheses accepted/rejected, decoys ruled out, missing evidence, policy
+  basis, cardholder letter; live status (turn, open plan items) until the decision arrives.
+  Evidence chips set a shared `highlight` selection (used by S13).
 
-### S13 — Documentation and final cleanup  ☐
+Checks: `npx tsc -b`, `npx vitest run` (tests for event → store derivation and the conclusion
+panel with a fixture `CaseReport`), `npm run build`.
+
+### S12 — Frontend part 2: agent-flow graph + inspector  ☐
+**Complexity: Complex**
+
+Goal: the region-segmented agent map where every node can be opened to see what it did.
+
+Read: spec §7.3, §7.5; S11 output; React Flow docs (context7); the `frontend-design` skill.
+
+Do (React Flow):
+- Four fixed background regions left to right: **Planning** (triage, supervisor),
+  **Investigation** (one node per role that ran, ad-hoc roles tagged), **Tools & Memory** (one
+  node per tool), **Decision** (adjudicator, consolidate_memory). Deterministic positions:
+  region column + stacking order; nodes appear as actors first run; nothing reflows.
+- Edges with counts: triage → supervisor, supervisor → worker (labelled "decided by
+  supervisor"), worker → supervisor (dashed curved **loop** arc), worker → tool, supervisor →
+  supervisor on rejected `Decide` (self-loop), supervisor → adjudicator (labelled "Decide" or
+  "forced: max_turns/no_progress"), adjudicator → consolidate_memory.
+- Visit badges `×N`; active node pulses; last-taken edge animates.
+- Inspector for an agent node: list of visits (1…N), each with input, structured output rendered
+  as readable fields (raw JSON toggle), tool calls (args + compact result), duration, tokens.
+  Supervisor visits also show the plan checklist after that turn. Tool nodes list their calls.
+- Selecting an agent node publishes the node IDs it touched (used by S13 to dim the evidence
+  graph).
+
+Checks: tsc, vitest (layout is deterministic for a fixture event stream; visit counts;
+loop-edge rendering), build.
+
+### S13 — Frontend part 3: evidence graph, highlighting, E2E  ☐
+**Complexity: Complex**
+
+Goal: the data graph that shows how everything links together.
+
+Read: spec §7.4; S11–S12 output; `d3-force` docs.
+
+Do:
+- Evidence graph from touched `node_ids`/`edge_ids` (properties via `GET /graph/nodes?ids=`),
+  growing live; three regions (**Identity**, **Commerce**, **Case & knowledge**) with d3-force
+  pulling nodes toward their region centre; colour + icon per label; edge type labels;
+  agent-written edges dashed accent; new nodes flash.
+- Click node → inspector: properties, edges with `valid_from/valid_to`, "found by <agent> via
+  <tool> at turn N". Double-click → expand 1-hop neighbours (dimmed context).
+- Highlighting: `CaseReport` evidence emphasised after decision; conclusion evidence chips
+  highlight exact nodes/edges and switch to this tab; agent-node selection from S12 dims to that
+  agent's nodes; eval overlay toggle (solution/decoy outlines) when `/eval/latest` has the case.
+- Playwright E2E: open cases page → click a case → agent-flow nodes appear → evidence graph grows →
+  conclusion shows a verdict → clicking an evidence chip highlights nodes. Keep `./dev.sh`
+  working.
+
+Checks: tsc, vitest, build, `npm run e2e`.
+
+### S14 — Documentation and final cleanup  ☐
 **Complexity: Medium**
 
 Goal: docs a new developer and a demo audience can follow; zero leftovers.
 
-Do: rewrite `README.md` (what it is, a 5-minute quickstart, the demo script per case, architecture
-diagram) and `docs/technical.md` (runtime, graph ontology, tools, schemas, events, eval, "add a
-role / skill / case type / case"). Remove the spec's "pending review" status. Final repo-wide
-`code-simplifier` pass; `rg` for leftovers of removed concepts (`playbook`, `governance`,
-`virtual_clock`, `persona`, `scheduler`, `route_id`, `hash_chain`, `redact`) and remove them.
-Full verification: pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
+Do: rewrite `README.md` (what it is, a 5-minute quickstart, the demo script per case with
+screenshots of the run page, architecture diagram) and `docs/technical.md` (runtime, graph
+ontology, tools, schemas, events, frontend data flow, eval, "add a role / skill / case type /
+case"). Remove the spec's "pending review" status. Final repo-wide `code-simplifier` pass; `rg`
+for leftovers of removed concepts (`playbook`, `governance`, `virtual_clock`, `persona`,
+`scheduler`, `route_id`, `hash_chain`, `redact`, `queue`) and remove them. Full verification:
+pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
 
 ---
 
@@ -460,4 +513,7 @@ Full verification: pytest, ruff, frontend checks, E2E, and one full `inspect eva
   produces a Pydantic `CaseReport`; router and planner merged into `triage`; supervisor actions
   limited to `Delegate`/`Decide`; seven tools; replace the custom model gateway with
   `init_chat_model`; drop hash chain and redaction.
+- Frontend redesigned as two pages (cases → run page). The run page has the graph on the left
+  (tabs: region-segmented agent flow, and the evidence graph), the inspector on the right, and the
+  conclusion (`CaseReport`) at the bottom. Split into S11–S13; docs moved to S14.
 - Baseline before teardown: HEAD `56d9380` plus the spec commits.

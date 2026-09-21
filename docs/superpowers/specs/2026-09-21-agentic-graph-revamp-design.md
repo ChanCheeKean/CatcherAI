@@ -288,20 +288,123 @@ Event types: `run_started`, `triage`, `plan_updated`, `supervisor_turn`,
 
 Removed: wait/clock/persona/evidence-arrival, guardrail/verifier/panel/adjudication, todo events.
 
-API: case list/detail read from the graph; run start/stream/replay; new
-`GET /runs/{id}/subgraph` (union of touched node/edge IDs, with properties); graph explorer
-endpoints for Cypher-backed neighbourhoods; evaluation results. Queue endpoints removed;
-`schemas/openapi.json` and `trajectory-event.schema.json` regenerated.
+API (everything the two-page frontend needs, nothing more): `GET /cases` (from
+`case_catalog.json`), `POST /runs {case_id}`, `GET /runs/{id}` (status + `CaseReport` when done),
+`GET /runs/{id}/events` (SSE, reconnectable, replays stored events), `GET /graph/nodes?ids=`
+(properties for touched nodes/edges), `GET /graph/neighbors/{id}`, `GET /eval/latest` (overlay
+data only). Queue, memory, sources and graph-lab endpoints removed; `schemas/openapi.json` and
+`trajectory-event.schema.json` regenerated. Every event carries `actor`, `visit`, `turn`,
+`parent_id` (see §7.5).
 
 ## 7. Frontend
 
-- Run Observatory: supervisor timeline with plan checklist (status + evidence refs); **live evidence
-  subgraph** growing from `tool_result` node/edge IDs, with solution-subgraph overlay in eval mode;
-  delegation tree (parallel workers, ad-hoc roles highlighted); **case report view** rendering the
-  `CaseReport` (verdict, summary, per-transaction rationale, accepted/rejected hypotheses, decoys
-  ruled out, cardholder letter) with every `EvidenceLink` clickable into the subgraph.
-- Graph Lab: neighbourhood explorer over the new ontology.
-- Removed: queue launcher/visualization, wait/clock and governance-panel views.
+Deliberately small: **two pages**, one layout, two graph views. Everything else in the current
+frontend (mission control, queue, evaluation page, memory explorer, graph lab, command palette,
+navigation rail, metrics strip, replay controls) is deleted.
+
+### 7.1 Page 1 — Cases (`/`)
+
+A grid of 10 case cards. Each card: title (e.g. "Porch Ring"), claim type, amount, and a one-line
+**neutral** summary of what the cardholder says (never the answer). Clicking a card opens page 2
+and starts a new run immediately.
+
+Data: `data/generated/case_catalog.json` written by the generator (`case_id`, `title`,
+`claim_type`, `amount`, `summary`), served by `GET /cases`. It holds display text only; answers
+stay in evaluator-only ground truth.
+
+### 7.2 Page 2 — Case run (`/cases/:caseId/runs/:runId`)
+
+```text
+┌──────────────────────────────────────────────────────────────┬──────────────────────────┐
+│ ◀ Cases   C11 · Takeover in a Friendly Mask   ● running  [Run again]                  │
+├──────────────────────────────────────────────────────────────┬──────────────────────────┤
+│ [ Agent flow | Evidence graph ]                              │ INSPECTOR                │
+│                                                              │ (whatever is selected)   │
+│   LEFT: graph canvas (~65% width)                            │                          │
+│                                                              │ agent node → per visit:  │
+│                                                              │  role, input, structured │
+│                                                              │  output, tool calls,     │
+│                                                              │  duration, tokens        │
+│                                                              │                          │
+│                                                              │ data node → label, props,│
+│                                                              │  edges (+valid_from/to), │
+│                                                              │  which agent/tool found  │
+│                                                              │  it, and when            │
+├──────────────────────────────────────────────────────────────┴──────────────────────────┤
+│ CONCLUSION (bottom, collapsible)                                                        │
+│ ⬤ REJECTED — "Merchant's CE 3.0 claim fails; this is an ATO ring via a shared drop…"    │
+│ Executive summary · Detailed reasoning · Per-transaction table · Hypotheses accepted /  │
+│ rejected · Decoys ruled out · Missing evidence · Policy basis · Cardholder letter       │
+│ Every evidence chip is clickable → switches to Evidence graph and highlights it.        │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+Before the `decision` event, the conclusion bar shows live status (current turn, open plan items).
+The same page replays a finished run from its stored events.
+
+### 7.3 Agent-flow graph (left, tab 1)
+
+A stable, region-segmented map of the LangGraph run. Nodes are **agents/stages**, not individual
+steps, so the picture never reflows; repetition is shown on the node.
+
+```text
+┌──── PLANNING ────┐┌──────── INVESTIGATION ────────┐┌──── TOOLS & MEMORY ────┐┌─ DECISION ─┐
+│                  ││                               ││                        ││            │
+│  [triage]        ││  [graph_analyst ×3]           ││  (graph_query  ×41)    ││[adjudicator│
+│     │            ││  [evidence_analyst ×1]        ││  (graph_neighbors ×12) ││     ]      │
+│     ▼            ││  [transaction_analyst ×2]     ││  (search_knowledge ×4) ││     │      │
+│  [supervisor ×5]◀┼┼─ [critic ×1]                  ││  (python ×2)           ││     ▼      │
+│   ↻ plan list    ││  [ring_mapper ×1] (ad-hoc)    ││  (memory_write ×2)     ││[consolidate│
+│                  ││                               ││  (graph_write ×1)      ││  _memory]  │
+└──────────────────┘└───────────────────────────────┘└────────────────────────┘└────────────┘
+```
+
+- Fixed regions laid out left to right: **Planning** (triage, supervisor), **Investigation**
+  (one node per role that ran; ad-hoc roles appear here, visually tagged), **Tools & Memory**
+  (one node per tool), **Decision** (adjudicator, consolidate_memory). Positions are
+  deterministic (region column + stacking order). No force layout.
+- Edges: supervisor → worker (delegation), worker → supervisor (return), worker → tool (calls),
+  triage → supervisor, supervisor → adjudicator → consolidate_memory. Each edge shows a count;
+  **loop/back-edges** (worker → supervisor, supervisor → supervisor on a rejected `Decide`) are
+  drawn as curved dashed arcs; edges chosen by an LLM decision are labelled with the deciding
+  agent. The active node pulses and the last-taken edge animates.
+- **Revisits:** a node shows `×N` visits; the inspector lists visits in order (visit 1…N) with
+  each visit's input, structured output (`Triage`, `SupervisorTurn`, `Findings`, `CaseReport`
+  rendered as readable fields, raw JSON toggle) and its tool calls. The supervisor inspector
+  also shows the plan checklist as it stood after each turn.
+- Selecting an agent node dims the evidence graph to the data nodes that agent touched (cross-link).
+
+### 7.4 Evidence graph (left, tab 2)
+
+The data the run discovered: the union of `node_ids`/`edge_ids` from all `tool_result` and
+`graph_write` events, growing live.
+
+- Segmented into regions by domain: **Identity** (Customer, Account, Card, Token, Device, IP,
+  Phone, Email, Address, MerchantAccount), **Commerce** (Transaction, Authorization, Merchant,
+  Terminal, Descriptor, Order, Shipment, AgentProvider, Mandate), **Case & knowledge** (Dispute,
+  EvidenceItem, EvidenceRequest, Communication, AccountEvent, MemoryNote, Finding). Layout:
+  d3-force with a pull toward each node's region centre, so clusters (e.g. a ring sharing one
+  address) are visible while regions stay separate.
+- Nodes coloured by label with icon + short key; edges labelled by type. Agent-written edges
+  (`SAME_ACTOR`, `COMPROMISED_AT`, …) are drawn distinctly (dashed, accent colour).
+- **Highlighting:** edges/nodes cited in the `CaseReport` evidence are emphasised once the decision
+  arrives; clicking an evidence chip in the conclusion highlights exactly those nodes/edges; newly
+  discovered nodes flash briefly.
+- Click a node → inspector shows its properties, its edges with `valid_from/valid_to`, and "found by
+  <agent> via <tool> at turn N". Double-click → expand its 1-hop neighbourhood from
+  `GET /graph/neighbors/{id}` (shown as context, dimmed until the agent touches it).
+- Eval overlay toggle (only when eval data exists): outline solution-subgraph nodes and decoys.
+
+### 7.5 Event requirements this imposes on the backend
+
+Every event carries `actor` (node or role name), `visit` (1-based per actor), `turn` (supervisor
+turn), and `parent_id` (delegation that spawned it). `node_exited` carries the node's structured
+output; `tool_result` carries `node_ids`/`edge_ids`; `delegation_started` carries the `Task`,
+`delegation_finished` the `Findings`. The frontend derives both graphs purely from events plus
+`/graph/neighbors` and node-property lookups (`GET /graph/nodes?ids=`).
+
+Tech: existing React 19 + Vite + TanStack Query + React Flow (`@xyflow/react`); add `d3-force`.
+No other new UI dependencies.
 
 ## 8. Testing and evaluation
 
