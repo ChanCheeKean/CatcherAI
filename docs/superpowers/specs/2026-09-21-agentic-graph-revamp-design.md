@@ -112,8 +112,8 @@ One factory builds a Deep Agent (`create_deep_agent`, `response_format=Findings`
 - same full toolset for every worker (section 5);
 - returns `Findings{facts, hypothesis_updates, suggested_next, node_ids, edge_ids}`.
 
-All configuration lives in one file, `config/agents.yaml`: the case-type menu (id, description,
-suggested skills/roles) and the role catalog (id, description, prompt, default skills):
+All configuration lives in one file, `config/agents.yaml`: the role catalog (id, description, prompt,
+default skills), the triage and supervisor prompts, and the loop limits. The roles are
 `graph_analyst`, `transaction_analyst`, `evidence_analyst`, `policy_researcher`, `memory_keeper`,
 `critic`, `adjudicator`. Adding a role is a YAML entry.
 
