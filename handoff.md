@@ -1,8 +1,8 @@
 # DisputeAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S14 final cleanup complete; S9 tuning partly done (3/10 cases verified)**
-Next stage: none scheduled; S9 case tuning (7 cases queued, see §8) is the remaining open work
+Current phase: **S14 final cleanup complete; S9 pass@1 verified on all 10 cases (pass@3 not run)**
+Next stage: none scheduled; S9 pass@3 and decoy-naming tuning (see the last S9 entry in §8) are the remaining open work
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -369,7 +369,7 @@ schema; a second test scans `src/` and fails on `json.loads` applied to model ou
 call outside `invoke_structured`. One `@pytest.mark.llm`
 smoke run on C04.
 
-### S9 — Real-LLM evaluation and tuning  ◐ (tooling done; 3/10 cases verified, 7 queued)
+### S9 — Real-LLM evaluation and tuning  ◐ (tooling done; 10/10 pass@1, pass@3 not run)
 **Complexity: Complex**
 
 Goal: prove the agent solves the cases, and tune prompts and skills (never case code) until it does.
@@ -858,3 +858,8 @@ pytest, ruff, frontend checks and E2E.
 - Leftover grep (`playbook`, `governance`, `virtual_clock`, `persona`, `scheduler`, `route_id`, `hash_chain`, `redact`, `queue`): only legitimate hits remain (`asyncio.Queue` in the emitter, domain policy text in `data/corpus`, and the "no hash chain" wording in tests).
 - Left for the owner: `pyproject.toml` still names the project `card-dispute-agent`.
 - Verification: `uv run pytest` 67 passed, 1 deselected; ruff check and format clean; frontend `tsc -b`, vitest (30), lint, build, `npm run e2e` (1 passed). Docs rewrite and full `inspect eval` were dropped from S14 by decision.
+
+### 2026-09-21 — S9 continued: remaining 7 cases verified with the real model
+- Ran `inspect eval` for C10, C11, C12, C12b, C13, C18, C19 (k=1, parallel 4, no prompt or code changes; no run hung, each was watched for stalled event streams every 120 s). All 7 passed: verdict and per-transaction amounts correct, missing-evidence default applied, solution coverage 1.00 each. With C02, C04 and C08 from the earlier entry, pass@1 is **10/10** and mean coverage 1.00, meeting the pass@1 and coverage targets. Runs took about 8-14 minutes each.
+- Weak spots (not failures under the current scorer): decoys named in the report were 0/2 (C10, C12, C18), 0/1 (C13, C19), while C11 (1/1) and C12b (4/4) named them; cited-solution share was 0.50 for C19, 0.88-0.92 for C10, C12 and C18. Candidate tuning: have the adjudicator prompt/skill require ruling out matched decoys explicitly.
+- Not done: pass@3 across the 10 cases; the earlier known issues (consolidate_memory hang, scorer missing `E-<hash>` edge ids) did not reappear in these runs.
