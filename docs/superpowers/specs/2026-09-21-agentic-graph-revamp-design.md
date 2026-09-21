@@ -61,10 +61,7 @@ intake, its first-hop graph neighbourhood, the graph schema and the case-type me
 
 ```python
 class Triage(BaseModel):
-    case_type: str                 # a menu case type, or "novel"
-    case_type_description: str     # required when novel
-    suggested_skills: list[str]
-    suggested_roles: list[str]
+    case_type: str                 # a short free-text label chosen by triage; nothing branches on it
     hypotheses: list[Hypothesis]
     plan: list[PlanItem]           # id, question, status: open|done|waived, evidence_refs, waiver_reason
     rationale: str
@@ -118,7 +115,7 @@ One factory builds a Deep Agent (`create_deep_agent`, `response_format=Findings`
 All configuration lives in one file, `config/agents.yaml`: the case-type menu (id, description,
 suggested skills/roles) and the role catalog (id, description, prompt, default skills):
 `graph_analyst`, `transaction_analyst`, `evidence_analyst`, `policy_researcher`, `memory_keeper`,
-`critic`, `adjudicator`. Adding a role or case type is a YAML entry.
+`critic`, `adjudicator`. Adding a role is a YAML entry.
 
 ### 3.4 Final adjudicator — `decide` node
 

@@ -68,18 +68,9 @@ class PlanEdit(SchemaModel):
 
 class Triage(SchemaModel):
     case_type: str
-    case_type_description: str | None
-    suggested_skills: list[str]
-    suggested_roles: list[str]
     hypotheses: list[Hypothesis]
     plan: list[PlanItem]
     rationale: str
-
-    @model_validator(mode="after")
-    def novel_case_type_has_description(self) -> Triage:
-        if self.case_type == "novel" and not self.case_type_description:
-            raise ValueError("case_type_description is required when case_type is 'novel'")
-        return self
 
 
 class InvestigationSummary(SchemaModel):

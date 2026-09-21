@@ -1,45 +1,3 @@
-case_types:
-  - id: descriptor_confusion
-    description: The merchant descriptor may identify a payment facilitator or parent merchant rather than the storefront the cardholder recognizes.
-    suggested_skills: [graph-investigation, unrecognized-charges, network-reason-codes]
-    suggested_roles: [graph_analyst, transaction_analyst, policy_researcher]
-  - id: split_clearing
-    description: Multiple clearings may belong to one authorization and one order rather than represent a duplicate charge.
-    suggested_skills: [graph-investigation, agentic-transactions]
-    suggested_roles: [transaction_analyst, graph_analyst, evidence_analyst]
-  - id: compromise_point
-    description: A temporal shared terminal, device, or access point may explain several unauthorized transactions.
-    suggested_skills: [graph-investigation, fraud-and-ato-signals]
-    suggested_roles: [graph_analyst, transaction_analyst, critic]
-  - id: household_authority
-    description: A household device or authorized user may explain a transaction that looks unfamiliar to the primary cardholder.
-    suggested_skills: [graph-investigation, household-authority]
-    suggested_roles: [graph_analyst, evidence_analyst, policy_researcher]
-  - id: account_takeover
-    description: Contact changes, new access devices, and a shared delivery point may indicate coordinated account takeover.
-    suggested_skills: [graph-investigation, fraud-and-ato-signals, memory-hygiene]
-    suggested_roles: [graph_analyst, evidence_analyst, critic]
-  - id: delivery_ring
-    description: Several non-receipt claims may be coordinated through shared identity or delivery infrastructure.
-    suggested_skills: [graph-investigation, fraud-and-ato-signals, not-received-and-refunds]
-    suggested_roles: [graph_analyst, evidence_analyst, critic]
-  - id: agent_authority
-    description: A tokenized transaction may have been made by an agent within or beyond a recorded mandate.
-    suggested_skills: [graph-investigation, agentic-transactions]
-    suggested_roles: [transaction_analyst, graph_analyst, policy_researcher]
-  - id: refund_matching
-    description: An unlinked credit may match a disputed order and reduce the amount still at issue.
-    suggested_skills: [graph-investigation, not-received-and-refunds]
-    suggested_roles: [transaction_analyst, evidence_analyst, policy_researcher]
-  - id: stale_memory
-    description: A historical merchant or customer note may be contradicted by newer graph findings.
-    suggested_skills: [graph-investigation, memory-hygiene]
-    suggested_roles: [memory_keeper, graph_analyst, critic]
-  - id: novel
-    description: A case type not represented in the starting menu; the triage model must describe it.
-    suggested_skills: [graph-investigation]
-    suggested_roles: [graph_analyst, critic]
-
 roles:
   - id: graph_analyst
     description: Finds connected evidence and separates meaningful temporal paths from superficial links.
@@ -71,7 +29,7 @@ roles:
     default_skills: [graph-investigation, unrecognized-charges, missing-evidence-default, network-reason-codes]
 
 prompts:
-  triage: Inspect the dispute intake, its first-hop graph neighbourhood, the graph schema, and the case-type menu. Classify the case, state any novel-case description, propose hypotheses, and create an evidence-seeking plan. Suggestions are starting context, not restrictions.
+  triage: Inspect the dispute intake and its first-hop graph neighbourhood. Give the case a short free-text type label, propose hypotheses, and create an evidence-seeking plan. The plan is a starting point for the supervisor, not a restriction.
   supervisor: Review the current plan, investigation summary, and latest findings. Delegate focused tasks or decide that investigation is complete. Close, add, drop, or waive plan items only with a grounded reason and evidence references.
 
 runtime:

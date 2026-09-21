@@ -75,9 +75,7 @@ def _report(**overrides: object) -> CaseReport:
     return CaseReport.model_validate(values)
 
 
-def test_schema_validators_cover_novel_tasks_and_case_reports() -> None:
-    with pytest.raises(ValidationError):
-        Triage(case_type="novel", rationale="Needs more detail")
+def test_schema_validators_cover_ad_hoc_tasks_and_case_reports() -> None:
     with pytest.raises(ValidationError):
         Task(role="fresh_specialist", objective="Investigate")
 
@@ -130,7 +128,6 @@ def test_agents_config_loads() -> None:
         "critic",
         "adjudicator",
     }
-    assert config.case_type_map["novel"].description
     assert "graph-investigation" in config.role_map["graph_analyst"].default_skills
     assert config.runtime.max_parallel_tasks == 4
 
@@ -169,9 +166,6 @@ def test_invoke_structured_retries_once_on_validation_error() -> None:
             {"case_type": "known"},
             {
                 "case_type": "known",
-                "case_type_description": None,
-                "suggested_skills": [],
-                "suggested_roles": [],
                 "hypotheses": [],
                 "plan": [],
                 "rationale": "The intake is clear.",
@@ -207,9 +201,6 @@ def test_invoke_structured_reads_deep_agent_structured_response() -> None:
             {
                 "structured_response": {
                     "case_type": "known",
-                    "case_type_description": None,
-                    "suggested_skills": [],
-                    "suggested_roles": [],
                     "hypotheses": [],
                     "plan": [],
                     "rationale": "The intake is clear.",

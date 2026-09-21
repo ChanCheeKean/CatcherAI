@@ -36,15 +36,6 @@ class ModelsConfig(BaseModel):
         return f"sha256:{hashlib.sha256(raw.encode()).hexdigest()}"
 
 
-class CaseTypeConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    id: str
-    description: str
-    suggested_skills: list[str] = Field(default_factory=list)
-    suggested_roles: list[str] = Field(default_factory=list)
-
-
 class RoleConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -72,14 +63,9 @@ class AgentRuntimeConfig(BaseModel):
 class AgentsConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    case_types: list[CaseTypeConfig]
     roles: list[RoleConfig]
     prompts: AgentPrompts
     runtime: AgentRuntimeConfig = Field(default_factory=AgentRuntimeConfig)
-
-    @property
-    def case_type_map(self) -> dict[str, CaseTypeConfig]:
-        return {case_type.id: case_type for case_type in self.case_types}
 
     @property
     def role_map(self) -> dict[str, RoleConfig]:

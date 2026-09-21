@@ -108,7 +108,6 @@ class _Runtime:
             prompt = {
                 "instructions": self.config.prompts.triage,
                 "case": state["case"],
-                "case_types": [c.model_dump() for c in self.config.case_types],
             }
             output = invoke_structured(
                 self.model,

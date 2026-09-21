@@ -132,9 +132,6 @@ def runtime_paths(tmp_path: Path) -> RuntimePaths:
 def triage() -> Triage:
     return Triage(
         case_type="compromise_point",
-        case_type_description=None,
-        suggested_skills=["graph-investigation"],
-        suggested_roles=["graph_analyst", "evidence_analyst"],
         hypotheses=[Hypothesis(label="fraud", status="open", support=[], against=[])],
         plan=[
             PlanItem(
