@@ -6,9 +6,11 @@ from pathlib import Path
 from domain.events import EventEnvelope, event_from_row
 
 
-def load_events(db_path: Path, run_id: str, to_seq: int | None = None) -> list[EventEnvelope]:
-    sql = "SELECT * FROM run_events WHERE run_id=?"
-    params: list[object] = [run_id]
+def load_events(
+    db_path: Path, run_id: str, to_seq: int | None = None, after_seq: int = 0
+) -> list[EventEnvelope]:
+    sql = "SELECT * FROM run_events WHERE run_id=? AND seq>?"
+    params: list[object] = [run_id, after_seq]
     if to_seq is not None:
         sql += " AND seq<=?"
         params.append(to_seq)

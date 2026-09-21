@@ -1,15 +1,22 @@
-"""Minimal API shell retained during the graph-agent rebuild."""
+"""FastAPI app factory: everything the two-page frontend needs, nothing more."""
 
 from __future__ import annotations
 
 from fastapi import FastAPI
 
-from api.routers import meta
+from api.context import ApiContext
+from api.errors import ApiError, api_error_handler
+from api.routers import graph, meta, runs
 
 
-def create_app() -> FastAPI:
+def create_app(context: ApiContext | None = None) -> FastAPI:
+    """Build the app; tests inject an `ApiContext` with tmp paths and a stub model."""
+
     app = FastAPI(title="CatcherAI API", version="0.1.0")
-    app.include_router(meta.router)
+    app.state.context = context or ApiContext()
+    app.add_exception_handler(ApiError, api_error_handler)
+    for router in (meta.router, runs.router, graph.router):
+        app.include_router(router)
     return app
 
 

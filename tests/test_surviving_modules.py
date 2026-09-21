@@ -45,8 +45,7 @@ def test_event_log_is_append_only_without_hash_chain(tmp_path: Path) -> None:
     assert "redactions_json" not in columns
 
 
-def test_health_endpoint_is_the_only_api_surface() -> None:
+def test_health_endpoint() -> None:
     client = TestClient(create_app())
 
     assert client.get("/health").json() == {"status": "ok"}
-    assert client.get("/cases").status_code == 404

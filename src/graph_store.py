@@ -7,7 +7,9 @@ import json
 import re
 import shutil
 import tempfile
+import threading
 import uuid
+import weakref
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -81,10 +83,31 @@ def _jsonl(path: Path):
             yield json.loads(line)
 
 
+_DATABASES: weakref.WeakValueDictionary[tuple[str, bool], lb.Database] = (
+    weakref.WeakValueDictionary()
+)
+_DATABASES_LOCK = threading.Lock()
+
+
+def _database(path: Path, read_only: bool) -> lb.Database:
+    """One Database per file and process.
+
+    Each Database reserves a huge address range, so parallel workers share one and
+    take their own Connection.
+    """
+
+    key = (str(path.resolve()), read_only)
+    with _DATABASES_LOCK:
+        database = _DATABASES.get(key)
+        if database is None:
+            database = _DATABASES[key] = lb.Database(str(path), read_only=read_only)
+        return database
+
+
 class GraphStore:
-    def __init__(self, db_path: Path) -> None:
+    def __init__(self, db_path: Path, read_only: bool = False) -> None:
         self.db_path = Path(db_path)
-        self.conn = lb.Connection(lb.Database(str(self.db_path)))
+        self.conn = lb.Connection(_database(self.db_path, read_only))
         onto = _ontology_path(self.db_path)
         self.ontology = (
             json.loads(onto.read_text()) if onto.exists() else {"nodes": {}, "edges": {}}

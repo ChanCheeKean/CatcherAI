@@ -222,3 +222,8 @@ data/generated/
 frontend/playwright-report/
 frontend/test-results/
 .DS_Store
+
+# runtime artifacts
+trajectory.sqlite*
+checkpoints.sqlite*
+large_tool_results/

@@ -23,10 +23,7 @@
         "agent",
         "subagent",
         "tool",
-        "memory",
-        "sandbox",
-        "harness",
-        "evaluator"
+        "memory"
       ],
       "title": "ActorKind",
       "type": "string"
@@ -75,29 +72,6 @@
       "title": "EventUsage",
       "type": "object"
     },
-    "Redaction": {
-      "properties": {
-        "path": {
-          "title": "Path",
-          "type": "string"
-        },
-        "category": {
-          "title": "Category",
-          "type": "string"
-        },
-        "replacement": {
-          "default": "[REDACTED]",
-          "title": "Replacement",
-          "type": "string"
-        }
-      },
-      "required": [
-        "path",
-        "category"
-      ],
-      "title": "Redaction",
-      "type": "object"
-    },
     "RuntimeSnapshot": {
       "properties": {
         "config_hash": {
@@ -106,10 +80,6 @@
         },
         "agent_runtime": {
           "title": "Agent Runtime",
-          "type": "string"
-        },
-        "model_gateway": {
-          "title": "Model Gateway",
           "type": "string"
         },
         "provider": {
@@ -131,7 +101,6 @@
       "required": [
         "config_hash",
         "agent_runtime",
-        "model_gateway",
         "provider",
         "model"
       ],
@@ -190,13 +159,30 @@
       "title": "Ts Wall",
       "type": "string"
     },
-    "ts_virtual": {
-      "format": "date-time",
-      "title": "Ts Virtual",
-      "type": "string"
-    },
     "actor": {
       "$ref": "#/$defs/Actor"
+    },
+    "visit": {
+      "default": 1,
+      "title": "Visit",
+      "type": "integer"
+    },
+    "turn": {
+      "default": 0,
+      "title": "Turn",
+      "type": "integer"
+    },
+    "parent_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Id"
     },
     "type": {
       "title": "Type",
@@ -223,13 +209,6 @@
     },
     "usage": {
       "$ref": "#/$defs/EventUsage"
-    },
-    "redactions": {
-      "items": {
-        "$ref": "#/$defs/Redaction"
-      },
-      "title": "Redactions",
-      "type": "array"
     }
   },
   "required": [
@@ -240,7 +219,6 @@
     "span_id",
     "parent_span_id",
     "ts_wall",
-    "ts_virtual",
     "actor",
     "type",
     "summary",

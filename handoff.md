@@ -388,7 +388,7 @@ and record the results table in §8. Target: at least 8/10 correct verdicts at p
 pass@3, and average subgraph coverage of at least 0.7. If a case is unsolvable because the data is
 ambiguous, fix the data (and its proof patterns), not the agent.
 
-### S10 — API  ☐
+### S10 — API  ☑
 **Complexity: Medium**
 
 Goal: exactly the endpoints the two-page frontend needs (spec §6, §7.5).
@@ -740,3 +740,23 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   test), with one upstream Starlette deprecation warning; `uv run inspect --help` works. The
   real-LLM smoke was not run in S8 and remains S9 work.
 - No design decision changed and no spec update was required.
+
+### 2026-09-21 — S10 API complete (built while S9 tuning is in progress)
+
+- Added the seven endpoints from the S10 spec as `create_app(context: ApiContext | None)` in `src/api/`
+  (`app.py`, `context.py`, `models.py`, `routers/runs.py`, `routers/graph.py`): `GET /cases`,
+  `POST /runs` (202, background thread through `run_case`, isolated graph copy), `GET /runs/{id}`
+  (`running|completed|failed`, `CaseReport` from the `decision` event), `GET /runs/{id}/events` (SSE with
+  replay, live follow and `Last-Event-ID`), `GET /graph/nodes?ids=`, `GET /graph/neighbors/{id}`,
+  `GET /eval/latest` (solution and decoy ids from ground truth for the newest eval batch, empty when none).
+- Deviations: `/graph/*` take an optional `run_id` to read that run's graph copy (the only place agent-
+  written `FND-`/`MEM-`/`E-` items live); `GraphStore` gained `read_only`; `load_events` gained
+  `after_seq`; `/eval/latest` returns an empty body rather than 404. `schemas/openapi.json` and
+  `schemas/trajectory-event.schema.json` regenerated.
+- Open issues: the run registry is per process (a run still in flight when the API restarts shows as
+  `failed`); `/graph/*` has no CORS, so S11 needs the Vite proxy; several parallel runs in one process
+  are untested against the LadybugDB mmap limit (see S9 notes once recorded).
+- Verification: `uv run pytest` 66 passed, ruff clean. Tests use the stub model (`tests/test_api.py`, 8).
+- S9 changes that touch shared code (`graph_store` now shares one `Database` per file, `schemas.Money`)
+  must keep S10 and later stages passing.
+
