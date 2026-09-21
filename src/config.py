@@ -53,6 +53,56 @@ class ModelsConfig(BaseModel):
         return f"sha256:{hashlib.sha256(raw.encode()).hexdigest()}"
 
 
+class CaseTypeConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: str
+    description: str
+    suggested_skills: list[str] = Field(default_factory=list)
+    suggested_roles: list[str] = Field(default_factory=list)
+
+
+class RoleConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    id: str
+    description: str
+    prompt: str
+    default_skills: list[str] = Field(default_factory=list)
+
+
+class AgentPrompts(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    triage: str
+    supervisor: str
+
+
+class AgentRuntimeConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    max_turns: int = Field(default=8, gt=0)
+    no_progress_turns: int = Field(default=2, gt=0)
+    max_parallel_tasks: int = Field(default=4, gt=0)
+
+
+class AgentsConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    case_types: list[CaseTypeConfig]
+    roles: list[RoleConfig]
+    prompts: AgentPrompts
+    runtime: AgentRuntimeConfig = Field(default_factory=AgentRuntimeConfig)
+
+    @property
+    def case_type_map(self) -> dict[str, CaseTypeConfig]:
+        return {case_type.id: case_type for case_type in self.case_types}
+
+    @property
+    def role_map(self) -> dict[str, RoleConfig]:
+        return {role.id: role for role in self.roles}
+
+
 def _load_yaml(path: Path) -> dict[str, Any]:
     with path.open(encoding="utf-8") as handle:
         value = yaml.safe_load(handle)
@@ -74,3 +124,7 @@ def load_models_config(path: Path) -> ModelsConfig:
     if "REASONING_EFFORT".lower() in overrides:
         raw["default"]["reasoning_effort"] = overrides["reasoning_effort"]
     return ModelsConfig.model_validate(raw)
+
+
+def load_agents_config(path: Path) -> AgentsConfig:
+    return AgentsConfig.model_validate(_load_yaml(path))

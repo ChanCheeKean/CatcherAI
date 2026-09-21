@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S5 — Knowledge store and skills complete**
-Next stage: **S6 — Schemas, config and model setup**
+Current phase: **S6 — Schemas, config and model setup complete**
+Next stage: **S7 — Agent tools**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -281,7 +281,7 @@ Build:
 Tests: search returns relevant policy for a few queries; `as_of` filter works; every skill parses
 (frontmatter present) and contains no `DSP-`/`TXN-` IDs.
 
-### S6 — Schemas, config and model setup  ☐
+### S6 — Schemas, config and model setup  ☑
 **Complexity: Simple**
 
 Goal: every contract later stages rely on, in two small files.
@@ -660,3 +660,26 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   documents. Memory notes are not in `knowledge.sqlite`; they are `MemoryNote` graph nodes, so S7's
   `search_knowledge` decides whether to add them (spec §5 lists them as searchable).
 - No design decisions changed.
+
+### 2026-09-21 — S6 schemas, config and model setup complete
+
+- Added `src/schemas.py` with the agent contracts from spec §3: triage/planning, investigation
+  summaries, delegation, findings, verdicts, evidence links, transaction decisions, citations,
+  account actions, and the evidence-grounded `CaseReport`. Pydantic validators enforce novel-case
+  descriptions, instructions for ad-hoc roles, transaction amount reconciliation, and evidence
+  links for every transaction and hypothesis.
+- Added `config/agents.yaml` with ten starting case types, the seven catalog roles, triage and
+  supervisor prompts, and runtime limits. Added typed loading and lookup helpers in `src/config.py`.
+- Added `src/models.py`: `chat_model` builds LangChain's configured OpenAI Responses model,
+  `provider_strategy` supplies strict native output for Deep Agents, `invoke_structured` is the
+  single model/agent invocation boundary with one validation-error retry, and the callback handler
+  emits `model_call` trajectory events with schema, token, model, and latency data.
+- Added `tests/test_schemas_models.py` covering validators, config loading, no-network model
+  construction, plain-model and Deep-Agent structured responses, retry/failure behavior, and model
+  telemetry. A missing OpenAI key uses a construction-only sentinel; actual calls still require the
+  configured key.
+- Verification: `uv run ruff check src tests data/generator` clean; `uv run ruff format --check
+  src tests data/generator` clean; `uv run pytest` — **41 passed** with one upstream Starlette
+  deprecation warning. The required code-simplifier review found no safe reductions; the
+  provider-strategy helper is intentionally retained for S8's Deep Agent construction. No design
+  decisions changed and no spec update was required.
