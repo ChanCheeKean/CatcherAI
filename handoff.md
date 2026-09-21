@@ -121,7 +121,7 @@ Delete:
 - `data/generator/` (all), `data/generated/` (all), `data/corpus/skills/` (duplicate of `skills/`),
   `schemas/openapi.json`
 - `docs/design/`, `docs/prompts/`, `docs/superpowers/specs/2026-09-16-*`,
-  `docs/superpowers/plans/2026-09-16-*`, `docs/technical.md` (rewritten in S14)
+  `docs/superpowers/plans/2026-09-16-*`, `docs/technical.md`
 - Every test in `tests/` whose subject was deleted. Keep tests only for surviving modules.
 
 Keep: `src/domain/events.py`, `src/observability/emitter.py`, `src/replay.py`, `src/storage.py`,
@@ -129,7 +129,7 @@ Keep: `src/domain/events.py`, `src/observability/emitter.py`, `src/replay.py`, `
 `ModelsConfig` loading only), `src/cli.py` (reduce to commands that still work, or to an empty
 Typer app), `src/api/app.py`, `src/api/errors.py`, `src/api/routers/meta.py`, `data/corpus/`
 (except `skills/`), `skills/` (rewritten in S5), `config/models.yaml`, `frontend/` (untouched until
-S11), `README.md` (rewritten in S14; add one line at the top saying it is being rewritten).
+S11), `README.md`.
 
 In `events.py`/`emitter.py`, remove the hash chain, its verification and redaction calls; keep an
 append-only SQLite event log with blobs. Remove event types listed as removed in spec §6.
@@ -486,15 +486,12 @@ Checks: tsc, vitest, build, `npm run e2e`.
 ### S14 — Documentation and final cleanup  ☐
 **Complexity: Medium**
 
-Goal: docs a new developer and a demo audience can follow; zero leftovers.
+Goal: zero leftovers and a fully verified repo.
 
-Do: rewrite `README.md` (what it is, a 5-minute quickstart, the demo script per case with
-screenshots of the run page, architecture diagram) and `docs/technical.md` (runtime, graph
-ontology, tools, schemas, events, frontend data flow, eval, "add a role / skill / case type /
-case"). Remove the spec's "pending review" status. Final repo-wide `code-simplifier` pass; `rg`
+Do: remove the spec's "pending review" status. Final repo-wide `code-simplifier` pass; `rg`
 for leftovers of removed concepts (`playbook`, `governance`, `virtual_clock`, `persona`,
 `scheduler`, `route_id`, `hash_chain`, `redact`, `queue`) and remove them. Full verification:
-pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
+pytest, ruff, frontend checks and E2E.
 
 ---
 
