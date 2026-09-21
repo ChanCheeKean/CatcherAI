@@ -7,6 +7,13 @@ import { ModelOutput, PlanChecklist } from './ModelOutput'
 const seconds = (ms: number | null) => (ms === null ? 'running' : `${(ms / 1000).toFixed(1)} s`)
 const CLIP = 2400
 
+/** "decided by supervisor" four times in a row reads as "decided by supervisor ×4". */
+function tally(exits: string[]): string {
+  const counts = new Map<string, number>()
+  for (const exit of exits) counts.set(exit, (counts.get(exit) ?? 0) + 1)
+  return [...counts].map(([exit, n]) => (n > 1 ? `${exit} ×${n}` : exit)).join('; ')
+}
+
 function Call({ call, caller }: { call: ToolCall; caller?: string }) {
   const found = call.nodeIds.length + call.edgeIds.length
   const result = JSON.stringify(call.result, null, 2) ?? ''
@@ -42,7 +49,7 @@ function VisitSection({ visit, open }: { visit: Visit; open: boolean }) {
             {visit.skills.map((skill) => (
               <Pill key={skill}>skill: {skill}</Pill>
             ))}
-            {visit.exits.length > 0 && <span>Then: {visit.exits.join('; ')}</span>}
+            {visit.exits.length > 0 && <span>Then: {tally(visit.exits)}</span>}
           </div>
         )}
 

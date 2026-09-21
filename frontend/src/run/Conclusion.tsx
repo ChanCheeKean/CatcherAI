@@ -1,5 +1,6 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import type { CaseReport, EvidenceLink } from '../api/types'
+import { Prose, Ref } from './Fields'
 import { money, verdictLabel, verdictTone, words } from './format'
 import { useRunPanels } from './RunContext'
 import { openPlanItems } from './store'
@@ -73,7 +74,7 @@ export function Conclusion() {
     const snaps = OPEN_SHARES.map((share) => share * window.innerHeight)
     resize(snaps.find((px) => px > height + 8) ?? 0)
   }
-  /** A chip asks to show the graph, so the report steps aside; "Show details" brings it back. */
+  /** A cited claim asks to show the graph, so the report steps aside; "Show details" brings it back. */
   const reveal = (link: Pick<EvidenceLink, 'node_ids' | 'edge_ids'>) => {
     showEvidence(link)
     setHeight(0)
@@ -169,14 +170,30 @@ function LiveStatus() {
 type Reveal = (link: Pick<EvidenceLink, 'node_ids' | 'edge_ids'>) => void
 
 function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) {
+  const confidence = Math.round(report.confidence * 100)
   return (
     <div className="space-y-6 px-4 pt-3 pb-6 sm:px-6">
       <Block id="report-summary" title="Summary">
         <p className="max-w-3xl leading-relaxed">{report.executive_summary}</p>
-        <p className="mt-2 text-sm text-graphite">
-          {words(report.claim_family)}, {Math.round(report.confidence * 100)}% confident. This would
-          change if: {report.flip_fact}
-        </p>
+        <div className="mt-3 flex max-w-3xl flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+          <span>
+            <span className="text-graphite">Claim </span>
+            <span className="font-medium">{words(report.claim_family)}</span>
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="text-graphite">Confidence</span>
+            <span aria-hidden className="h-1.5 w-20 overflow-hidden rounded-full bg-rule">
+              <span className="block h-full bg-ink" style={{ width: `${confidence}%` }} />
+            </span>
+            <span className="font-medium tabular-nums">{confidence}%</span>
+          </span>
+        </div>
+        <aside className="mt-3 max-w-3xl border-l-2 border-partial bg-paper/60 py-1.5 pr-2 pl-3 text-sm">
+          <p className="font-medium">What would change this decision</p>
+          <p className="mt-0.5 leading-relaxed text-graphite">
+            <Prose>{report.flip_fact}</Prose>
+          </p>
+        </aside>
       </Block>
 
       <details className="max-w-3xl">
@@ -220,27 +237,37 @@ function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) 
           {report.transactions.map((t) => (
             <li key={t.txn_id} className="max-w-3xl">
               <p className="text-sm leading-relaxed">
-                <span className="id-chip">{t.txn_id}</span> {t.rationale}
+                <Ref id={t.txn_id} /> <Prose>{t.rationale}</Prose>
               </p>
-              <EvidenceChips links={t.evidence} onShow={onShow} />
+              <EvidenceRows links={t.evidence} onShow={onShow} />
             </li>
           ))}
         </ul>
       </Block>
 
       <Block id="report-hypotheses" title="Hypotheses">
-        <ul className="space-y-3">
-          {report.hypotheses.map((h) => (
-            <li key={h.hypothesis} className="max-w-3xl">
-              <p className="text-sm leading-relaxed">
-                <span className={`font-semibold ${h.status === 'accepted' ? 'text-accepted' : 'text-rejected'}`}>
-                  {h.status === 'accepted' ? 'Accepted' : 'Rejected'}:
-                </span>{' '}
-                {h.hypothesis}. {h.why}
-              </p>
-              <EvidenceChips links={h.evidence} onShow={onShow} />
-            </li>
-          ))}
+        <ul className="grid gap-x-8 gap-y-5 lg:grid-cols-2">
+          {[...report.hypotheses]
+            .sort((x, y) => Number(y.status === 'accepted') - Number(x.status === 'accepted'))
+            .map((h) => {
+              const accepted = h.status === 'accepted'
+              return (
+                <li key={h.hypothesis} className={`border-l-4 pl-3 ${accepted ? 'border-accepted' : 'border-rejected/70'}`}>
+                  <p className="flex items-start justify-between gap-3">
+                    <span className="font-serif text-[1.05rem] leading-snug font-semibold">{h.hypothesis.replace(/\.$/, '')}</span>
+                    <span
+                      className={`mt-0.5 shrink-0 rounded-full px-2 py-px text-xs font-medium ${accepted ? 'bg-accepted/12 text-accepted' : 'bg-rejected/10 text-rejected'}`}
+                    >
+                      {accepted ? 'Accepted' : 'Rejected'}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed text-graphite">
+                    <Prose>{h.why}</Prose>
+                  </p>
+                  <EvidenceRows links={h.evidence} onShow={onShow} />
+                </li>
+              )
+            })}
         </ul>
       </Block>
 
@@ -248,20 +275,34 @@ function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) 
         <TextList title="Decoys ruled out" items={report.decoys_ruled_out} />
         <TextList title="Missing evidence" items={report.missing_evidence} />
         <Block title="Policy basis">
-          <ul className="space-y-1.5 text-sm">
+          <ul className="stack text-sm">
             {report.policy_basis.map((c) => (
-              <li key={c.document_id}>
-                <span className="id-chip">{c.document_id}</span> {c.why}
+              <li key={c.document_id} className="grid gap-x-3 sm:grid-cols-[minmax(9rem,max-content)_1fr]">
+                <span className="id-chip pt-0.5 font-medium">{c.document_id}</span>
+                <span className="leading-relaxed text-graphite">
+                  <Prose>{c.why}</Prose>
+                </span>
               </li>
             ))}
           </ul>
         </Block>
-        <TextList
-          title="Account actions"
-          items={report.account_actions.map(
-            (a) => `${a.action}${a.target_id ? ` (${a.target_id})` : ''}: ${a.reason}`,
-          )}
-        />
+        {report.account_actions.length > 0 && (
+          <Block title="Account actions">
+            <ul className="stack text-sm">
+              {report.account_actions.map((a) => (
+                <li key={`${a.action}-${a.target_id}`}>
+                  <p className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{words(a.action)}</span>
+                    {a.target_id && <Ref id={a.target_id} />}
+                  </p>
+                  <p className="mt-0.5 leading-relaxed text-graphite">
+                    <Prose>{a.reason}</Prose>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </Block>
+        )}
       </div>
 
       <Block id="report-letter" title="Letter to the cardholder">
@@ -276,7 +317,7 @@ function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) 
 function Block({ id, title, children }: { id?: string; title: string; children: ReactNode }) {
   return (
     <div id={id}>
-      <h3 className="mb-1.5 font-semibold">{title}</h3>
+      <h3 className="mb-2 font-semibold">{title}</h3>
       {children}
     </div>
   )
@@ -286,28 +327,34 @@ function TextList({ title, items }: { title: string; items: string[] }) {
   if (!items.length) return null
   return (
     <Block title={title}>
-      <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed">
+      <ul className="stack text-sm leading-relaxed">
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item}>
+            <Prose>{item}</Prose>
+          </li>
         ))}
       </ul>
     </Block>
   )
 }
 
-/** One chip per cited claim; clicking it lights up exactly those nodes and edges in the graph. */
-function EvidenceChips({ links, onShow }: { links: EvidenceLink[]; onShow: Reveal }) {
+/** One row per cited claim; clicking it lights up exactly those nodes and edges in the graph. */
+function EvidenceRows({ links, onShow }: { links: EvidenceLink[]; onShow: Reveal }) {
+  if (!links.length) return null
   return (
-    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+    <ul className="mt-2 space-y-1">
       {links.map((link) => (
         <li key={`${link.claim}-${link.node_ids.join()}`}>
           <button
             type="button"
             onClick={() => onShow(link)}
             title={`${link.node_ids.length} nodes, ${link.edge_ids.length} edges`}
-            className="max-w-md cursor-pointer truncate rounded-sm border bg-paper px-2 py-0.5 text-xs hover:bg-highlighter"
+            className="flex w-full cursor-pointer items-baseline gap-2 rounded-sm border bg-paper px-2 py-1 text-left text-xs leading-snug hover:bg-highlighter"
           >
-            {link.claim}
+            <span aria-hidden className="shrink-0 text-graphite">
+              ◆
+            </span>
+            <span className="min-w-0">{link.claim}</span>
           </button>
         </li>
       ))}

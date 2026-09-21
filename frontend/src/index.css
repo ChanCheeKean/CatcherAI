@@ -107,6 +107,27 @@ body {
   font-size: 0.72rem;
 }
 
+/* A graph id: monospace, on a faint chip, never broken across lines. */
+.ref {
+  display: inline-block;
+  border: 1px solid var(--color-rule);
+  border-radius: 3px;
+  background: var(--color-paper);
+  padding: 0 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.35rem;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+/* Items of one list: an even rhythm with a hairline between them, no boxes inside boxes. */
+.stack > * + * {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid color-mix(in srgb, var(--tone, var(--color-graphite)) 16%, transparent);
+}
+
 /* A node that has just been discovered: one ring that expands and fades. */
 @keyframes arrival-ring {
   0% {

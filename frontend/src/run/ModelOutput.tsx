@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react'
 import type { PlanItem } from '../api/types'
 import { Capsule, type Tone } from './Capsule'
-import { Fields, Json } from './Fields'
+import { Fields, Json, Prose, Ref, Refs } from './Fields'
 import { words } from './format'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 const list = (value: unknown): Record<string, unknown>[] => (Array.isArray(value) ? value.filter(isRecord) : [])
+const strings = (value: unknown): string[] => (Array.isArray(value) ? value.map(String) : [])
 
 /** The fields of a structured model answer that a reader wants first, in reading order. */
 const CARDS: { key: string; tone: Tone; title: string }[] = [
@@ -75,26 +76,133 @@ function PlanEdits({ edits }: { edits: Record<string, unknown>[] }) {
   )
 }
 
+/** Evidence for or against a hypothesis: a signed marker, then the sentence; long lists fold. */
+function Evidence({ sign, items }: { sign: '+' | '−'; items: string[] }) {
+  if (!items.length) return null
+  const row = (text: string, index: number) => (
+    <li key={index} className="flex gap-1.5">
+      <span aria-label={sign === '+' ? 'for' : 'against'} className={`w-3 shrink-0 text-center font-semibold ${sign === '+' ? 'text-accepted' : 'text-rejected'}`}>
+        {sign}
+      </span>
+      <span className="min-w-0">
+        <Prose>{text}</Prose>
+      </span>
+    </li>
+  )
+  return (
+    <ul className="mt-1.5 space-y-1 text-[0.8125rem] leading-snug">
+      {items.slice(0, 3).map(row)}
+      {items.length > 3 && (
+        <li className="pl-[1.125rem]">
+          <details>
+            <summary className="cursor-pointer text-xs text-graphite">{items.length - 3} more</summary>
+            <ul className="mt-1 space-y-1">{items.slice(3).map((text, index) => row(text, index + 3))}</ul>
+          </details>
+        </li>
+      )}
+    </ul>
+  )
+}
+
 function Hypotheses({ items }: { items: Record<string, unknown>[] }) {
   return (
-    <ul className="space-y-2.5">
+    <ul className="stack">
       {items.map((item, index) => (
         <li key={index}>
-          <p className="font-medium">
-            {String(item.label ?? '')}{' '}
-            <span className="ml-1 rounded-full bg-hypo/12 px-2 py-px text-xs font-normal text-hypo">{words(String(item.status ?? ''))}</span>
-          </p>
-          {['support', 'against'].map((side) =>
-            Array.isArray(item[side]) && item[side].length ? (
-              <div key={side} className="mt-1 pl-2">
-                <p className="text-xs font-medium text-graphite">{side === 'support' ? 'For' : 'Against'}</p>
-                <Fields value={item[side]} />
-              </div>
-            ) : null,
-          )}
+          <div className="flex items-start justify-between gap-2">
+            <p className="leading-snug font-medium">{String(item.label ?? '')}</p>
+            <span className="shrink-0 rounded-full bg-hypo/12 px-2 py-px text-xs text-hypo">{words(String(item.status ?? ''))}</span>
+          </div>
+          <Evidence sign="+" items={strings(item.support)} />
+          <Evidence sign="−" items={strings(item.against)} />
         </li>
       ))}
     </ul>
+  )
+}
+
+/** What was found: the statement, with the graph items it rests on underneath. */
+function FactList({ facts }: { facts: unknown[] }) {
+  return (
+    <ul className="stack">
+      {facts.map((fact, index) => {
+        const record = isRecord(fact) ? fact : { statement: String(fact) }
+        const refs = [...strings(record.node_ids), ...strings(record.edge_ids)]
+        return (
+          <li key={index}>
+            <p className="leading-snug">
+              <Prose>{String(record.statement ?? '')}</Prose>
+            </p>
+            {refs.length > 0 && (
+              <div className="mt-1">
+                <Refs ids={refs} />
+              </div>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function Marked({ mark, tone, items }: { mark: string; tone: string; items: string[] }) {
+  return (
+    <ul className="space-y-1.5">
+      {items.map((text, index) => (
+        <li key={index} className="flex gap-2 leading-snug">
+          <span aria-hidden className={`w-3 shrink-0 text-center font-semibold ${tone}`}>
+            {mark}
+          </span>
+          <span className="min-w-0">
+            <Prose>{text}</Prose>
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function Part({ title, count, children }: { title: string; count: number; children: ReactNode }) {
+  return (
+    <section>
+      <h4 className="mb-1.5 flex items-baseline gap-1.5 text-xs font-semibold text-graphite">
+        {title}
+        <span className="rounded-full bg-paper px-1.5 font-normal tabular-nums">{count}</span>
+      </h4>
+      {children}
+    </section>
+  )
+}
+
+/** The supervisor's running picture of the case, one part per kind of thing it tracks. */
+function InvestigationSummary({ summary }: { summary: Record<string, unknown> }) {
+  const hypotheses = list(summary.hypotheses)
+  const facts = Array.isArray(summary.key_facts) ? summary.key_facts : []
+  const questions = strings(summary.open_questions)
+  const contradictions = strings(summary.contradictions)
+  return (
+    <div className="stack">
+      {hypotheses.length > 0 && (
+        <Part title="Hypotheses" count={hypotheses.length}>
+          <Hypotheses items={hypotheses} />
+        </Part>
+      )}
+      {facts.length > 0 && (
+        <Part title="Key facts" count={facts.length}>
+          <FactList facts={facts} />
+        </Part>
+      )}
+      {questions.length > 0 && (
+        <Part title="Open questions" count={questions.length}>
+          <Marked mark="?" tone="text-plan" items={questions} />
+        </Part>
+      )}
+      {contradictions.length > 0 && (
+        <Part title="Contradictions" count={contradictions.length}>
+          <Marked mark="!" tone="text-rejected" items={contradictions} />
+        </Part>
+      )}
+    </div>
   )
 }
 
@@ -116,6 +224,7 @@ function NextStep({ action }: { action: Record<string, unknown> }) {
       <ol className="space-y-2">
         {tasks.map((task, index) => {
           const instructions = typeof task.instructions === 'string' ? task.instructions : ''
+          const planItemIds = strings(task.plan_item_ids)
           return (
             <li key={index} className="rounded-sm border border-next/25 bg-vellum px-2.5 py-1.5">
               <p className="font-medium">
@@ -125,9 +234,12 @@ function NextStep({ action }: { action: Record<string, unknown> }) {
                 )}
               </p>
               <p>{String(task.objective ?? '')}</p>
-              {Array.isArray(task.plan_item_ids) && task.plan_item_ids.length > 0 && (
+              {planItemIds.length > 0 && (
                 <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-graphite">
-                  Plan items <Fields value={task.plan_item_ids} />
+                  Answers
+                  {planItemIds.map((id) => (
+                    <Ref key={id} id={id} />
+                  ))}
                 </p>
               )}
               {instructions && <p className="mt-1 text-xs text-graphite">{instructions}</p>}
@@ -144,6 +256,9 @@ function cardBody(key: string, value: unknown): ReactNode {
   if (key === 'plan' && list(value).every((item) => 'question' in item)) return <PlanChecklist plan={value as PlanItem[]} />
   if (key === 'hypotheses' || key === 'hypothesis_updates') return <Hypotheses items={list(value)} />
   if (key === 'plan_edits') return <PlanEdits edits={list(value)} />
+  if (key === 'facts' && Array.isArray(value)) return <FactList facts={value} />
+  if (key === 'summary' && isRecord(value)) return <InvestigationSummary summary={value} />
+  if (key === 'suggested_next' && Array.isArray(value)) return <Marked mark="›" tone="text-next" items={strings(value)} />
   return <Fields value={value} />
 }
 
