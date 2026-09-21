@@ -20,6 +20,36 @@ from domain.events import (
 )
 
 
+def init_event_db(db_path: Path) -> None:
+    """Create the append-only event table ."""
+    with sqlite3.connect(db_path) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS run_events (
+                event_id TEXT PRIMARY KEY,
+                run_id TEXT NOT NULL,
+                case_id TEXT,
+                seq INTEGER NOT NULL,
+                span_id TEXT NOT NULL,
+                parent_span_id TEXT,
+                ts_wall TEXT NOT NULL,
+                actor_kind TEXT NOT NULL,
+                actor_name TEXT NOT NULL,
+                visit INTEGER NOT NULL DEFAULT 1,
+                turn INTEGER NOT NULL DEFAULT 0,
+                parent_id TEXT,
+                type TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                refs_json TEXT NOT NULL,
+                runtime_json TEXT NOT NULL,
+                usage_json TEXT NOT NULL,
+                UNIQUE(run_id, seq)
+            );
+            """
+        )
+
+
 class EventEmitter:
     """Persist and stream the append-only trajectory for one run."""
 
@@ -42,50 +72,12 @@ class EventEmitter:
         )
         self._subscribers: list[asyncio.Queue[EventEnvelope | None]] = []
         self._stream_closed = False
-        self._init_db()
+        init_event_db(db_path)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.db_path)
         connection.row_factory = sqlite3.Row
         return connection
-
-    def _init_db(self) -> None:
-        with self._connect() as connection:
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS run_events (
-                    event_id TEXT PRIMARY KEY,
-                    run_id TEXT NOT NULL,
-                    case_id TEXT,
-                    seq INTEGER NOT NULL,
-                    span_id TEXT NOT NULL,
-                    parent_span_id TEXT,
-                    ts_wall TEXT NOT NULL,
-                    actor_kind TEXT NOT NULL,
-                    actor_name TEXT NOT NULL,
-                    visit INTEGER NOT NULL DEFAULT 1,
-                    turn INTEGER NOT NULL DEFAULT 0,
-                    parent_id TEXT,
-                    type TEXT NOT NULL,
-                    summary TEXT NOT NULL,
-                    payload_json TEXT NOT NULL,
-                    refs_json TEXT NOT NULL,
-                    runtime_json TEXT NOT NULL,
-                    usage_json TEXT NOT NULL,
-                    UNIQUE(run_id, seq)
-                );
-                """
-            )
-            columns = {
-                row[1] for row in connection.execute("PRAGMA table_info(run_events)").fetchall()
-            }
-            for name, ddl in (
-                ("visit", "INTEGER NOT NULL DEFAULT 1"),
-                ("turn", "INTEGER NOT NULL DEFAULT 0"),
-                ("parent_id", "TEXT"),
-            ):
-                if name not in columns:
-                    connection.execute(f"ALTER TABLE run_events ADD COLUMN {name} {ddl}")
 
     @property
     def current_span(self) -> str:

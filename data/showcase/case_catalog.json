@@ -1,0 +1,72 @@
+[
+  {
+    "amount": 11.4,
+    "case_id": "DSP-2026-90002",
+    "claim_type": "fraud",
+    "summary": "I do not recognize the $11.40 TAPR* BLUEFERN CAFE BOSTON charge on October 14.",
+    "title": "Coffee by Another Name"
+  },
+  {
+    "amount": 64.18,
+    "case_id": "DSP-2026-90004",
+    "claim_type": "duplicate",
+    "summary": "Parcelwick charged me $64.18 twice for the one lamp I ordered.",
+    "title": "Split, Not Double"
+  },
+  {
+    "amount": 642.9,
+    "case_id": "DSP-2026-90008",
+    "claim_type": "fraud",
+    "summary": "I still have my card and did not make the $642.90 purchase reported this week.",
+    "title": "Pump Six"
+  },
+  {
+    "amount": 486.77,
+    "case_id": "DSP-2026-90010",
+    "claim_type": "fraud",
+    "summary": "I did not make these game purchases totaling $486.77; the card never left my wallet.",
+    "title": "Family Tablet"
+  },
+  {
+    "amount": 1389.0,
+    "case_id": "DSP-2026-90011",
+    "claim_type": "fraud",
+    "summary": "I did not authorize the $1,389 Orbital Audio purchase and I was locked out after my phone stopped receiving service.",
+    "title": "Takeover in a Friendly Mask"
+  },
+  {
+    "amount": 319.75,
+    "case_id": "DSP-2026-90012",
+    "claim_type": "not_received",
+    "summary": "The $319.75 parcel never arrived even though tracking says it was left at my door.",
+    "title": "The Porch Ring"
+  },
+  {
+    "amount": 284.2,
+    "case_id": "DSP-2026-90122",
+    "claim_type": "not_received",
+    "summary": "Tracking shows delivered but the photo is not my house and I never received it.",
+    "title": "The Wrong House"
+  },
+  {
+    "amount": 780.0,
+    "case_id": "DSP-2026-90013",
+    "claim_type": "fraud",
+    "summary": "I never booked this $780 hotel charge and do not recognize the merchant.",
+    "title": "The Agent Booked It"
+  },
+  {
+    "amount": 240.0,
+    "case_id": "DSP-2026-90018",
+    "claim_type": "refund",
+    "summary": "I returned the $240 coat but the merchant never credited my account.",
+    "title": "The Refund That Crossed"
+  },
+  {
+    "amount": 412.0,
+    "case_id": "DSP-2026-90019",
+    "claim_type": "not_received",
+    "summary": "The merchant says my $412 order was delivered but nothing arrived at my home.",
+    "title": "Yesterday's Reputation"
+  }
+]

@@ -1,0 +1,83 @@
+{
+  "case_id": "DSP-2026-90018",
+  "code": "C18",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (credit:Transaction {id: 'TXN-C18-DECOY-CREDIT'})-[:REFUNDS]->(purchase:Transaction {id: 'TXN-C18-DECOY-PURCHASE'}) RETURN credit, purchase",
+      "name": "same-amount credit for another purchase",
+      "why_irrelevant": "The equal-sized credit explicitly refunds another purchase and has no path to the disputed order or card."
+    }
+  ],
+  "expected": {
+    "account_actions": [],
+    "claim_family": "credit_not_processed_partial",
+    "transactions": [
+      {
+        "cardholder_liability": 180.0,
+        "credit_amount": 60.0,
+        "network_action": "file_dispute",
+        "reason_code": "Visa 13.6",
+        "txn_id": "TXN-C18-PURCHASE",
+        "verdict": "partially_accepted"
+      }
+    ],
+    "verdict": "partially_accepted"
+  },
+  "human_effort": {
+    "entities": 8,
+    "hops": 5,
+    "note": "Search unlinked credits, match one through the order, reconcile the $180 credit against $240, and assess the $60 remainder after no merchant response."
+  },
+  "intake": "I returned the $240 coat but the merchant never credited my account.",
+  "misleading_surface": "The statement lacks a direct refund link, but a credit for the same order already covered most of the claimed amount.",
+  "missing_evidence": true,
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-90018'})-[:DISPUTES]->(purchase:Transaction)-[:FOR_ORDER]->(o:PurchaseOrder)<-[:FOR_ORDER]-(credit:Transaction), (d)-[:REQUESTED]->(r:EvidenceRequest) WHERE purchase.amount > 0 AND credit.amount < 0 AND r.status = 'no_response' RETURN d, purchase, o, credit, r",
+      "min_rows": 1,
+      "name": "unlinked credit matches purchase through order"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "loop_termination",
+      "label": "Loop termination",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "termination {reason}",
+        "edge_taken"
+      ],
+      "why": "Stop after matching the credit and resolving the remainder."
+    },
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / Python",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "tool_call {tool: python}"
+      ],
+      "why": "Reconcile prior credit against the disputed purchase without duplication."
+    },
+    {
+      "capability": "memory_graph",
+      "label": "Memory \u2014 graph",
+      "necessity": "supporting",
+      "trajectory_signals": [
+        "graph_query",
+        "graph_write"
+      ],
+      "why": "Match an unlinked credit through the shared order."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-90018",
+    "CUS-C18",
+    "CRD-C18",
+    "TXN-C18-PURCHASE",
+    "TXN-C18-CREDIT",
+    "ORD-C18",
+    "MER-C18",
+    "ERQ-C18"
+  ],
+  "title": "The Refund That Crossed"
+}

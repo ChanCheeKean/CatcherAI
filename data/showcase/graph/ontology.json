@@ -1,0 +1,791 @@
+{
+ "edges": {
+  "ABOUT": {
+   "pairs": [
+    [
+     "AccountEvent",
+     "Account"
+    ],
+    [
+     "MemoryNote",
+     "Merchant"
+    ],
+    [
+     "MemoryNote",
+     "Customer"
+    ],
+    [
+     "MemoryNote",
+     "Dispute"
+    ],
+    [
+     "MemoryNote",
+     "Device"
+    ],
+    [
+     "MemoryNote",
+     "Address"
+    ],
+    [
+     "MemoryNote",
+     "Terminal"
+    ],
+    [
+     "MemoryNote",
+     "Account"
+    ],
+    [
+     "MemoryNote",
+     "Transaction"
+    ],
+    [
+     "Finding",
+     "Merchant"
+    ],
+    [
+     "Finding",
+     "Customer"
+    ],
+    [
+     "Finding",
+     "Dispute"
+    ],
+    [
+     "Finding",
+     "Device"
+    ],
+    [
+     "Finding",
+     "Address"
+    ],
+    [
+     "Finding",
+     "Terminal"
+    ],
+    [
+     "Finding",
+     "Account"
+    ],
+    [
+     "Finding",
+     "Transaction"
+    ]
+   ],
+   "props": {
+    "confidence": "DOUBLE",
+    "evidence_path": "STRING",
+    "run_id": "STRING"
+   }
+  },
+  "ACTING_FOR": {
+   "pairs": [
+    [
+     "Token",
+     "AgentProvider"
+    ],
+    [
+     "AgentProvider",
+     "Customer"
+    ]
+   ],
+   "props": {}
+  },
+  "ASSERTS": {
+   "pairs": [
+    [
+     "EvidenceItem",
+     "Device"
+    ],
+    [
+     "EvidenceItem",
+     "IP"
+    ],
+    [
+     "EvidenceItem",
+     "Address"
+    ],
+    [
+     "EvidenceItem",
+     "PurchaseOrder"
+    ],
+    [
+     "EvidenceItem",
+     "Transaction"
+    ],
+    [
+     "EvidenceItem",
+     "Phone"
+    ],
+    [
+     "EvidenceItem",
+     "Shipment"
+    ]
+   ],
+   "props": {}
+  },
+  "AT_MERCHANT": {
+   "pairs": [
+    [
+     "Transaction",
+     "Merchant"
+    ],
+    [
+     "MerchantAccount",
+     "Merchant"
+    ],
+    [
+     "Terminal",
+     "Merchant"
+    ]
+   ],
+   "props": {}
+  },
+  "AUTHORIZED_BY_MANDATE": {
+   "pairs": [
+    [
+     "Transaction",
+     "Mandate"
+    ],
+    [
+     "Mandate",
+     "AgentProvider"
+    ]
+   ],
+   "props": {}
+  },
+  "BOUND_TO_DEVICE": {
+   "pairs": [
+    [
+     "Token",
+     "Device"
+    ]
+   ],
+   "props": {}
+  },
+  "CARRIES": {
+   "pairs": [
+    [
+     "Customer",
+     "Device"
+    ]
+   ],
+   "props": {}
+  },
+  "CHANGED_PHONE_TO": {
+   "pairs": [
+    [
+     "AccountEvent",
+     "Phone"
+    ]
+   ],
+   "props": {}
+  },
+  "CLEARS": {
+   "pairs": [
+    [
+     "Transaction",
+     "Authorization"
+    ]
+   ],
+   "props": {
+    "seq": "INT64"
+   }
+  },
+  "COMPROMISED_AT": {
+   "pairs": [
+    [
+     "Card",
+     "Terminal"
+    ],
+    [
+     "Card",
+     "Merchant"
+    ]
+   ],
+   "props": {
+    "confidence": "DOUBLE",
+    "evidence_path": "STRING",
+    "run_id": "STRING"
+   }
+  },
+  "CONTRADICTS": {
+   "pairs": [
+    [
+     "Finding",
+     "Finding"
+    ],
+    [
+     "Finding",
+     "MemoryNote"
+    ],
+    [
+     "Finding",
+     "Dispute"
+    ],
+    [
+     "Finding",
+     "Transaction"
+    ]
+   ],
+   "props": {
+    "confidence": "DOUBLE",
+    "evidence_path": "STRING",
+    "run_id": "STRING"
+   }
+  },
+  "DELIVERED_TO": {
+   "pairs": [
+    [
+     "Shipment",
+     "Address"
+    ]
+   ],
+   "props": {
+    "pod": "STRING",
+    "signer": "STRING"
+   }
+  },
+  "DESCRIBES": {
+   "pairs": [
+    [
+     "Descriptor",
+     "Merchant"
+    ],
+    [
+     "Descriptor",
+     "Transaction"
+    ]
+   ],
+   "props": {
+    "valid_from": "STRING",
+    "valid_to": "STRING"
+   }
+  },
+  "DISPUTES": {
+   "pairs": [
+    [
+     "Dispute",
+     "Transaction"
+    ]
+   ],
+   "props": {
+    "amount": "DOUBLE"
+   }
+  },
+  "FILED_BY": {
+   "pairs": [
+    [
+     "Dispute",
+     "Customer"
+    ]
+   ],
+   "props": {}
+  },
+  "FOR_ORDER": {
+   "pairs": [
+    [
+     "Transaction",
+     "PurchaseOrder"
+    ]
+   ],
+   "props": {}
+  },
+  "FROM_DEVICE": {
+   "pairs": [
+    [
+     "Transaction",
+     "Device"
+    ],
+    [
+     "PurchaseOrder",
+     "Device"
+    ]
+   ],
+   "props": {}
+  },
+  "FROM_IP": {
+   "pairs": [
+    [
+     "Transaction",
+     "IP"
+    ],
+    [
+     "PurchaseOrder",
+     "IP"
+    ]
+   ],
+   "props": {}
+  },
+  "HAS_EMAIL": {
+   "pairs": [
+    [
+     "Customer",
+     "Email"
+    ]
+   ],
+   "props": {}
+  },
+  "HAS_EVIDENCE": {
+   "pairs": [
+    [
+     "Dispute",
+     "EvidenceItem"
+    ],
+    [
+     "Dispute",
+     "Communication"
+    ]
+   ],
+   "props": {}
+  },
+  "HAS_PHONE": {
+   "pairs": [
+    [
+     "Customer",
+     "Phone"
+    ]
+   ],
+   "props": {
+    "valid_from": "STRING",
+    "valid_to": "STRING"
+   }
+  },
+  "HOLDS": {
+   "pairs": [
+    [
+     "Customer",
+     "Account"
+    ],
+    [
+     "Customer",
+     "MerchantAccount"
+    ]
+   ],
+   "props": {
+    "role": "STRING",
+    "valid_from": "STRING",
+    "valid_to": "STRING"
+   }
+  },
+  "ISSUED_ON": {
+   "pairs": [
+    [
+     "Card",
+     "Account"
+    ]
+   ],
+   "props": {}
+  },
+  "LIVES_AT": {
+   "pairs": [
+    [
+     "Customer",
+     "Address"
+    ]
+   ],
+   "props": {
+    "valid_from": "STRING",
+    "valid_to": "STRING"
+   }
+  },
+  "LOGGED_IN_FROM": {
+   "pairs": [
+    [
+     "Customer",
+     "Device"
+    ]
+   ],
+   "props": {
+    "ip": "STRING",
+    "ts": "STRING"
+   }
+  },
+  "MERCHANT_LOGIN_FROM": {
+   "pairs": [
+    [
+     "MerchantAccount",
+     "IP"
+    ]
+   ],
+   "props": {
+    "ts": "STRING"
+   }
+  },
+  "PAID_WITH": {
+   "pairs": [
+    [
+     "Transaction",
+     "Card"
+    ],
+    [
+     "Transaction",
+     "Token"
+    ],
+    [
+     "Authorization",
+     "Card"
+    ]
+   ],
+   "props": {}
+  },
+  "REFUNDS": {
+   "pairs": [
+    [
+     "Transaction",
+     "Transaction"
+    ]
+   ],
+   "props": {}
+  },
+  "RELATED_TO": {
+   "pairs": [
+    [
+     "Dispute",
+     "Dispute"
+    ],
+    [
+     "Dispute",
+     "PurchaseOrder"
+    ]
+   ],
+   "props": {}
+  },
+  "REQUESTED": {
+   "pairs": [
+    [
+     "Dispute",
+     "EvidenceRequest"
+    ]
+   ],
+   "props": {
+    "requested_at": "STRING"
+   }
+  },
+  "SAME_ACTOR": {
+   "pairs": [
+    [
+     "Customer",
+     "Customer"
+    ],
+    [
+     "Account",
+     "Account"
+    ],
+    [
+     "Device",
+     "Customer"
+    ]
+   ],
+   "props": {
+    "confidence": "DOUBLE",
+    "evidence_path": "STRING",
+    "run_id": "STRING"
+   }
+  },
+  "SHIPPED_AS": {
+   "pairs": [
+    [
+     "PurchaseOrder",
+     "Shipment"
+    ]
+   ],
+   "props": {}
+  },
+  "SUB_MERCHANT_OF": {
+   "pairs": [
+    [
+     "Merchant",
+     "Merchant"
+    ],
+    [
+     "Descriptor",
+     "Merchant"
+    ]
+   ],
+   "props": {}
+  },
+  "SUPPORTS": {
+   "pairs": [
+    [
+     "Finding",
+     "Finding"
+    ],
+    [
+     "Finding",
+     "MemoryNote"
+    ],
+    [
+     "Finding",
+     "Dispute"
+    ],
+    [
+     "Finding",
+     "Transaction"
+    ]
+   ],
+   "props": {
+    "confidence": "DOUBLE",
+    "evidence_path": "STRING",
+    "run_id": "STRING"
+   }
+  },
+  "TOKENIZED_AS": {
+   "pairs": [
+    [
+     "Card",
+     "Token"
+    ]
+   ],
+   "props": {}
+  },
+  "TRIGGERED_BY": {
+   "pairs": [
+    [
+     "AccountEvent",
+     "Device"
+    ],
+    [
+     "AccountEvent",
+     "IP"
+    ]
+   ],
+   "props": {}
+  },
+  "VIA_TERMINAL": {
+   "pairs": [
+    [
+     "Transaction",
+     "Terminal"
+    ]
+   ],
+   "props": {}
+  },
+  "WORKS_AT": {
+   "pairs": [
+    [
+     "Customer",
+     "Address"
+    ]
+   ],
+   "props": {}
+  }
+ },
+ "nodes": {
+  "Account": {
+   "prefix": "ACC",
+   "props": {
+    "credit_limit": "DOUBLE",
+    "kind": "STRING",
+    "opened_at": "STRING",
+    "status": "STRING"
+   }
+  },
+  "AccountEvent": {
+   "prefix": "AEV",
+   "props": {
+    "detail": "STRING",
+    "kind": "STRING",
+    "ts": "STRING"
+   }
+  },
+  "Address": {
+   "prefix": "ADR",
+   "props": {
+    "city": "STRING",
+    "postcode": "STRING",
+    "street": "STRING",
+    "unit": "STRING"
+   }
+  },
+  "AgentProvider": {
+   "prefix": "AGP",
+   "props": {
+    "kind": "STRING",
+    "name": "STRING"
+   }
+  },
+  "Authorization": {
+   "prefix": "AUT",
+   "props": {
+    "amount": "DOUBLE",
+    "currency": "STRING",
+    "status": "STRING",
+    "ts": "STRING"
+   }
+  },
+  "Card": {
+   "prefix": "CRD",
+   "props": {
+    "issued_at": "STRING",
+    "last4": "STRING",
+    "network": "STRING",
+    "status": "STRING"
+   }
+  },
+  "Communication": {
+   "prefix": "COM",
+   "props": {
+    "channel": "STRING",
+    "sender": "STRING",
+    "text": "STRING",
+    "ts": "STRING"
+   }
+  },
+  "Customer": {
+   "prefix": "CUS",
+   "props": {
+    "name": "STRING",
+    "opened_at": "STRING",
+    "segment": "STRING"
+   }
+  },
+  "Descriptor": {
+   "prefix": "DSC",
+   "props": {
+    "text": "STRING"
+   }
+  },
+  "Device": {
+   "prefix": "DEV",
+   "props": {
+    "fingerprint": "STRING",
+    "kind": "STRING"
+   }
+  },
+  "Dispute": {
+   "prefix": "DSP",
+   "props": {
+    "amount": "DOUBLE",
+    "claim_type": "STRING",
+    "filed_at": "STRING",
+    "intake": "STRING",
+    "status": "STRING"
+   }
+  },
+  "Email": {
+   "prefix": "EML",
+   "props": {
+    "address": "STRING"
+   }
+  },
+  "EvidenceItem": {
+   "prefix": "EVI",
+   "props": {
+    "kind": "STRING",
+    "source": "STRING",
+    "text": "STRING",
+    "ts": "STRING"
+   }
+  },
+  "EvidenceRequest": {
+   "prefix": "ERQ",
+   "props": {
+    "deadline": "STRING",
+    "deadline_passed": "BOOLEAN",
+    "party": "STRING",
+    "responded_at": "STRING",
+    "status": "STRING"
+   }
+  },
+  "Finding": {
+   "prefix": "FND",
+   "props": {
+    "confidence": "DOUBLE",
+    "evidence_path": "STRING",
+    "kind": "STRING",
+    "run_id": "STRING",
+    "text": "STRING"
+   }
+  },
+  "IP": {
+   "prefix": "IP",
+   "props": {
+    "address": "STRING",
+    "kind": "STRING"
+   }
+  },
+  "Mandate": {
+   "prefix": "MDT",
+   "props": {
+    "max_amount": "DOUBLE",
+    "scope": "STRING",
+    "valid_from": "STRING",
+    "valid_to": "STRING"
+   }
+  },
+  "MemoryNote": {
+   "prefix": "MEM",
+   "props": {
+    "confidence": "DOUBLE",
+    "created_at": "STRING",
+    "run_id": "STRING",
+    "status": "STRING",
+    "text": "STRING"
+   }
+  },
+  "Merchant": {
+   "prefix": "MER",
+   "props": {
+    "country": "STRING",
+    "kind": "STRING",
+    "mcc": "STRING",
+    "name": "STRING"
+   }
+  },
+  "MerchantAccount": {
+   "prefix": "MAC",
+   "props": {
+    "created_at": "STRING",
+    "handle": "STRING"
+   }
+  },
+  "Phone": {
+   "prefix": "PHN",
+   "props": {
+    "number": "STRING"
+   }
+  },
+  "PurchaseOrder": {
+   "prefix": "ORD",
+   "props": {
+    "currency": "STRING",
+    "items": "STRING",
+    "total": "DOUBLE",
+    "ts": "STRING"
+   }
+  },
+  "Shipment": {
+   "prefix": "SHP",
+   "props": {
+    "carrier": "STRING",
+    "shipped_at": "STRING",
+    "tracking": "STRING"
+   }
+  },
+  "Terminal": {
+   "prefix": "TRM",
+   "props": {
+    "kind": "STRING",
+    "location": "STRING"
+   }
+  },
+  "Token": {
+   "prefix": "TOK",
+   "props": {
+    "created_at": "STRING",
+    "wallet": "STRING"
+   }
+  },
+  "Transaction": {
+   "prefix": "TXN",
+   "props": {
+    "amount": "DOUBLE",
+    "channel": "STRING",
+    "currency": "STRING",
+    "kind": "STRING",
+    "status": "STRING",
+    "ts": "STRING"
+   }
+  }
+ }
+}

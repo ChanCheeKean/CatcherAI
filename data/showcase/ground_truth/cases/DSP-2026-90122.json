@@ -1,0 +1,89 @@
+{
+  "case_id": "DSP-2026-90122",
+  "code": "C12b",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (c:Customer {id: 'CUS-C12B'})-[old:HAS_PHONE]->(p:Phone {id: 'PHN-C12-SHARED'})<-[current:HAS_PHONE]-(ring:Customer) WHERE old.valid_to < current.valid_from RETURN c, old, p, current, ring",
+      "name": "expired recycled-phone link to porch ring",
+      "why_irrelevant": "The control customer stopped owning the number before any ring member's ownership began and before this purchase."
+    }
+  ],
+  "expected": {
+    "account_actions": [],
+    "claim_family": "not_received_wrong_address",
+    "transactions": [
+      {
+        "cardholder_liability": 0.0,
+        "credit_amount": 284.2,
+        "network_action": "file_dispute",
+        "reason_code": "Visa 13.1",
+        "txn_id": "TXN-C12B",
+        "verdict": "accepted"
+      }
+    ],
+    "verdict": "accepted"
+  },
+  "human_effort": {
+    "entities": 9,
+    "hops": 7,
+    "note": "Compare the delivery and residence addresses, inspect the missed merchant deadline, then check both sides of the recycled phone's validity window."
+  },
+  "intake": "Tracking shows delivered but the photo is not my house and I never received it.",
+  "misleading_surface": "A recycled phone number creates an apparent porch-ring link even though ownership ended before the purchase.",
+  "missing_evidence": true,
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-90122'})-[:FILED_BY]->(c:Customer)-[l:LIVES_AT]->(home:Address), (d)-[:DISPUTES]->(t:Transaction)-[:FOR_ORDER]->(o:PurchaseOrder)-[:SHIPPED_AS]->(s:Shipment)-[:DELIVERED_TO]->(wrong:Address) WHERE home.id <> wrong.id AND l.valid_to IS NULL RETURN d, c, home, t, o, s, wrong",
+      "min_rows": 1,
+      "name": "delivery address differs from current residence"
+    },
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-90122'})-[:REQUESTED]->(r:EvidenceRequest) WHERE r.status = 'no_response' AND r.deadline_passed = true RETURN d, r",
+      "min_rows": 1,
+      "name": "merchant missed evidence deadline"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "tool_calling",
+      "label": "Tool calling",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {node_ids, edge_ids}"
+      ],
+      "why": "Query temporal ownership, delivery and evidence-request facts."
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ],
+      "why": "Apply the cardholder-favourable missing-evidence default."
+    },
+    {
+      "capability": "read_paths",
+      "label": "Agent read paths",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "tool_result {node_ids, edge_ids}",
+        "search_knowledge"
+      ],
+      "why": "Use phone validity windows instead of a timeless shared-ID match."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-90122",
+    "CUS-C12B",
+    "TXN-C12B",
+    "ORD-C12B",
+    "SHP-C12B",
+    "ADR-C12B-HOME",
+    "ADR-C12B-WRONG",
+    "ERQ-C12B",
+    "PHN-C12-SHARED"
+  ],
+  "title": "The Wrong House"
+}

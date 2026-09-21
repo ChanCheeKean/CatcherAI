@@ -77,7 +77,7 @@ def sse_events(text: str) -> list[dict]:
 
 
 def test_health_endpoint() -> None:
-    client = TestClient(create_app())
+    client = TestClient(create_app(ApiContext()))
 
     assert client.get("/health").json() == {"status": "ok"}
 

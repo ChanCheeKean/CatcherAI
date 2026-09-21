@@ -1,0 +1,94 @@
+{
+  "case_id": "DSP-2026-90002",
+  "code": "C02",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (x:Descriptor {id: 'DSC-C02-DECOY'})-[:DESCRIBES]->(m:Merchant) RETURN x, m",
+      "name": "similarly named merchant",
+      "why_irrelevant": "It has a similar name but no transaction or cardholder-history path."
+    }
+  ],
+  "expected": {
+    "account_actions": [],
+    "claim_family": "descriptor_confusion",
+    "transactions": [
+      {
+        "cardholder_liability": 11.4,
+        "credit_amount": 0.0,
+        "network_action": "none",
+        "reason_code": null,
+        "txn_id": "TXN-C02-DISPUTED",
+        "verdict": "not_a_dispute"
+      }
+    ],
+    "verdict": "not_a_dispute"
+  },
+  "human_effort": {
+    "entities": 7,
+    "hops": 5,
+    "note": "Trace the statement descriptor through its facilitator parent and compare the card's earlier merchant history."
+  },
+  "intake": "I do not recognize the $11.40 TAPR* BLUEFERN CAFE BOSTON charge on October 14.",
+  "misleading_surface": "The facilitator prefix makes a regular merchant look unfamiliar.",
+  "missing_evidence": false,
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-90002'})-[:DISPUTES]->(t:Transaction)<-[:DESCRIBES]-(x:Descriptor)-[:SUB_MERCHANT_OF]->(m:Merchant)<-[:AT_MERCHANT]-(prior:Transaction)-[:PAID_WITH]->(c:Card) WHERE (t)-[:PAID_WITH]->(c) AND prior.ts < t.ts RETURN d, t, x, m, prior, c",
+      "min_rows": 2,
+      "name": "new descriptor reaches cardholder history"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "router_triage",
+      "label": "Router / triage",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "triage {case_type, hypotheses, plan}"
+      ],
+      "why": "Recognize descriptor confusion rather than assume fraud."
+    },
+    {
+      "capability": "memory_graph",
+      "label": "Memory \u2014 graph",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "graph_query",
+        "graph_write"
+      ],
+      "why": "Join the new descriptor to the merchant and prior card history."
+    },
+    {
+      "capability": "memory_persistent",
+      "label": "Memory \u2014 persistent",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "checkpoint persisted",
+        "event replay",
+        "decision persisted"
+      ],
+      "why": "Persist the non-dispute report and its evidence trajectory."
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "supporting",
+      "trajectory_signals": [
+        "triage",
+        "supervisor_turn",
+        "plan_updated"
+      ],
+      "why": "Test the unfamiliar-merchant hypothesis against graph history."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-90002",
+    "TXN-C02-DISPUTED",
+    "DSC-C02-TAPR",
+    "MER-C02",
+    "TXN-C02-PRIOR-A",
+    "TXN-C02-PRIOR-B",
+    "CRD-C02"
+  ],
+  "title": "Coffee by Another Name"
+}

@@ -9,6 +9,7 @@ from domain.events import event_json_schema
 from evaluation import evaluate, load_truth, write_summary
 from replay import load_events, render_timeline
 from runtime import RuntimePaths, run_case
+from showcase import export
 
 load_dotenv()
 app = typer.Typer(no_args_is_help=True, help="Replay card-dispute investigation trajectories.")
@@ -63,6 +64,14 @@ def eval_cases(
     out = write_summary(summary)
     typer.echo((out / "summary.md").read_text())
     typer.echo(f"written to {out}")
+
+
+@app.command("showcase-export")
+def showcase_export() -> None:
+    """Snapshot the latest completed run of every case into data/showcase/ for committing."""
+
+    for case_id, run_id in sorted(export().items()):
+        typer.echo(f"{case_id}: {run_id}")
 
 
 @app.command("replay")

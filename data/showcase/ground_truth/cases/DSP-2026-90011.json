@@ -1,0 +1,118 @@
+{
+  "case_id": "DSP-2026-90011",
+  "code": "C11",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (m:MemoryNote {id: 'MEM-C11-FRIENDLY'})-[:ABOUT]->(d:Dispute {id: 'DSP-2026-90011'}) RETURN m, d",
+      "name": "stale friendly-fraud note",
+      "why_irrelevant": "The historical inference predates and is contradicted by the phone-change, new-device, VPN, and shared drop-address cluster."
+    },
+    {
+      "cypher": "MATCH (t:Transaction {id: 'TXN-C11-PRIOR'})-[:FROM_DEVICE]->(dev:Device), (t)-[:AT_MERCHANT]->(m:Merchant {id: 'MER-C11-AUDIO'}) RETURN t, dev, m",
+      "name": "prior legitimate merchant purchase",
+      "why_irrelevant": "It used the known device months earlier and does not connect to the new takeover device or drop shipment."
+    }
+  ],
+  "expected": {
+    "account_actions": [
+      "card_reissue",
+      "secure_online_banking",
+      "revert_phone_change",
+      "retract_memory_note",
+      "watchlist_drop_address"
+    ],
+    "claim_family": "fraud_cnp_account_takeover",
+    "transactions": [
+      {
+        "cardholder_liability": 0.0,
+        "credit_amount": 1389.0,
+        "network_action": "file_dispute",
+        "reason_code": "Visa 10.4",
+        "txn_id": "TXN-C11-ATO-01",
+        "verdict": "accepted"
+      }
+    ],
+    "verdict": "accepted"
+  },
+  "human_effort": {
+    "entities": 168,
+    "hops": 8,
+    "note": "Correlate forty account changes with a new device and VPN, then traverse each order and shipment to the common drop while distinguishing the customer's older known device."
+  },
+  "intake": "I did not authorize the $1,389 Orbital Audio purchase and I was locked out after my phone stopped receiving service.",
+  "misleading_surface": "A prior legitimate merchant purchase and a stale friendly-fraud note conceal a forty-account takeover cluster.",
+  "missing_evidence": false,
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute)-[:FILED_BY]->(c:Customer)-[:HOLDS]->(a:Account)<-[:ABOUT]-(e:AccountEvent)-[:CHANGED_PHONE_TO]->(p:Phone), (e)-[:TRIGGERED_BY]->(dev:Device), (d)-[:DISPUTES]->(t:Transaction)-[:FROM_DEVICE]->(dev), (t)-[:FROM_IP]->(ip:IP) WHERE p.id = 'PHN-C11-NEW' RETURN d, c, a, e, p, dev, t, ip",
+      "min_rows": 40,
+      "name": "phone change to shared takeover infrastructure"
+    },
+    {
+      "cypher": "MATCH (d:Dispute)-[:DISPUTES]->(t:Transaction)-[:FOR_ORDER]->(o:PurchaseOrder)-[:SHIPPED_AS]->(s:Shipment)-[:DELIVERED_TO]->(a:Address {id: 'ADR-C11-DROP'}) RETURN d, t, o, s, a",
+      "min_rows": 40,
+      "name": "forty orders reach one drop address"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "triage",
+        "supervisor_turn",
+        "plan_updated"
+      ],
+      "why": "Revise the friendly-fraud hypothesis after finding takeover facts."
+    },
+    {
+      "capability": "agent_graph",
+      "label": "Agent graph",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "node_entered",
+        "node_exited",
+        "edge_taken"
+      ],
+      "why": "Loop from contradictory findings through a revised plan."
+    },
+    {
+      "capability": "write_paths",
+      "label": "Agent write paths",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "graph_write",
+        "memory_write"
+      ],
+      "why": "Retract the stale note and record the supported cluster finding."
+    },
+    {
+      "capability": "read_paths",
+      "label": "Agent read paths",
+      "necessity": "supporting",
+      "trajectory_signals": [
+        "tool_result {node_ids, edge_ids}",
+        "search_knowledge"
+      ],
+      "why": "Treat the historical note as a lead and verify it."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-90011",
+    "TXN-C11-ATO-01",
+    "CUS-C11-01",
+    "ACC-C11-01",
+    "AEV-C11-01",
+    "PHN-C11-NEW",
+    "DEV-C11-NEW",
+    "IP-C11-VPN",
+    "ORD-C11-01",
+    "SHP-C11-01",
+    "ADR-C11-DROP",
+    "MEM-C11-FRIENDLY",
+    "TXN-C11-PRIOR",
+    "DEV-C11-OLD"
+  ],
+  "title": "Takeover in a Friendly Mask"
+}

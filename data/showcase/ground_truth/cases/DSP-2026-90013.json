@@ -1,0 +1,96 @@
+{
+  "case_id": "DSP-2026-90013",
+  "code": "C13",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (a:AgentProvider {id: 'AGP-C13-DECOY'}) RETURN a",
+      "name": "similarly named agent provider",
+      "why_irrelevant": "The similarly named provider has no path to the token, customer, mandate, order, or transaction."
+    }
+  ],
+  "expected": {
+    "account_actions": [
+      "review_agent_mandate",
+      "rotate_agent_token"
+    ],
+    "claim_family": "agentic_transaction_mandate_exceeded",
+    "transactions": [
+      {
+        "cardholder_liability": 600.0,
+        "credit_amount": 180.0,
+        "network_action": "file_dispute",
+        "reason_code": "Visa 10.4",
+        "txn_id": "TXN-C13",
+        "verdict": "partially_accepted"
+      }
+    ],
+    "verdict": "partially_accepted"
+  },
+  "human_effort": {
+    "entities": 10,
+    "hops": 8,
+    "note": "Trace the payment token through the agent provider to the mandate, compare its scope and ceiling with the order, and calculate the excess."
+  },
+  "intake": "I never booked this $780 hotel charge and do not recognize the merchant.",
+  "misleading_surface": "The unfamiliar merchant looks wholly unauthorized, but the payment token belongs to a delegated agent that exceeded a narrower mandate.",
+  "missing_evidence": false,
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-90013'})-[:FILED_BY]->(c:Customer)<-[:ACTING_FOR]-(a:AgentProvider)<-[:ACTING_FOR]-(tok:Token)<-[:PAID_WITH]-(t:Transaction)-[:AUTHORIZED_BY_MANDATE]->(m:Mandate)-[:AUTHORIZED_BY_MANDATE]->(a), (t)-[:FOR_ORDER]->(o:PurchaseOrder) WHERE t.amount > m.max_amount RETURN d, c, a, tok, t, m, o",
+      "min_rows": 1,
+      "name": "token and provider connect transaction to bounded mandate"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "router_triage",
+      "label": "Router / triage",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "triage {case_type, hypotheses, plan}"
+      ],
+      "why": "Classify an agentic transaction as a novel investigation."
+    },
+    {
+      "capability": "memory_semantic",
+      "label": "Memory \u2014 semantic",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "tool_call {tool: search_knowledge}"
+      ],
+      "why": "Retrieve mandate and agentic-transaction guidance."
+    },
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / Python",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "tool_call {tool: python}"
+      ],
+      "why": "Calculate the amount outside the mandate ceiling."
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool calling",
+      "necessity": "supporting",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {node_ids, edge_ids}"
+      ],
+      "why": "Inspect token, provider, mandate and order facts."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-90013",
+    "CUS-C13",
+    "ACC-C13",
+    "CRD-C13",
+    "TOK-C13",
+    "AGP-C13",
+    "MDT-C13",
+    "TXN-C13",
+    "ORD-C13",
+    "MER-C13-HOTEL"
+  ],
+  "title": "The Agent Booked It"
+}
