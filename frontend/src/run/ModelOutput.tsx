@@ -104,19 +104,57 @@ function Evidence({ sign, items }: { sign: '+' | '−'; items: string[] }) {
   )
 }
 
+/** Claims the adjudicator cites for a verdict or hypothesis: the sentence, then the graph items it rests on. */
+function Claims({ links }: { links: Record<string, unknown>[] }) {
+  return (
+    <ul className="mt-1.5 space-y-1.5 text-[0.8125rem] leading-snug">
+      {links.map((link, index) => (
+        <li key={index} className="flex gap-1.5">
+          <span aria-hidden className="w-3 shrink-0 text-center text-graphite">
+            ◆
+          </span>
+          <span className="min-w-0">
+            <Prose>{String(link.claim ?? '')}</Prose>
+            <span className="mt-0.5 block">
+              <Refs ids={[...strings(link.node_ids), ...strings(link.edge_ids)]} max={4} />
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+const VERDICT_PILL: Record<string, string> = {
+  accepted: 'bg-accepted/12 text-accepted',
+  rejected: 'bg-rejected/10 text-rejected',
+}
+
+/** Working hypotheses (label, status, for and against) and the adjudicator's final ones (claim, verdict, why, evidence). */
 function Hypotheses({ items }: { items: Record<string, unknown>[] }) {
   return (
     <ul className="stack">
-      {items.map((item, index) => (
-        <li key={index}>
-          <div className="flex items-start justify-between gap-2">
-            <p className="leading-snug font-medium">{String(item.label ?? '')}</p>
-            <span className="shrink-0 rounded-full bg-hypo/12 px-2 py-px text-xs text-hypo">{words(String(item.status ?? ''))}</span>
-          </div>
-          <Evidence sign="+" items={strings(item.support)} />
-          <Evidence sign="−" items={strings(item.against)} />
-        </li>
-      ))}
+      {items.map((item, index) => {
+        const status = String(item.status ?? '')
+        return (
+          <li key={index}>
+            <div className="flex items-start justify-between gap-2">
+              <p className="leading-snug font-medium">{String(item.label ?? item.hypothesis ?? '')}</p>
+              <span className={`shrink-0 rounded-full px-2 py-px text-xs ${VERDICT_PILL[status] ?? 'bg-hypo/12 text-hypo'}`}>
+                {words(status)}
+              </span>
+            </div>
+            {typeof item.why === 'string' && (
+              <p className="mt-1 text-[0.8125rem] leading-snug text-graphite">
+                <Prose>{item.why}</Prose>
+              </p>
+            )}
+            <Evidence sign="+" items={strings(item.support)} />
+            <Evidence sign="−" items={strings(item.against)} />
+            <Claims links={list(item.evidence)} />
+          </li>
+        )
+      })}
     </ul>
   )
 }
