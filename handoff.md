@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S10 API complete; S9 evaluation tooling shipped, tuning partly done (3/10 cases verified)**
-Next stage: **S11 — Frontend part 1** (S9 case tuning is queued and will be revisited; see §8)
+Current phase: **S11 frontend shell complete; S9 tuning partly done (3/10 cases verified)**
+Next stage: **S12 — Frontend part 2: agent-flow graph + inspector** (S9 case tuning is queued and will be revisited; see §8)
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -407,7 +407,7 @@ Tests: `tests/test_api.py` with the stub model (FastAPI TestClient): list cases;
 stream events to completion; every event has `actor`/`visit`/`turn`; fetch report; batch node
 lookup; neighbours.
 
-### S11 — Frontend part 1: shell, cases page, run page layout, conclusion  ☐
+### S11 — Frontend part 1: shell, cases page, run page layout, conclusion  ☑
 **Complexity: Medium**
 
 Goal: the simple two-page app with the final layout, without the graphs yet.
@@ -791,3 +791,39 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   S11+ frontend must be kept working in the same change.
 - Verification: `uv run pytest` and ruff pass (see the commit).
 
+
+### 2026-09-21 — S11 frontend part 1 complete
+
+- Deleted the old console (mission control, evaluation, memory, graph lab, run observatory, command
+  palette, navigation rail, inspector context, projections, old API client/types/SSE hook, old e2e
+  spec) and the unused `@vitest/ui` dependency. The simplifier also removed the unused `@xyflow/react`, `@playwright/test`, `playwright.config.ts` and the `e2e` script: S12 re-adds `@xyflow/react`, S13 adds `d3-force`, Playwright, its config (webServer `../scripts/dev.sh`) and the e2e script.
+- New app (`frontend/src/`): `App.tsx` (router + query client), `api/{types,client}.ts` for the S10
+  endpoints, `run/store.ts` (pure `reduceEvent` folding trajectory events into one `RunView`: plan,
+  supervisor turn, visits per actor, touched node/edge ids with "found by actor via tool at turn",
+  report, termination, status; duplicate `seq` ignored so SSE reconnects are safe),
+  `run/useRunEvents.ts` (EventSource; the browser reconnects with `Last-Event-ID`, the hook closes the
+  stream after the final event or when `GET /runs/{id}` says the run is no longer active),
+  `run/RunContext.tsx` (shared selection, highlight, canvas tab), `pages/CasesPage.tsx`,
+  `pages/RunPage.tsx`, `run/Canvas.tsx` (tabs with stand-ins), `run/Inspector.tsx` (raw events of the
+  selected actor or graph item), `run/Conclusion.tsx` (live status with open plan items, then the
+  full `CaseReport`: verdict ruling, summary, collapsible reasoning, transaction table, hypotheses,
+  decoys, missing evidence, policy basis, account actions, cardholder letter; evidence chips call
+  `showEvidence`, which sets the shared highlight and switches to the Evidence graph tab).
+- Design: cool slate "case file" palette with fixed verdict colours (accepted/partial/rejected/
+  informational), Schibsted Grotesk UI, Newsreader for the ruling and cardholder letter, IBM Plex
+  Mono for ids; the verdict band is the one deliberate visual moment.
+- Integration notes for S12/S13: the API has no `/api/v1` prefix, so the Vite dev proxy strips
+  `/api`; `scripts/dev.sh` health checks now use `/health`. Money fields arrive as strings (Pydantic
+  Decimal) and are read with `Number()`. Node events use actor kind `graph_node` for every role
+  (including ad-hoc roles such as `fraud-pattern-investigator` and `memory_keeper`); `run_started`
+  and `error` events are excluded from actor visits. Tool events have actor = tool name and the calling
+  role in `payload.caller`. The Agent flow and Evidence graph tabs are stand-ins (actor buttons with
+  `×N`, and id chips) that S12/S13 replace; the shared `selection`/`highlight`/`tab` state is the
+  contract they plug into.
+- Vite binds IPv6 `localhost` only; browser checks must use `localhost`, not `127.0.0.1`.
+  `scripts/dev.sh` still probes `127.0.0.1:5173`, so `./dev.sh` and `npm run e2e` need the frontend host
+  fixed (`--host 127.0.0.1` is passed there, so it should work; verify in S13).
+- Verified in a browser against stored real runs (C08 replay): case grid, live/decided status, actor
+  inspector, and evidence-chip highlight into the graph tab.
+- Verification: `npx tsc -b`, `npx vitest run` (9 tests: store derivation, conclusion panel), `npm run
+  build`, `npm run lint`. No design decision changed and no spec update was required.

@@ -1,0 +1,73 @@
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { useCallback, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { api } from '../api/client'
+import { Canvas } from '../run/Canvas'
+import { Conclusion } from '../run/Conclusion'
+import { Inspector } from '../run/Inspector'
+import { type CanvasTab, type Highlight, RunPanelsContext, type Selection } from '../run/RunContext'
+import { useRunEvents } from '../run/useRunEvents'
+
+const NO_HIGHLIGHT: Highlight = { nodeIds: new Set(), edgeIds: new Set() }
+
+const statusLabel = { running: 'Running', completed: 'Decided', failed: 'Failed' } as const
+const statusDot = { running: 'bg-partial breathing', completed: 'bg-accepted', failed: 'bg-rejected' } as const
+
+export function RunPage() {
+  const { caseId = '', runId = '' } = useParams()
+  const navigate = useNavigate()
+  const view = useRunEvents(runId)
+  const cases = useQuery({ queryKey: ['cases'], queryFn: api.listCases })
+  const title = cases.data?.find((item) => item.case_id === caseId)?.title ?? caseId
+
+  const [selection, select] = useState<Selection>(null)
+  const [highlight, setHighlight] = useState<Highlight>(NO_HIGHLIGHT)
+  const [tab, setTab] = useState<CanvasTab>('flow')
+
+  const showEvidence = useCallback(
+    (link: { node_ids: string[]; edge_ids: string[] }) => {
+      setHighlight({ nodeIds: new Set(link.node_ids), edgeIds: new Set(link.edge_ids) })
+      setTab('graph')
+    },
+    [],
+  )
+  const rerun = useMutation({
+    mutationFn: () => api.startRun(caseId),
+    onSuccess: (run) => navigate(`/cases/${run.case_id}/runs/${run.run_id}`),
+  })
+  const panels = useMemo(
+    () => ({ view, selection, select, highlight, showEvidence, tab, setTab }),
+    [view, selection, highlight, showEvidence, tab],
+  )
+
+  return (
+    <RunPanelsContext.Provider value={panels}>
+      <div className="flex min-h-screen flex-col lg:h-screen">
+        <header className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b bg-vellum px-4 py-3 sm:px-6">
+          <Link to="/" className="text-sm text-graphite underline-offset-4 hover:text-ink hover:underline">
+            Back to cases
+          </Link>
+          <h1 className="text-lg font-semibold">{title}</h1>
+          <span role="status" className="flex items-center gap-2 text-sm">
+            <span className={`size-2.5 rounded-full ${statusDot[view.status]}`} aria-hidden />
+            {statusLabel[view.status]}
+          </span>
+          <button
+            type="button"
+            onClick={() => rerun.mutate()}
+            disabled={rerun.isPending}
+            className="ml-auto cursor-pointer rounded-sm bg-ink px-3 py-1.5 text-sm font-medium text-vellum disabled:opacity-60"
+          >
+            Run again
+          </button>
+        </header>
+
+        <div className="grid min-h-[28rem] flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <Canvas />
+          <Inspector />
+        </div>
+        <Conclusion />
+      </div>
+    </RunPanelsContext.Provider>
+  )
+}

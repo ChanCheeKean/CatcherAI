@@ -187,18 +187,7 @@ only inside the backend subprocess and explicitly removes `OPENAI_API_KEY` from 
 Both ports are strict; a collision fails clearly. Ctrl-C and process failure clean up both children.
 
 Vite proxies `/api` to `http://127.0.0.1:8000`, so the frontend never needs a base URL. Frontend
-commands: `npm run dev`, `npm run build`, `npm run test`, and `npm run lint`. The committed browser
-test starts the same combined launcher and drives a real fake-adapter run:
-
-```bash
-cd frontend
-npx playwright install chromium  # first browser-test run only
-npm run e2e
-```
-
-Stop any locally running Observatory first: the E2E configuration deliberately refuses to reuse
-ports, proving that its own launcher and teardown work. See
-[`docs/design/07-observability-console.md`](docs/design/07-observability-console.md).
+commands: `npm run dev`, `npm run build`, `npm run test`, and `npm run lint`.
 
 ### How the runtime is organized
 

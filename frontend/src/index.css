@@ -1,29 +1,22 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Schibsted Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Newsreader', ui-serif, Georgia, serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
 
-  /* Canvas and surfaces: layered blue-black, never pure black. */
-  --color-canvas: #070a12;
-  --color-surface-1: #0b0f1b;
-  --color-surface-2: #111729;
-  --color-surface-3: #182036;
-  --color-border: #232c44;
-  --color-border-strong: #303c5c;
+  /* A cool case-file palette: slate paper, one ink, verdict colours with fixed meanings. */
+  --color-paper: #e8ecf1;
+  --color-vellum: #f8f9fb;
+  --color-rule: #c7cfda;
+  --color-ink: #131d2e;
+  --color-graphite: #4f5c70;
+  --color-highlighter: #ffd84a;
 
-  /* Text. */
-  --color-ink: #e7ebf5;
-  --color-ink-muted: #97a1bc;
-  --color-ink-faint: #5c6684;
-
-  /* Status/role accents — fixed meanings across the whole console. */
-  --color-cyan: #34d5ef;
-  --color-violet: #ab8ffb;
-  --color-amber: #f3b74d;
-  --color-emerald: #3fd694;
-  --color-rose: #f26e83;
-  --color-slate: #647090;
+  --color-accepted: #1c7a57;
+  --color-partial: #a96a12;
+  --color-rejected: #b0352c;
+  --color-informed: #46609a;
 }
 
 html,
@@ -33,23 +26,25 @@ body,
 }
 
 body {
-  background: var(--color-canvas);
+  background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-* {
-  border-color: var(--color-border);
-}
+@layer base {
+  * {
+    border-color: var(--color-rule);
+  }
 
-:focus-visible {
-  outline: 2px solid var(--color-cyan);
-  outline-offset: 2px;
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-cyan) 30%, transparent);
+  background: var(--color-highlighter);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -57,40 +52,22 @@ body {
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
 }
 
-@keyframes pulse-edge {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
+/* One deliberate moment: the run status dot breathes while agents are working. */
+@keyframes breathe {
   50% {
-    opacity: 1;
+    opacity: 0.35;
   }
 }
-
-.animate-pulse-edge {
-  animation: pulse-edge 1.6s ease-in-out infinite;
+.breathing {
+  animation: breathe 1.4s ease-in-out infinite;
 }
 
-.observatory-node {
-  width: 150px !important;
-  border: 1px solid var(--color-border-strong) !important;
-  border-radius: 7px !important;
-  background: var(--color-surface-2) !important;
-  color: var(--color-ink-muted) !important;
-  font: 11px var(--font-mono) !important;
+.id-chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
 }
-
-.observatory-node.is-complete { border-color: color-mix(in srgb, var(--color-emerald) 55%, transparent) !important; color: var(--color-emerald) !important; }
-.observatory-node.is-active { border-color: var(--color-cyan) !important; color: var(--color-cyan) !important; box-shadow: 0 0 18px color-mix(in srgb, var(--color-cyan) 25%, transparent); }
-.react-flow__edge.is-back-edge path { stroke-dasharray: 5 4; }
-.react-flow__controls button { background: var(--color-surface-2); border-color: var(--color-border); fill: var(--color-ink-muted); }
-
-.replay-button { border: 1px solid var(--color-border); border-radius: 5px; padding: 0.3rem 0.55rem; font-size: 0.75rem; color: var(--color-ink-muted); }
-.replay-button:hover { border-color: var(--color-border-strong); color: var(--color-ink); }
-.replay-input { border: 1px solid var(--color-border); border-radius: 5px; background: var(--color-canvas); padding: 0.3rem 0.5rem; font: 0.75rem var(--font-mono); color: var(--color-ink); }

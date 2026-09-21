@@ -1,0 +1,62 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+import { Conclusion } from './Conclusion'
+import { evidence, event, report } from './fixtures'
+import { emptyRun, reduceEvent } from './store'
+import { RunPanelsContext, type RunPanels } from './RunContext'
+
+function renderWith(events: ReturnType<typeof event>[], showEvidence = vi.fn()) {
+  const panels: RunPanels = {
+    view: events.reduce(reduceEvent, emptyRun()),
+    selection: null,
+    select: vi.fn(),
+    highlight: { nodeIds: new Set(), edgeIds: new Set() },
+    showEvidence,
+    tab: 'flow',
+    setTab: vi.fn(),
+  }
+  render(
+    <RunPanelsContext.Provider value={panels}>
+      <Conclusion />
+    </RunPanelsContext.Provider>,
+  )
+  return showEvidence
+}
+
+describe('Conclusion', () => {
+  it('shows live status and open plan items before the decision', () => {
+    renderWith([
+      event('plan_updated', 'triage', {
+        plan: [{ id: 'P1', question: 'Who used the card?', status: 'open', evidence_refs: [], waiver_reason: null }],
+      }),
+      event('supervisor_turn', 'supervisor', {}, { turn: 3 }),
+    ])
+    expect(screen.getByRole('status')).toHaveTextContent('Supervisor turn 3; 1 of 1 plan items still open')
+    expect(screen.getByText('Who used the card?')).toBeInTheDocument()
+  })
+
+  it('renders the report and passes cited evidence to the graph on click', async () => {
+    const showEvidence = renderWith([event('decision', 'adjudicator', { report, reason: 'decided' })])
+    expect(screen.getAllByText('Rejected').length).toBeGreaterThan(0)
+    expect(screen.getByText(report.headline)).toBeInTheDocument()
+    expect(screen.getAllByText('$120.50', { selector: 'td' })).toHaveLength(2)
+    expect(screen.getByText('Shared IP is a CGNAT block')).toBeInTheDocument()
+    expect(screen.getByText(/Dear customer/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getAllByRole('button', { name: evidence.claim })[0])
+    expect(showEvidence).toHaveBeenCalledWith(evidence)
+  })
+
+  it('collapses the details but keeps the verdict visible', async () => {
+    renderWith([event('decision', 'adjudicator', { report, reason: 'decided' })])
+    await userEvent.click(screen.getByRole('button', { name: 'Hide details' }))
+    expect(screen.queryByText(/Dear customer/)).not.toBeInTheDocument()
+    expect(screen.getByText('Rejected')).toBeInTheDocument()
+  })
+
+  it('reports a failed run', () => {
+    renderWith([event('error', 'runtime', { error: 'boom' })])
+    expect(screen.getByRole('status')).toHaveTextContent('The run failed: boom')
+  })
+})

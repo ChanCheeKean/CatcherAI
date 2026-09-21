@@ -7,7 +7,7 @@ OBS_BACKEND_PID=""
 OBS_FRONTEND_PID=""
 
 fail() {
-  echo "Dispute Observatory: $*" >&2
+  echo "CatcherAI: $*" >&2
   exit 1
 }
 
@@ -36,7 +36,7 @@ done
   uv run python -c "import fastapi, sse_starlette, uvicorn" >/dev/null
 ) || fail "backend API dependencies missing; run: uv sync --extra dev --extra graph --extra api"
 
-echo "Dispute Observatory: starting backend on http://127.0.0.1:8000"
+echo "CatcherAI: starting backend on http://127.0.0.1:8000"
 (
   cd "$OBS_ROOT"
   if [[ -f "$OBS_ROOT/.env" ]]; then
@@ -51,15 +51,15 @@ OBS_BACKEND_PID=$!
 
 for _ in {1..80}; do
   kill -0 "$OBS_BACKEND_PID" 2>/dev/null || fail "backend exited before becoming healthy"
-  if curl --silent --fail http://127.0.0.1:8000/api/v1/health >/dev/null; then
+  if curl --silent --fail http://127.0.0.1:8000/health >/dev/null; then
     break
   fi
   sleep 0.25
 done
-curl --silent --fail http://127.0.0.1:8000/api/v1/health >/dev/null || fail "backend health check timed out"
-echo "Dispute Observatory: backend healthy"
+curl --silent --fail http://127.0.0.1:8000/health >/dev/null || fail "backend health check timed out"
+echo "CatcherAI: backend healthy"
 
-echo "Dispute Observatory: starting frontend on http://127.0.0.1:5173"
+echo "CatcherAI: starting frontend on http://127.0.0.1:5173"
 (
   cd "$OBS_FRONTEND"
   exec env -u OPENAI_API_KEY ./node_modules/.bin/vite --host 127.0.0.1 --port 5173 --strictPort
@@ -75,7 +75,7 @@ for _ in {1..80}; do
 done
 curl --silent --fail http://127.0.0.1:5173 >/dev/null || fail "frontend health check timed out"
 
-echo "Dispute Observatory: ready at http://127.0.0.1:5173 (Ctrl-C to stop)"
+echo "CatcherAI: ready at http://127.0.0.1:5173 (Ctrl-C to stop)"
 while kill -0 "$OBS_BACKEND_PID" 2>/dev/null && kill -0 "$OBS_FRONTEND_PID" 2>/dev/null; do
   sleep 1
 done
