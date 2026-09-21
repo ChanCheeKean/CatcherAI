@@ -1,14 +1,13 @@
 ---
 name: memory-hygiene
-description: Read memory as leads, then correct, consolidate, time-bound and expire notes under SOP-DSP-005.
-version: "1"
-source: data/corpus/skills/pb-memory-hygiene.md
+description: How to read, write, supersede, retract and expire memory notes without letting stale notes decide cases.
 ---
 
-# Playbook: memory hygiene
-- Treat retrieved notes as leads. Verify against current case evidence and the policy corpus before relying on them.
-- Conflict with a source of truth → supersede (policy changed) or retract (note was wrong) and write a correction with sources.
-- Three or more raw observations of one pattern → consolidate with a validity window; archive raw notes; merge duplicate entities.
-- Pattern stopped being true → set `valid_to`, don't delete.
-- Never store prohibited content (SOP-DSP-004); purge with tombstone if found.
-- Merchant pattern notes older than 90 days, or predating a known merchant change, must be revalidated against current evidence before use.
+# Memory hygiene
+
+- Memory notes are leads, never evidence. Verify a note against current graph facts before relying on it, and say in your findings whether you accepted or rejected it and why.
+- A note whose claim is contradicted by newer facts must be **superseded** (the world changed) or **retracted** (the note was wrong), with the source node IDs that prove it.
+- Three or more observations of one pattern can be **merged** into one note with a validity window; keep the sources.
+- When a pattern stops being true, set an end date instead of deleting it. Notes past `valid_until` are expired.
+- Write only what is reusable across cases: patterns and corrected beliefs, not the details of one customer. Always cite source IDs.
+- Do not store anything you would not want a later investigation to weigh: raw speculation, unverified accusations or sensitive personal data.

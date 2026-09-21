@@ -4,6 +4,7 @@ import random
 from pathlib import Path
 
 from cases import build_cases
+from knowledge import build_knowledge
 from validate import validate_cases, write_case_outputs
 from world import build_world, stats
 
@@ -21,6 +22,7 @@ def main() -> None:
     validate_cases(store, cases)
     store.close()
     write_case_outputs(output, cases, graph)
+    print(f"knowledge documents: {build_knowledge(root, output / 'knowledge.sqlite')}")
     stats(graph)
 
 

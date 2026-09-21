@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S4 — Cases 6–10, missing evidence, capability map complete**
-Next stage: **S5 — Knowledge store and skills**
+Current phase: **S5 — Knowledge store and skills complete**
+Next stage: **S6 — Schemas, config and model setup**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -259,7 +259,7 @@ Tests: extend `tests/test_cases.py`: 10 cases validate; at least 2 cases have
 `missing_evidence: true`; at least 6 cases have a non-empty `misleading_surface`; every capability is
 primary for at least one case.
 
-### S5 — Knowledge store and skills  ☐
+### S5 — Knowledge store and skills  ☑
 **Complexity: Medium**
 
 Goal: searchable policies/precedents/memory-note text, and skills rewritten as generic knowledge.
@@ -637,3 +637,26 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   customers, 50,079 transactions, and 364 disputes; all ten cases' proof and decoy patterns passed.
 - No design decisions changed and no spec update was required. Generated graph, ground truth,
   capability coverage, catalog, and LadybugDB files remain ignored build artifacts.
+
+### 2026-09-21 — S5 knowledge store and skills complete
+
+- `src/memory/retrieval.py` is now two functions: `build(db_path, docs)` (documents table, FTS5 and
+  sqlite-vec indexes) and `search(db_path, query, as_of=, kinds=, limit=)` (reciprocal-rank fusion of
+  vector and keyword hits, filtered by `valid_from <= as_of <= valid_to`, open bounds allowed). The
+  emitter dependency and event emission were removed; S7's `search_knowledge` tool emits the event.
+  Embeddings remain the offline hashed bag-of-words vectors (no network needed).
+- `data/generator/knowledge.py` loads the 35 policy documents from `data/corpus/policies/**` plus 30
+  precedents from `data/corpus/precedents.yaml` (analogous patterns only, no showcase-case IDs or
+  answers) into `data/generated/knowledge.sqlite` (kind `policy` or `precedent`). `gen.py` builds it
+  after the graph. `author_policies.py` no longer authors skills.
+- Replaced the old skills with nine generic ones in `skills/*/SKILL.md` (frontmatter `name` and
+  `description`): graph-investigation, fraud-and-ato-signals, household-authority,
+  missing-evidence-default, reg-e-and-reg-z, network-reason-codes, agentic-transactions,
+  memory-hygiene, not-received-and-refunds. Removed dispute-lifecycle, eligibility-check, lodging-te,
+  recurring-trial, automated-adjudication, fraud-cnp, not-received and reg-e-clocks.
+- Tests: `tests/test_knowledge.py` (relevant policy search, kind filter, `as_of` validity for the
+  scheduled Visa 10.4 version, skills parse and contain no `DSP-`/`TXN-`/`CUS-`/`ACC-` IDs).
+- Verification: `uv run ruff check` clean; `uv run pytest` 34 passed; `gen.py` builds 65 knowledge
+  documents. Memory notes are not in `knowledge.sqlite`; they are `MemoryNote` graph nodes, so S7's
+  `search_knowledge` decides whether to add them (spec §5 lists them as searchable).
+- No design decisions changed.

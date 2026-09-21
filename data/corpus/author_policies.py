@@ -1,6 +1,6 @@
-"""Authoring source for the policy corpus (network rules, regulation, internal SOPs, bulletins) and skills (playbooks).
+"""Authoring source for the policy corpus (network rules, regulation, internal SOPs, bulletins).
 
-Writes one markdown file per document with YAML front matter to data/corpus/policies/ and data/corpus/skills/.
+Writes one markdown file per document with YAML front matter to data/corpus/policies/.
 Run: python3 data/corpus/author_policies.py
 
 Provenance conventions (front matter `provenance`):
@@ -770,106 +770,12 @@ quality of property or services you purchased, you may have the right not to pay
 problem with the merchant, the purchase was more than $50, and it was made in your home state or within 100 miles of your mailing address.
 """)
 
-# =============================================================================================== SKILLS (procedural memory)
-def skill(name, description, triggers, body, uses):
-    doc("skills", f"{name}.md", body, name=name, description=description, triggers=triggers, uses_policies=uses, provenance="fictional_internal",
-        version="1")
-
-
-skill("pb-eligibility-check", "Verify a candidate network condition is valid before arguing merits", ["any network dispute decision"], """
-# Playbook: eligibility before merits
-1. Retrieve the candidate condition **as of the date that governs**: dispute processing date (network), notice date (regulation), transaction date only
-   where the rule says so. If the projected processing date crosses an effective date, evaluate both versions.
-2. Walk the **invalid-dispute list** line by line against the facts. Record each item as `clear`, `triggered`, or `unknown`.
-3. Check **time limits and waiting periods** (and their waivers) with the sandbox — never by mental arithmetic.
-4. Check **mutual exclusivity** (fraud vs non-fraud) against the cardholder's own words.
-5. Check **amount limits** (portion not received, unused portion, value returned).
-6. If any item is `triggered`, re-plan: look for another condition, a pre-dispute remedy, or a regulatory remedy without network recourse.
-""", ["VISA-11.2-LIFECYCLE@2026-04-18"])
-
-skill("pb-not-received", "Investigate goods/services not received (Visa 13.1; Reg Z 13(a)(3))", ["not_received", "partial delivery", "late delivery"], """
-# Playbook: not received
-1. Expected delivery/service date from order evidence; has it passed? If disputed before it, record why.
-2. Attempt to resolve with merchant — evidence and dates. Merchant insolvent? (research; waives waiting period).
-3. Credits posted since purchase (including unlinked credits after intake).
-4. Merchant/carrier evidence: **full** delivery address? photo, GPS, signature? Compare house number / unit to the cardholder's address on file.
-5. Same merchant disputes on the same card in 30 days (≥3 → cardholder letter).
-6. Graph: is the delivery address, device, or phone shared with other disputing customers? Linkage needs a specific shared identifier.
-7. Partial delivery or portion of services → dispute amount = portion not received.
-""", ["VISA-13.1@2026-04-18", "REGZ-1026.13", "LFB-SOP-DSP-004@v2"])
-
-skill("pb-fraud-cnp", "Investigate card-absent unauthorized-use claims (Visa 10.4; Reg Z 12(b)/13; Reg E 6/11)", ["fraud_cnp", "unauthorized online"], """
-# Playbook: card-not-present fraud
-1. Regime and liability rules (Reg Z $50 cap / Reg E tiers only if card lost or stolen).
-2. Authentication at authorization: ECI, CAVV, 3DS status, CVV2 presence/result, AVS → any **invalid-dispute** triggers (ECI 5 + CAVV; CVV2 N approved).
-3. Issuer security events in the 72 hours before the transaction: phone/email changes, password resets, new devices, VPN/hosting IPs → ATO hypothesis.
-4. Merchant evidence: login, IP, device, ship-to, account changes before order. Validate **format** (full clear-text IP, full address, device ID length).
-5. CE 3.0: select the version by projected dispute processing date; count prior transactions (>120 days, ≤365 days; same merchant vs multi-merchant
-   same acquirer); count elements (device ID and fingerprint are one element in the new version).
-6. Keep **H1 first-party / household** and **H2 third-party / ATO** open until evidence separates them. Write both down.
-7. Fraud report (TC40) before dispute; recovery threshold per SOP-DSP-008; cardholder outcome is independent of recovery.
-8. Compromise point: common card-present merchants among recent fraud victims (graph/SQL).
-""", ["VISA-10.4@2026-04-18", "VISA-10.4@2026-10-24", "REGZ-1026.12", "REGE-1005.6", "LFB-SOP-DSP-008@v3"])
-
-skill("pb-recurring-trial", "Investigate cancelled subscriptions and free-trial conversions (13.2 / 13.5)", ["cancelled_recurring", "free trial", "subscription"], """
-# Playbook: recurring and trials
-1. Transaction type: merchant-initiated recurring vs unscheduled COF vs cardholder-initiated (13.2 invalid for the latter two).
-2. Cancellation date vs transaction date (13.2 invalid when cancellation is after the transaction — disputes processed on/after 2026-04-18).
-3. Trial/intro offer: did the merchant notify **≥7 days before** the recurring charge with amount, date, and cancellation link? Checkout disclosure?
-   If not → 13.5 candidate.
-4. Usage after cancellation / after charge (merchant logs).
-5. Amount: unused portion — compute with the sandbox and state the day-count convention.
-""", ["VISA-13.2@2026-04-18", "VISA-13.5@2026-04-18", "VISA-5-RECURRING-MERCHANT-DUTIES@2026-04-18"])
-
-skill("pb-lodging-te", "Investigate hotel and T&E disputes (folios, no-shows, fees)", ["hotel", "lodging", "no-show", "folio"], """
-# Playbook: lodging / T&E
-1. Decompose the folio into lines; classify each: disclosed, acknowledged (initials/signature), or unsupported.
-2. 12.5 is invalid for quoted-vs-actual T&E differences; 13.3 is invalid for price discrepancies — route line items to the condition that actually fits
-   (e.g. 13.1 portion not provided) or to pre-dispute merchant contact.
-3. No-shows: cancellation deadline in **hotel local time**; convert cardholder-reported times; billing more than one night is independently improper.
-4. Corroborate with the cardholder's own card activity (ride-hail, parking, airline) — never with assumptions.
-5. Minimum dispute amount for T&E: USD 25.
-""", ["VISA-13.7@2026-04-18", "VISA-12.5@2026-04-18", "VISA-13.3@2026-04-18", "VISA-13.1@2026-04-18", "VISA-11.4-AMOUNTS-CREDITS-FX@2026-04-18"])
-
-skill("pb-reg-e-clocks", "Compute Regulation E deadlines and liability for debit disputes", ["REG_E"], """
-# Playbook: Reg E clocks
-1. Notice date and channel (oral → optional written confirmation within 10 business days).
-2. First deposit date → new-account test (transfer within 30 days after first deposit).
-3. POS debit / foreign-initiated → 90-day investigation.
-4. Business days from bank calendar; day of notice not counted. Use the sandbox.
-5. Liability: card lost/stolen? Only then the $50/$500 tiers; otherwise 60-day statement rule.
-6. Reversal of provisional credit → notice + 5 business days honoring.
-""", ["REGE-1005.11", "REGE-1005.6", "LFB-SOP-DSP-006@v4", "LFB-CB-2025-09"])
-
-skill("pb-automated-adjudication", "Decide high-impact or uncertain cases without human review", ["review_panel", "high_impact", "policy_gap"], """
-# Playbook: automated adjudication
-1. Check whether SOP-DSP-003 §2 requires the review panel.
-2. Write the case file summary: facts with source IDs, hypotheses, rules with versions, computed amounts/deadlines.
-3. Run the cardholder advocate and the issuer/merchant advocate independently on the same case file (no shared reasoning).
-4. Adjudicator decides; verifier checks eligibility, versions, arithmetic, citations and fairness. Any verifier failure → back to planning.
-5. Record confidence on the determinative issue and the single fact that would flip the decision.
-6. Confidence < 0.75 → apply the conservative default (cardholder-favorable outcome, no uncertain network dispute) and say why.
-7. Execute the bounded automated actions (SOP-DSP-003 §4–§7) and record each one. Never wait for a human.
-""", ["LFB-SOP-DSP-003@v6", "LFB-SOP-DSP-004@v2"])
-
-skill("pb-memory-hygiene", "Read, correct, consolidate and expire long-term memory", ["memory"], """
-# Playbook: memory hygiene
-- Treat retrieved notes as leads. Verify against current case evidence and the policy corpus before relying on them.
-- Conflict with a source of truth → supersede (policy changed) or retract (note was wrong) and write a correction with sources.
-- Three or more raw observations of one pattern → consolidate with a validity window; archive raw notes; merge duplicate entities.
-- Pattern stopped being true → set `valid_to`, don't delete.
-- Never store prohibited content (SOP-DSP-004); purge with tombstone if found.
-""", ["LFB-SOP-DSP-005@v1", "LFB-SOP-DSP-004@v2"])
-
-
 if __name__ == "__main__":
-    for folder in ("policies", "skills"):
-        root = os.path.join(HERE, folder)
-        if os.path.isdir(root):
-            for dirpath, _, files in os.walk(root):
-                for f in files:
-                    if f.endswith(".md"):
-                        os.remove(os.path.join(dirpath, f))
+    root = os.path.join(HERE, "policies")
+    for dirpath, _, files in os.walk(root):
+        for f in files:
+            if f.endswith(".md"):
+                os.remove(os.path.join(dirpath, f))
     for folder, fname, text in DOCS:
         path = os.path.join(HERE, folder, fname)
         os.makedirs(os.path.dirname(path), exist_ok=True)

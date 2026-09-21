@@ -1,18 +1,12 @@
 ---
 name: household-authority
-description: Decide unauthorized-use claims involving household members under Reg Z authority rules, fairly and without labels.
-version: "1"
-source: data/corpus/skills/pb-fraud-cnp.md
+description: Decide whether use of a card by a household member or authorized user was authorized, using devices, addresses and account roles.
 ---
 
 # Household authority
 
-Load this skill when a household member made the disputed purchases.
-
-1. Keep two hypotheses open: no authority was ever given, or authority was given and then exceeded (cardholder liable until notice, Reg Z comment 12(b)(1)(ii)-3).
-2. Find who stored the card and from which device; traverse devices to their banking-login owners.
-3. Ask the cardholder a specific, non-accusatory question about whether the card was saved to the account.
-4. Record the intake date as notice that further use is no longer authorized.
-5. Look for a merchant remedy (for example a minor-purchase refund window) and compute its deadlines in the sandbox.
-6. Never use the age of the cardholder or child as a signal. Describe facts, not character.
-7. An authority determination always goes to the automated review panel (SOP-DSP-003 §2.3).
+1. Identify who holds each role on the account (owner, authorized user) and the validity of that role at the transaction date.
+2. Trace the device and delivery address: was the device registered to a household member, and does the address match the household? Compare its history with earlier undisputed purchases.
+3. Keep both hypotheses open: authority was never given, or it was given and then exceeded. Use of the card by someone the cardholder let use it counts as authorized until the cardholder told the bank otherwise; the notice date is when further use stops being authorized.
+4. Distinguish households from lookalikes: same street but different units, roommates and shared building networks are not households.
+5. Describe facts, never character or age. Where a merchant or platform offers its own remedy (for example a refund window), note it for the cardholder.
