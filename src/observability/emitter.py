@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import sqlite3
 import threading
@@ -11,7 +10,6 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 from domain.events import (
     EventDraft,
@@ -76,12 +74,6 @@ class EventEmitter:
                     usage_json TEXT NOT NULL,
                     UNIQUE(run_id, seq)
                 );
-                CREATE TABLE IF NOT EXISTS run_blobs (
-                    sha256 TEXT PRIMARY KEY,
-                    media_type TEXT NOT NULL,
-                    size_bytes INTEGER NOT NULL,
-                    content BLOB NOT NULL
-                );
                 """
             )
             columns = {
@@ -107,20 +99,6 @@ class EventEmitter:
             yield
         finally:
             self._span_stack.reset(token)
-
-    def put_blob(self, value: Any, media_type: str = "application/json") -> str:
-        content = (
-            json.dumps(value, sort_keys=True, default=str, separators=(",", ":")).encode()
-            if media_type == "application/json"
-            else str(value).encode()
-        )
-        digest = hashlib.sha256(content).hexdigest()
-        with self._connect() as connection:
-            connection.execute(
-                "INSERT OR IGNORE INTO run_blobs VALUES (?,?,?,?)",
-                (digest, media_type, len(content), content),
-            )
-        return f"sha256:{digest}"
 
     def emit(self, draft: EventDraft) -> EventEnvelope:
         with self._lock, self._connect() as connection:
@@ -224,10 +202,3 @@ class EventEmitter:
                 "SELECT * FROM run_events WHERE run_id=? ORDER BY seq", (self.run_id,)
             ).fetchall()
         return [event_from_row(row) for row in rows]
-
-    def last_event(self) -> EventEnvelope | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                "SELECT * FROM run_events WHERE run_id=? ORDER BY seq DESC LIMIT 1", (self.run_id,)
-            ).fetchone()
-        return event_from_row(row) if row else None

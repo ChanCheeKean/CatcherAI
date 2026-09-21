@@ -76,6 +76,12 @@ def sse_events(text: str) -> list[dict]:
     return events
 
 
+def test_health_endpoint() -> None:
+    client = TestClient(create_app())
+
+    assert client.get("/health").json() == {"status": "ok"}
+
+
 def test_list_cases(client: TestClient) -> None:
     cases = client.get("/cases").json()
     assert [c["case_id"] for c in cases] == [CASE_ID]

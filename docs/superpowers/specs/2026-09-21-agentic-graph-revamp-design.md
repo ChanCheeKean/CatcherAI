@@ -1,7 +1,7 @@
 # Agentic graph-discovery revamp — design
 
 Date: 2026-09-21
-Status: approved in brainstorming, pending written-spec review
+Status: approved
 
 ## 1. Why
 

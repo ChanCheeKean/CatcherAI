@@ -19,7 +19,6 @@ export interface RunView {
   /** Every node and edge id the run has touched, with its first discovery. */
   touched: Map<string, Touch>
   report: CaseReport | null
-  termination: string | null
 }
 
 export const emptyRun = (): RunView => ({
@@ -31,7 +30,6 @@ export const emptyRun = (): RunView => ({
   visits: new Map(),
   touched: new Map(),
   report: null,
-  termination: null,
 })
 
 const GRAPH_TYPES = new Set(['tool_result', 'graph_write', 'memory_write'])
@@ -71,7 +69,6 @@ export function reduceEvent(view: RunView, event: TrajectoryEvent): RunView {
     next.report = payload.report as CaseReport
     next.status = 'completed'
   }
-  if (event.type === 'termination') next.termination = String(payload.reason)
   if (event.type === 'error') {
     next.status = 'failed'
     next.error = String(payload.error)

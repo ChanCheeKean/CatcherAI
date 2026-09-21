@@ -147,9 +147,7 @@ def _attempt(truth: dict, attempt: int, batch: str, paths: RuntimePaths) -> dict
         "run_id": run_id,
     }
     # A hung run becomes a scored failure whose traceback shows where it was stuck.
-    signal.signal(
-        signal.SIGALRM, lambda *_: (_ for _ in ()).throw(TimeoutError("attempt timed out"))
-    )
+    signal.signal(signal.SIGALRM, _raise_timeout)
     signal.alarm(ATTEMPT_TIMEOUT_SECONDS)
     try:
         report = run_case(truth["case_id"], paths=paths, run_id=run_id)

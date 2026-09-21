@@ -135,6 +135,13 @@ def test_agents_config_loads() -> None:
     assert config.runtime.max_parallel_tasks == 4
 
 
+def test_models_config_loads() -> None:
+    config = load_models_config(Path("config/models.yaml"))
+
+    assert config.default.model
+    assert "structured_output" in config.default.required_capabilities
+
+
 def test_chat_model_builds_without_network() -> None:
     config = load_models_config(Path("config/models.yaml"))
     model = chat_model(config)

@@ -1,8 +1,8 @@
 # DisputeAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S13 evidence graph, highlighting and E2E complete; S9 tuning partly done (3/10 cases verified)**
-Next stage: **S14 — Documentation and final cleanup** (S9 case tuning is queued and will be revisited; see §8)
+Current phase: **S14 final cleanup complete; S9 tuning partly done (3/10 cases verified)**
+Next stage: none scheduled; S9 case tuning (7 cases queued, see §8) is the remaining open work
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -483,7 +483,7 @@ Do:
 
 Checks: tsc, vitest, build, `npm run e2e`.
 
-### S14 — Documentation and final cleanup  ☐
+### S14 — Documentation and final cleanup  ☑
 **Complexity: Medium**
 
 Goal: zero leftovers and a fully verified repo.
@@ -852,3 +852,9 @@ pytest, ruff, frontend checks and E2E.
 - The conclusion panel (`run/Conclusion.tsx`) has a drag handle on its top edge (`role="separator"`): drag or ArrowUp/ArrowDown (40 px steps) to resize up to 75% of the window; below 48 px it collapses to the verdict strip; double-click cycles strip, 34% and 66% of the window. The height is kept in `localStorage` (`disputeai.report-height`, wrapped in try/catch). "Hide details"/"Show details" toggles between the strip and the last open height.
 - A section row (Summary, Transactions, Hypotheses, Decoys and policy, Letter) scrolls inside the panel to that section. Clicking an evidence chip calls `showEvidence` and collapses the panel to the strip so the graph is visible; "Show details" restores it.
 - Verification: `npx tsc -b`, vitest (30, incl. chip collapse and keyboard resize), lint, `npm run e2e`; dragged in a browser on the stored C04 run (340 to 596 px, persisted over a reload). Code-simplifier pass run. No design decision changed.
+
+### 2026-09-21 — S14 final cleanup complete
+- Spec status is now "approved". Repo-wide code-simplifier pass: deleted `src/storage.py` (no callers), `put_blob`/`run_blobs` and `last_event` in the emitter, unused `ConcurrencyConfig`/`RetryConfig`/`max_attempts` (and their keys in `config/models.yaml`), `RunView.termination` in the frontend store; named the eval SIGALRM handler; renamed `OBS_*` vars in `scripts/dev.sh`; replaced `tests/test_surviving_modules.py` with `tests/test_emitter.py` (health and models-config checks moved to `test_api.py` / `test_schemas_models.py`).
+- Leftover grep (`playbook`, `governance`, `virtual_clock`, `persona`, `scheduler`, `route_id`, `hash_chain`, `redact`, `queue`): only legitimate hits remain (`asyncio.Queue` in the emitter, domain policy text in `data/corpus`, and the "no hash chain" wording in tests).
+- Left for the owner: `pyproject.toml` still names the project `card-dispute-agent`.
+- Verification: `uv run pytest` 67 passed, 1 deselected; ruff check and format clean; frontend `tsc -b`, vitest (30), lint, build, `npm run e2e` (1 passed). Docs rewrite and full `inspect eval` were dropped from S14 by decision.

@@ -5,7 +5,6 @@ default:
   model: gpt-5.6-luna
   reasoning_effort: medium
   timeout_seconds: 60
-  max_attempts: 3
   max_output_tokens: 12000
   required_capabilities:
     - structured_output
@@ -14,9 +13,4 @@ default:
     - reasoning_controls
     - usage_reporting
     - prompt_caching
-concurrency:
-  per_run: 4
-retry:
-  initial_backoff_ms: 500
-  max_backoff_ms: 8000
 
