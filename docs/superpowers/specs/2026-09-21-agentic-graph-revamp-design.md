@@ -29,8 +29,9 @@ portfolio queue scheduling.
 
 1. **Config is a starting menu, never a fence.** Router suggestions, catalog roles and skills seed
    the agents; the supervisor may load any skill, define ad-hoc specialists, and revise the plan.
-2. **Every LLM decision is a Pydantic model** (`response_format` / structured output), never a JSON
-   blob parsed from prompt instructions.
+2. **Every LLM output is a Pydantic model** (provider-native strict structured output), never a
+   JSON blob parsed from prompt instructions. All calls go through one `invoke_structured` helper;
+   tools have Pydantic `args_schema`s; the only free text is a worker's in-loop reasoning.
 3. **Only termination is hard-coded**: max supervisor turns, no-progress limit, and a `decide`
    precondition (all plan items done or explicitly waived). Nothing restricts *what* is decided.
 4. **One representation per fact.** Case evidence lives only in the graph.

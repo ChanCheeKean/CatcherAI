@@ -33,7 +33,17 @@ No playbooks, no rule-based governance, no simulation or time advancement, no hu
   confidences, no rule-based gates. Config (`config/agents.yaml`) is a starting menu, never a
   whitelist. Only loop termination (max turns, no-progress, plan-closed precondition) is hard-coded.
 - **Every LLM output is a Pydantic model** passed via `response_format` / structured output. Never
-  parse JSON out of free text.
+  parse JSON out of free text. This is enforced, not just intended:
+  - All LLM calls go through one helper, `invoke_structured(agent_or_model, schema, messages) ->
+    BaseModel` (in `src/models.py`, S6). No other code calls `.invoke`/`.ainvoke` on a model or agent.
+  - Use provider-native strict structured output (LangChain `ProviderStrategy`, OpenAI strict JSON
+    schema) so the output is guaranteed to match the schema. On a Pydantic validator error, feed the
+    error back and retry once, then fail the run with a clear `error` event (never fall back to text).
+  - Every tool has a Pydantic `args_schema`, so tool calls are typed too.
+  - The only unstructured model text allowed is a worker's intermediate reasoning between tool
+    calls inside its own loop. It is never read by other nodes.
+  - A test (S8) fails if any LLM call is made without a schema, and if `rg` finds `json.loads` on
+    model output anywhere in `src/`.
 - **Robust but not over-engineered.** Plain functions and data, few files, no class hierarchies or
   wrappers unless unavoidable. Add a node/tool/field/config file only when a case or the demo needs
   it. If something is unused, delete it. Never leave stubs, shims, `TODO`s or commented-out code.
@@ -290,11 +300,15 @@ Build:
   `supervisor`/`triage` prompt. Loader in `src/config.py`, plus `runtime` limits: `max_turns`,
   `no_progress_turns`, `max_parallel_tasks`.
 - `src/models.py`: `chat_model(config)` via `langchain.chat_models.init_chat_model` from
-  `config/models.yaml`, and a LangChain `BaseCallbackHandler` that emits `model_call` events
-  (model, tokens, latency) through the emitter.
+  `config/models.yaml`; `invoke_structured(agent_or_model, schema, messages)` (the only way the
+  codebase calls an LLM: plain models via `with_structured_output(schema, strict=True)`, Deep
+  Agents via `response_format=ProviderStrategy(schema)` reading `structured_response`; validates,
+  retries once with the validation error, returns the model instance); and a LangChain
+  `BaseCallbackHandler` that emits `model_call` events (model, schema name, tokens, latency)
+  through the emitter.
 
 Tests: schema validators accept good and reject bad examples; config loads; `chat_model` builds
-without network.
+without network; `invoke_structured` retries once on a validation error, then raises.
 
 ### S7 — Agent tools  ☐
 **Complexity: Medium**
@@ -304,7 +318,7 @@ graph IDs.
 
 Read: spec §5; `src/graph_store.py`; `src/memory/retrieval.py`; `src/observability/emitter.py`.
 
-Build `src/tools.py`: `make_tools(run) -> list[BaseTool]` returning `graph_schema`, `graph_query`,
+Build `src/tools.py` (every tool with a Pydantic `args_schema`): `make_tools(run) -> list[BaseTool]` returning `graph_schema`, `graph_query`,
 `graph_neighbors`, `graph_write_finding`, `search_knowledge`, `memory_write`, `python`. Tool
 errors (bad Cypher, timeouts) are returned to the agent as text, never raised. Results are
 compact: IDs plus key properties, capped rows, with a "truncated" note. `memory_write(op, note)`
@@ -343,7 +357,10 @@ Build `src/runtime.py` (split into at most two or three files if it grows past a
 Tests: `tests/test_runtime.py` with a stub chat model that returns fixed Pydantic objects
 (plumbing only): triage → supervisor delegates two tasks in parallel → findings merge →
 premature `Decide` is rejected → plan closed → adjudicator → consolidate → `decided`; plus
-`max_turns` and `no_progress` terminations; the event order is replayable. One `@pytest.mark.llm`
+`max_turns` and `no_progress` terminations; the event order is replayable. Structured-output
+enforcement test: the stub model records every call and the test asserts each one carried a
+schema; a second test scans `src/` and fails on `json.loads` applied to model output or any LLM
+call outside `invoke_structured`. One `@pytest.mark.llm`
 smoke run on C04.
 
 ### S9 — Real-LLM evaluation and tuning  ☐
