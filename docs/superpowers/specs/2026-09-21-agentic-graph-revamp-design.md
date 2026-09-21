@@ -206,12 +206,13 @@ realistic background; anything unused is cut.
 
 | Area | Nodes | Edges |
 |---|---|---|
-| Identity | Customer, Account, Card, Token, Device, IP, Phone, Email, Address, MerchantAccount | HOLDS{role,from,to}, ISSUED_ON, CARRIES, TOKENIZED_AS, BOUND_TO_DEVICE, LIVES_AT{from,to}, WORKS_AT, HAS_PHONE{from,to}, HAS_EMAIL, LOGGED_IN_FROM{ts,ip}, MERCHANT_LOGIN_FROM{ts} |
-| Commerce | Merchant, Terminal, Descriptor, Authorization, Transaction, Order, Shipment, AgentProvider, Mandate | PAID_WITH, AT_MERCHANT, VIA_TERMINAL, CLEARS{seq}, FOR_ORDER, SHIPPED_AS, DELIVERED_TO{pod,signer}, REFUNDS, FROM_DEVICE, FROM_IP, DESCRIBES{from,to}, SUB_MERCHANT_OF, ACTING_FOR, AUTHORIZED_BY_MANDATE |
+| Identity | Customer, Account, Card, Token, Device, IP, Phone, Email, Address, MerchantAccount | HOLDS{role,valid_from,valid_to}, ISSUED_ON, CARRIES, TOKENIZED_AS, BOUND_TO_DEVICE, LIVES_AT{valid_from,valid_to}, WORKS_AT, HAS_PHONE{valid_from,valid_to}, HAS_EMAIL, LOGGED_IN_FROM{ts,ip}, MERCHANT_LOGIN_FROM{ts} |
+| Commerce | Merchant, Terminal, Descriptor, Authorization, Transaction, Order, Shipment, AgentProvider, Mandate | PAID_WITH, AT_MERCHANT, VIA_TERMINAL, CLEARS{seq}, FOR_ORDER, SHIPPED_AS, DELIVERED_TO{pod,signer}, REFUNDS, FROM_DEVICE, FROM_IP, DESCRIBES{valid_from,valid_to}, SUB_MERCHANT_OF, ACTING_FOR, AUTHORIZED_BY_MANDATE |
 | Case | Dispute, EvidenceItem, EvidenceRequest, Communication, AccountEvent, MemoryNote, Finding | FILED_BY, DISPUTES{amount}, RELATED_TO, HAS_EVIDENCE, ASSERTS, REQUESTED{status,deadline,responded_at}, TRIGGERED_BY, CHANGED_PHONE_TO, ABOUT, SUPPORTS, CONTRADICTS, SAME_ACTOR, COMPROMISED_AT |
 
-Rules: every node has a stable prefixed key; every relationship that can change over time carries
-`from`/`to`; merchant evidence connects into the identity graph through `ASSERTS` (e.g. "order
+Rules: every node has a stable prefixed `id`; every edge has a stable `id` (`E-…`) so the frontend
+can reference it; every relationship that can change over time carries `valid_from`/`valid_to`
+(`FROM`/`TO` are reserved words in Cypher DDL); merchant evidence connects into the identity graph through `ASSERTS` (e.g. "order
 placed from device X"); free text (communications, merchant statements) is a node property the
 agent reads after reaching the node.
 
@@ -223,7 +224,7 @@ deadline, deadline_passed:true})` — a fact to discover, never a simulated wait
 - ~2–3k customers, ~50k transactions, realistic benign sharing: households, roommates, office IPs,
   CGNAT ranges, recycled phone numbers, marketplace sub-merchants.
 - Each case has at least one **decoy** that is only separable through edge properties or an extra
-  hop (e.g. same street different unit; phone shared only after `HAS_PHONE.to`; other cards at a
+  hop (e.g. same street different unit; phone shared only after `HAS_PHONE.valid_to`; other cards at a
   terminal that were never disputed).
 - In ≥6 of 10 cases the intake narrative and/or merchant statement point to the wrong answer.
 
@@ -237,7 +238,7 @@ deadline, deadline_passed:true})` — a fact to discover, never a simulated wait
 | 4 | C10 Family tablet | Transaction FROM_DEVICE → Device ← LOGGED_IN_FROM ← household member who HOLDS{role:authorized} | fraud |
 | 5 | C11 ATO drop ring (~40 accounts) | AccountEvent phone change → new Device/IP → Shipment DELIVERED_TO drop Address shared by many ATO Disputes; MemoryNote claims friendly fraud | first-party fraud |
 | 6 | C12 Porch ring | claimants share Phone/Device/Address component; coordinated not-received Disputes; POD to their addresses | genuine non-receipt |
-| 7 | C12b Wrong house (control) | resembles C12 via a recycled phone outside its `from/to`; POD address ≠ LIVES_AT; merchant EvidenceRequest `no_response` | ring member |
+| 7 | C12b Wrong house (control) | resembles C12 via a recycled phone outside its `valid_from/valid_to`; POD address ≠ LIVES_AT; merchant EvidenceRequest `no_response` | ring member |
 | 8 | C13 Agent booked it | Transaction → Token → ACTING_FOR AgentProvider → Mandate constraints vs Order | unauthorized |
 | 9 | C18 Refund crossed | unlinked credit Transaction → FOR_ORDER same Order as disputed purchase; EvidenceRequest `no_response` on partial remainder | credit not processed |
 | 10 | C19 Yesterday's reputation | merchant Dispute pattern + MemoryNote contradicted by newer Findings/graph facts | trust old note |
@@ -267,7 +268,7 @@ decoy pattern at build time and fails if any case is not uniquely resolvable.
 | `python(code)` | restricted subprocess with timeout for arithmetic, dates, FX, aggregation |
 
 Memory notes are graph nodes, so reading them is just `graph_query` or `search_knowledge` — no
-separate read tool. Six tools in total.
+separate read tool. Seven tools in total.
 
 Skills use Deep Agents' native `skills=` support with the `skills/` directory. Skills are rewritten
 as generic domain knowledge: graph-investigation techniques, fraud/ATO signals, household
@@ -328,7 +329,16 @@ agent YAMLs, tests tied to removed behaviour, `data/generated/eval/*` historic r
 `data/generator/capabilities.py` and `capability_coverage.json` are rewritten for the new case set
 and components (harness now = scenario loading, trajectory capture, eval — not simulation).
 
+**Model stack.** The custom provider-neutral gateway (`src/ports.py`, `src/domain/model.py`,
+`src/adapters/openai_responses.py`, `src/observability/model_gateway.py`,
+`src/runtime/gateway_chat_model.py`) is replaced by LangChain's `init_chat_model` configured from
+`config/models.yaml`, plus one LangChain callback handler that emits `model_call` events. Swapping
+provider becomes a config change.
+
 ## 10. Delivery stages
+
+See `handoff.md` for the authoritative, finer-grained stage list with complexity ratings.
+
 
 Each stage ends with tests green, a `code-simplifier` pass, and a commit + push.
 
