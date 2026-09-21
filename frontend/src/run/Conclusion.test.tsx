@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Conclusion } from './Conclusion'
 import { evidence, event, report } from './fixtures'
 import { deriveFlow } from './flow'
@@ -30,6 +30,9 @@ function renderWith(events: ReturnType<typeof event>[], showEvidence = vi.fn()) 
 }
 
 describe('Conclusion', () => {
+  // The panel remembers its height in localStorage, so each test starts from the default.
+  beforeEach(() => localStorage.clear())
+
   it('shows live status and open plan items before the decision', () => {
     renderWith([
       event('plan_updated', 'triage', {
@@ -51,6 +54,22 @@ describe('Conclusion', () => {
 
     await userEvent.click(screen.getAllByRole('button', { name: evidence.claim })[0])
     expect(showEvidence).toHaveBeenCalledWith(evidence)
+    // The report steps aside so the graph is visible, and "Show details" brings it back.
+    expect(screen.queryByText(/Dear customer/)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Show details' }))
+    expect(screen.getByText(/Dear customer/)).toBeInTheDocument()
+  })
+
+  it('resizes with the keyboard and collapses to the verdict strip', async () => {
+    renderWith([event('decision', 'adjudicator', { report, reason: 'decided' })])
+    const handle = screen.getByRole('separator', { name: 'Resize report' })
+    const before = Number(handle.getAttribute('aria-valuenow'))
+    handle.focus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(Number(handle.getAttribute('aria-valuenow'))).toBe(before + 40)
+    await userEvent.keyboard('{ArrowDown>40/}')
+    expect(handle).toHaveAttribute('aria-valuenow', '0')
+    expect(screen.queryByText(/Dear customer/)).not.toBeInTheDocument()
   })
 
   it('collapses the details but keeps the verdict visible', async () => {
