@@ -1,0 +1,54 @@
+"""Validate generated showcase cases and write evaluator/UI artifacts."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from cases import CaseTruth
+
+
+def validate_cases(store, cases: list[CaseTruth]) -> None:
+    """Fail when a solution node, proof path, or required decoy is absent."""
+    for case in cases:
+        for node_id in case["solution_node_ids"]:
+            label = store.label_of(node_id)
+            rows = store.query(f"MATCH (n:{label} {{id: $id}}) RETURN n.id", {"id": node_id})[
+                "rows"
+            ]
+            if not rows:
+                raise ValueError(f"{case['code']} solution node does not exist: {node_id}")
+        for pattern in case["proof_patterns"]:
+            count = len(store.query(pattern["cypher"])["rows"])
+            if count < pattern.get("min_rows", 1):
+                raise ValueError(
+                    f"{case['code']} proof pattern {pattern['name']!r} returned {count} rows"
+                )
+        for pattern in case["decoy_patterns"]:
+            if not store.query(pattern["cypher"])["rows"]:
+                raise ValueError(
+                    f"{case['code']} decoy pattern {pattern['name']!r} returned no rows"
+                )
+
+
+def write_case_outputs(output_dir: Path, cases: list[CaseTruth], graph) -> None:
+    """Write private evaluator truth and answer-free case-card data."""
+    truth_dir = Path(output_dir) / "ground_truth" / "cases"
+    truth_dir.mkdir(parents=True, exist_ok=True)
+    for case in cases:
+        (truth_dir / f"{case['case_id']}.json").write_text(
+            json.dumps(case, indent=2, sort_keys=True) + "\n"
+        )
+    catalog = [
+        {
+            "case_id": case["case_id"],
+            "title": case["title"],
+            "claim_type": graph.nodes[case["case_id"]]["props"]["claim_type"],
+            "amount": graph.nodes[case["case_id"]]["props"]["amount"],
+            "summary": case["intake"],
+        }
+        for case in cases
+    ]
+    (Path(output_dir) / "case_catalog.json").write_text(
+        json.dumps(catalog, indent=2, sort_keys=True) + "\n"
+    )

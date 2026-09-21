@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S2 — Background world generator complete**
-Next stage: **S3 — Case kit, validation, and cases 1–5**
+Current phase: **S3 — Case kit, validation, and cases 1–5 complete**
+Next stage: **S4 — Cases 6–10, missing evidence, capability map**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -197,7 +197,7 @@ Tests (`tests/test_generator_world.py`): determinism (same seed gives byte-ident
 every ontology label and edge type used; no dangling edges; temporal edges have
 `valid_from <= valid_to`.
 
-### S3 — Case kit, validation, and cases 1–5  ☐
+### S3 — Case kit, validation, and cases 1–5  ☑
 **Complexity: Complex**
 
 Goal: the first five showcase cases, each provably solvable by graph traversal and not by the
@@ -589,3 +589,26 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   loaded successfully into LadybugDB, and reported 2,500 customers / 50,000 transactions / 300
   disputes. A variable-length Cypher query against the resulting store returned connected IDs.
 - No design decisions changed and no spec update was required.
+
+### 2026-09-21 — S3 case kit, validation, and cases 1–5 complete
+
+- Added the typed case contract and deterministic builder in `data/generator/cases/`, plus five
+  graph-first showcases: C02 descriptor confusion, C04 split clearing, C08 common compromise point,
+  C10 authorized family-tablet use, and C11 a forty-account takeover/drop-address cluster. Each
+  case includes executable proof paths, matching but irrelevant decoys, a 5–25 node solution set,
+  evaluator outcomes, and a quantified human-effort note.
+- Added `data/generator/validate.py`: it verifies every solution node, minimum proof-row count and
+  decoy match after LadybugDB load, then writes evaluator-only case JSON and an answer-free UI case
+  catalog. Catalog claim types and amounts come from the intake Dispute nodes rather than hidden
+  expected outcomes.
+- Updated `data/generator/gen.py` to compose cases into the background world, validate the loaded
+  graph before emitting artifacts, and write `data/generated/ground_truth/cases/` plus
+  `data/generated/case_catalog.json`. Added `tests/test_cases.py` for all contracts, validation
+  failure modes, ground-truth separation, decoy coverage and neutral catalog fields.
+- Verification: `uv run ruff check src tests data/generator` clean; `uv run ruff format --check src
+  tests data/generator` clean; `uv run pytest` **29 passed** with one upstream Starlette warning.
+  The production generator completed successfully with 2,552 customers, 50,060 transactions and
+  349 disputes, and all case proof/decoy queries passed. A simplification review removed a direct
+  graph-property mutation and made catalog display data derive from graph intake facts.
+- No design decisions changed and no spec update was required. Generated graph, ground truth,
+  catalog and LadybugDB files remain ignored build artifacts.
