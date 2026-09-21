@@ -108,3 +108,46 @@ export interface TrajectoryEvent {
 export interface ApiErrorBody {
   error: { code: string; message: string }
 }
+
+export interface GraphNode {
+  id: string
+  label: string
+  properties: Record<string, unknown>
+}
+
+export interface GraphEdge {
+  id: string
+  type: string
+  src: string
+  dst: string
+  properties: Record<string, unknown>
+}
+
+export interface GraphElements {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  missing: string[]
+}
+
+export interface Neighbors {
+  neighbors: {
+    type: string
+    direction: 'out' | 'in'
+    edge: Record<string, unknown>
+    node: Record<string, unknown>
+  }[]
+  truncated: boolean
+}
+
+export interface EvalCase {
+  case_id: string
+  code: string
+  title: string
+  passed: boolean
+  solution_node_ids: string[]
+  decoy_node_ids: string[]
+}
+
+export interface EvalLatest {
+  cases: EvalCase[]
+}

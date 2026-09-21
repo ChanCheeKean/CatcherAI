@@ -5,9 +5,11 @@ import { api } from '../api/client'
 import type { EvidenceLink } from '../api/types'
 import { Canvas } from '../run/Canvas'
 import { Conclusion } from '../run/Conclusion'
+import { citedBy } from '../run/evidence'
 import { deriveFlow } from '../run/flow'
 import { Inspector } from '../run/Inspector'
 import { type CanvasTab, type Highlight, RunPanelsContext, type Selection } from '../run/RunContext'
+import { useEvidenceGraph } from '../run/useEvidenceGraph'
 import { useRunEvents } from '../run/useRunEvents'
 
 const NO_HIGHLIGHT: Highlight = { nodeIds: new Set(), edgeIds: new Set() }
@@ -15,7 +17,13 @@ const NO_HIGHLIGHT: Highlight = { nodeIds: new Set(), edgeIds: new Set() }
 const statusLabel = { running: 'Running', completed: 'Decided', failed: 'Failed' } as const
 const statusDot = { running: 'bg-partial breathing', completed: 'bg-accepted', failed: 'bg-rejected' } as const
 
+/** Keyed by run so that "Run again" starts with a clean selection, highlight and graph. */
 export function RunPage() {
+  const { runId = '' } = useParams()
+  return <RunView key={runId} />
+}
+
+function RunView() {
   const { caseId = '', runId = '' } = useParams()
   const navigate = useNavigate()
   const view = useRunEvents(runId)
@@ -30,14 +38,23 @@ export function RunPage() {
     setHighlight({ nodeIds: new Set(link.node_ids), edgeIds: new Set(link.edge_ids) })
     setTab('graph')
   }, [])
+  const clearHighlight = useCallback(() => setHighlight(NO_HIGHLIGHT), [])
   const rerun = useMutation({
     mutationFn: () => api.startRun(caseId),
     onSuccess: (run) => navigate(`/cases/${run.case_id}/runs/${run.run_id}`),
   })
   const flow = useMemo(() => deriveFlow(view.events), [view.events])
+  const cited = useMemo(() => citedBy(view.report), [view.report])
+  const graph = useEvidenceGraph(runId, [
+    ...view.touched.keys(),
+    ...cited.nodeIds,
+    ...cited.edgeIds,
+    ...highlight.nodeIds,
+    ...highlight.edgeIds,
+  ])
   const panels = useMemo(
-    () => ({ view, flow, selection, select, highlight, showEvidence, tab, setTab }),
-    [view, flow, selection, highlight, showEvidence, tab],
+    () => ({ view, flow, selection, select, highlight, clearHighlight, cited, graph, showEvidence, tab, setTab }),
+    [view, flow, selection, highlight, clearHighlight, cited, graph, showEvidence, tab],
   )
 
   return (

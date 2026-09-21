@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S12 agent-flow graph + inspector complete; S9 tuning partly done (3/10 cases verified)**
-Next stage: **S13 — Frontend part 3: evidence graph, highlighting, E2E** (S9 case tuning is queued and will be revisited; see §8)
+Current phase: **S13 evidence graph, highlighting and E2E complete; S9 tuning partly done (3/10 cases verified)**
+Next stage: **S14 — Documentation and final cleanup** (S9 case tuning is queued and will be revisited; see §8)
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -460,7 +460,7 @@ Do (React Flow):
 Checks: tsc, vitest (layout is deterministic for a fixture event stream; visit counts;
 loop-edge rendering), build.
 
-### S13 — Frontend part 3: evidence graph, highlighting, E2E  ☐
+### S13 — Frontend part 3: evidence graph, highlighting, E2E  ☑
 **Complexity: Complex**
 
 Goal: the data graph that shows how everything links together.
@@ -834,3 +834,15 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
 - Deviations: (1) Investigation wraps into another column after 6 roles (real runs invented up to 22 ad-hoc roles), so regions right of it shift one slot when that happens; nothing else moves. (2) Crowded maps (more than 16 edges) draw edges at half opacity and hide count labels until a node is selected. (3) The "selected agent publishes touched node ids" hook was removed by the simplifier as unused; S13 should derive it from `Flow.visits[name].tools` / `Flow.toolCalls[tool]` (each call has `nodeIds`/`edgeIds`) and add it to `RunPanels`. (4) Ad hoc = the supervisor gave the task `instructions`; tool calls by `memory_keeper` without a delegation parent are filed under `consolidate_memory`.
 - Verified in a browser against stored real runs (C04 and C08 replays; C08 has 22 roles). Playwright is not yet a project dependency (S13 adds it).
 - Verification: `npx tsc -b`, `npx vitest run` (20 tests: flow derivation, layout stability and wrapping, inspector), `npm run lint`, `npm run build`; `uv run pytest` passes. No design decision changed.
+
+### 2026-09-21 — S13 frontend part 3 complete
+
+- Added `d3-force` and `@playwright/test`. New files in `frontend/src/run/`: `graphModel.ts` (region, colour and icon name per label; caption; agent-written test; neighbour-to-node/edge mapping), `GraphIcon.tsx` (26 line icons), `evidenceLayout.ts` (`layoutGraph`: d3-force run synchronously to settle, links plus a pull toward each node's region column, collision, clamp inside the loop; new nodes start beside a placed neighbour so growth does not reshuffle; column widths scale with the node count in steps), `evidence.ts` (`touchedBy(flow, actor|tool)`, `citedBy(report)`), `useEvidenceGraph.ts` (fetches `GET /graph/nodes?ids=&run_id=` in batches as touched ids grow, then missing edge endpoints; `expand(id)` uses `/graph/neighbors`), `EvidenceGraph.tsx` (React Flow, three region bands Identity / Commerce / Case and knowledge, nodes coloured with icon and caption, edge type labels, parallel edges bent apart, agent-written nodes and edges dashed in `--color-agent`, new nodes ring-flash while the run is live, double-click expands one hop as faded context), `GraphItemPanel.tsx` (inspector for a node or edge: properties, dated connections that can be clicked, "found by <agent> with <tool> in turn N", raw events).
+- Highlighting: evidence chips from the conclusion focus exactly those nodes and edges (banner with "Show everything"); selecting an agent or tool on the flow tab dims the graph to what it touched (`touchedBy`); cited evidence gets a yellow ring after the decision; an Evaluation overlay toggle (solution ring green, decoy ring red dashed, "n of m solution nodes found") appears when `/eval/latest` has the case.
+- Deviation: real runs touch hundreds of nodes (survey queries return many isolated rows), which was unreadable. The graph has a scope switch: **Connected** (default: nodes with a drawn edge, agent-written nodes and cited nodes), **Everything touched**, **Cited only**.
+- Deviation: icons are 26 hand-drawn SVG line icons rather than an icon library (no new UI dependency). Labels shown under nodes are the first readable property (`name`, `text`, `street`, ...) or the id.
+- `RunPage` is keyed by run id, so "Run again" resets selection, highlight and graph state. `RunPanels` gained `graph`, `cited`, `clearHighlight`.
+- E2E: hermetic, no LLM. `tests/e2e_server.py` serves a tiny graph with scripted agents that call the real tools (so events carry graph ids); `frontend/playwright.config.ts` starts it on :8100 and Vite on :5273 (`API_URL` env overrides the proxy target in `vite.config.ts`). `frontend/e2e/run-page.spec.ts`: cases page, click case, agent map nodes, "Decided", evidence graph nodes, verdict, node inspector "Found by", chip focus, agent-selection dimming. Deviation: the plan said use `scripts/dev.sh`; the hermetic stack was chosen so the test needs no API key or generated data. `./dev.sh` still works (verified by hand against stored real runs C04 and C08).
+- Verification: `npx tsc -b`, `npx vitest run` (28 tests), `npm run lint`, `npm run build`, `npm run e2e` (1 passed), `uv run pytest` (66 passed, 1 deselected), ruff check and format clean. Code-simplifier pass done. No design decision changed.
+- Open: the Playwright browser must be installed once (`npx playwright install chromium`); the frontend bundle is over 500 kB (warning only).
+

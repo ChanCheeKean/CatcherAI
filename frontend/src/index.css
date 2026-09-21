@@ -12,6 +12,8 @@
   --color-ink: #131d2e;
   --color-graphite: #4f5c70;
   --color-highlighter: #ffd84a;
+  /* Written by an agent rather than found in the source data. */
+  --color-agent: #6b3fd4;
 
   --color-accepted: #1c7a57;
   --color-partial: #a96a12;
@@ -93,4 +95,22 @@ body {
 .id-chip {
   font-family: var(--font-mono);
   font-size: 0.72rem;
+}
+
+/* A node that has just been discovered: one ring that expands and fades. */
+@keyframes arrival-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(255 216 74 / 0.95);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgb(255 216 74 / 0);
+  }
+}
+.arrival {
+  animation: arrival-ring 1.2s ease-out 1;
+}
+
+/* Nodes glide to their new place when the layout settles again. */
+.react-flow__node-entity {
+  transition: transform 0.4s ease;
 }

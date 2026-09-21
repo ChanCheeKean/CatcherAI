@@ -1,4 +1,4 @@
-import type { ApiErrorBody, CaseSummary, RunStatus } from './types'
+import type { ApiErrorBody, CaseSummary, EvalLatest, GraphElements, Neighbors, RunStatus } from './types'
 
 const API_PREFIX = '/api'
 
@@ -19,5 +19,10 @@ export const api = {
   startRun: (caseId: string) =>
     request<RunStatus>('/runs', { method: 'POST', body: JSON.stringify({ case_id: caseId }) }),
   getRun: (runId: string) => request<RunStatus>(`/runs/${encodeURIComponent(runId)}`),
+  graphElements: (ids: string[], runId: string) =>
+    request<GraphElements>(`/graph/nodes?run_id=${encodeURIComponent(runId)}&ids=${ids.map(encodeURIComponent).join(',')}`),
+  neighbors: (id: string, runId: string) =>
+    request<Neighbors>(`/graph/neighbors/${encodeURIComponent(id)}?run_id=${encodeURIComponent(runId)}`),
+  evalLatest: () => request<EvalLatest>('/eval/latest'),
   eventsUrl: (runId: string) => `${API_PREFIX}/runs/${encodeURIComponent(runId)}/events`,
 }
