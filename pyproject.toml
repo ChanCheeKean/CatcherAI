@@ -43,10 +43,11 @@ only-include = ["src"]
 sources = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q -m 'not llm'"
 testpaths = ["tests"]
 pythonpath = ["data/generator"]
 asyncio_mode = "auto"
+markers = ["llm: requires a real configured language model"]
 
 [tool.ruff]
 line-length = 100

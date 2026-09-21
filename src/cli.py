@@ -6,8 +6,43 @@ import typer
 
 from domain.events import event_json_schema
 from replay import load_events, render_timeline
+from runtime import RuntimePaths, run_case
 
 app = typer.Typer(no_args_is_help=True, help="Replay card-dispute investigation trajectories.")
+
+
+@app.command("run")
+def run(
+    case_id: str,
+    graph: Annotated[Path, typer.Option(help="Pristine LadybugDB evidence graph")] = Path(
+        "data/generated/evidence.lbug"
+    ),
+    knowledge: Annotated[Path, typer.Option(help="Knowledge SQLite database")] = Path(
+        "data/generated/knowledge.sqlite"
+    ),
+    run_dir: Annotated[Path, typer.Option(help="Directory for isolated run graphs")] = Path(
+        "data/generated/runs"
+    ),
+    events: Annotated[Path, typer.Option(help="SQLite trajectory store")] = Path(
+        "trajectory.sqlite"
+    ),
+    checkpoints: Annotated[Path, typer.Option(help="LangGraph checkpoint store")] = Path(
+        "checkpoints.sqlite"
+    ),
+) -> None:
+    """Investigate one dispute and print its structured CaseReport."""
+
+    report = run_case(
+        case_id,
+        paths=RuntimePaths(
+            source_graph=graph,
+            knowledge_db=knowledge,
+            run_dir=run_dir,
+            trajectory_db=events,
+            checkpoint_db=checkpoints,
+        ),
+    )
+    typer.echo(report.model_dump_json(indent=2))
 
 
 @app.command("replay")

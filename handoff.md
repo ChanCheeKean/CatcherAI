@@ -1,8 +1,8 @@
 # CatcherAI — agentic graph-discovery revamp: handoff
 
 Last updated: 2026-09-21
-Current phase: **S7 — Agent tools complete**
-Next stage: **S8 — Agent runtime (LangGraph)**
+Current phase: **S8 — Agent runtime (LangGraph) complete**
+Next stage: **S9 — Real-LLM evaluation and tuning**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Dispute Observatory build history) is in git history: `git show 56d9380:handoff.md`.
@@ -332,7 +332,7 @@ stdout.
 Tests (`tests/test_tools.py`) against a fixture graph: each tool's happy path; the read-only guard;
 error-as-text; the event payload includes `node_ids`/`edge_ids`; the python timeout.
 
-### S8 — Agent runtime (LangGraph)  ☐
+### S8 — Agent runtime (LangGraph)  ☑
 **Complexity: Complex**
 
 Goal: the five-node agent graph, end to end, with a replayable trajectory.
@@ -707,3 +707,36 @@ pytest, ruff, frontend checks, E2E, and one full `inspect eval` recorded in §8.
   `__pycache__`; `src/tools/` would have shadowed `tools.py`).
 - Tests: `tests/test_tools.py` (10). `uv run ruff check src tests data/generator` clean; `uv run pytest`
   **51 passed**. Code-simplifier pass done. No design decisions changed.
+
+### 2026-09-21 — S8 agent runtime complete
+
+- Built the five-node LangGraph runtime in `src/runtime.py`, with small entry/state helpers in
+  `src/runtime_entry.py` and `src/runtime_support.py`: triage, supervisor, parallel worker fan-out
+  through `Send`, adjudicator, and memory consolidation. The supervisor applies plan edits,
+  rejects premature `Decide` actions while items remain open, caps parallel delegation, and forces
+  adjudication on `max_turns` or `no_progress` without encoding case outcomes.
+- Workers and the adjudicator are Deep Agents using provider-native Pydantic response formats.
+  Requested role/task skills are attached directly to their prompts while the native `/skills`
+  source remains available for ad-hoc discovery. Workers use independent LadybugDB connections for
+  parallel tool calls; the adjudicator receives only the four read-only domain tools.
+- Added per-run graph copying, persistent SQLite LangGraph checkpoints, the `inspect run <case_id>`
+  command, and structured error termination. The final `CaseReport` is returned and durably stored
+  in the trajectory's `decision` event.
+- Extended the trajectory contract and SQLite migration with top-level `visit`, `turn`, and
+  `parent_id`. Runtime events now cover every node/edge, task and finding payloads, skill loading,
+  forced termination, and the final consolidation-to-end edge. Tool/model events inherit the same
+  execution context; legacy trajectory databases receive the new columns automatically.
+- Added `tests/test_runtime.py`: deterministic triage → two-worker fan-out → merged findings →
+  rejected premature decision → closed plan → adjudication → consolidation; forced max-turn and
+  no-progress paths; replay sequence and frontend payload contracts; read-only adjudicator tools;
+  and an AST guard preventing model invocation outside `invoke_structured`. Added a C04 real-model
+  smoke test marked `llm` and excluded from default runs.
+- Verified installed `deepagents` 0.5.9 signatures, LangGraph `Send`, Deep Agents skills/backends,
+  and SQLite checkpoint usage against installed source and live LangChain documentation. The
+  required code-simplifier review was completed; its skill-event, final-edge, test-contract and
+  file-size findings were incorporated.
+- Verification: `uv run ruff check src tests data/generator` clean; `uv run ruff format --check src
+  tests data/generator` clean; `uv run pytest` — **55 passed, 1 deselected** (the real-LLM smoke
+  test), with one upstream Starlette deprecation warning; `uv run inspect --help` works. The
+  real-LLM smoke was not run in S8 and remains S9 work.
+- No design decision changed and no spec update was required.

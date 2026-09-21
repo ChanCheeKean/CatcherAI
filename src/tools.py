@@ -49,6 +49,9 @@ class Run:
     knowledge_db: Path
     as_of: date
     actor: str = "worker"
+    visit: int = 1
+    turn: int = 0
+    parent_id: str | None = None
 
 
 class SchemaArgs(BaseModel):
@@ -280,6 +283,9 @@ def _emit(
     run.emitter.emit(
         EventDraft(
             actor=Actor(kind=ActorKind.TOOL, name=tool),
+            visit=run.visit,
+            turn=run.turn,
+            parent_id=run.parent_id,
             type=type_,
             summary=f"{run.actor} {type_.replace('_', ' ')}: {tool}"
             + (f" failed: {error}" if error else ""),

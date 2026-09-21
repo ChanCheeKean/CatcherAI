@@ -17,6 +17,7 @@ from domain.events import (
     EventDraft,
     EventEnvelope,
     RuntimeSnapshot,
+    current_event_context,
     event_from_row,
 )
 
@@ -64,6 +65,9 @@ class EventEmitter:
                     ts_wall TEXT NOT NULL,
                     actor_kind TEXT NOT NULL,
                     actor_name TEXT NOT NULL,
+                    visit INTEGER NOT NULL DEFAULT 1,
+                    turn INTEGER NOT NULL DEFAULT 0,
+                    parent_id TEXT,
                     type TEXT NOT NULL,
                     summary TEXT NOT NULL,
                     payload_json TEXT NOT NULL,
@@ -80,6 +84,16 @@ class EventEmitter:
                 );
                 """
             )
+            columns = {
+                row[1] for row in connection.execute("PRAGMA table_info(run_events)").fetchall()
+            }
+            for name, ddl in (
+                ("visit", "INTEGER NOT NULL DEFAULT 1"),
+                ("turn", "INTEGER NOT NULL DEFAULT 0"),
+                ("parent_id", "TEXT"),
+            ):
+                if name not in columns:
+                    connection.execute(f"ALTER TABLE run_events ADD COLUMN {name} {ddl}")
 
     @property
     def current_span(self) -> str:
@@ -123,6 +137,7 @@ class EventEmitter:
                 and len(self._span_stack.get()) > 1
             ):
                 parent_span_id = self._span_stack.get()[-2]
+            context = current_event_context()
             envelope = EventEnvelope(
                 event_id=f"evt-{uuid.uuid4().hex}",
                 run_id=self.run_id,
@@ -132,6 +147,9 @@ class EventEmitter:
                 parent_span_id=parent_span_id,
                 ts_wall=datetime.now(UTC),
                 actor=draft.actor,
+                visit=draft.visit if draft.visit is not None else context.visit,
+                turn=draft.turn if draft.turn is not None else context.turn,
+                parent_id=draft.parent_id if draft.parent_id is not None else context.parent_id,
                 type=draft.type,
                 summary=draft.summary,
                 payload=draft.payload,
@@ -140,7 +158,11 @@ class EventEmitter:
                 usage=draft.usage,
             )
             connection.execute(
-                """INSERT INTO run_events VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                """INSERT INTO run_events (
+                    event_id, run_id, case_id, seq, span_id, parent_span_id, ts_wall,
+                    actor_kind, actor_name, visit, turn, parent_id, type, summary,
+                    payload_json, refs_json, runtime_json, usage_json
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     envelope.event_id,
                     envelope.run_id,
@@ -151,6 +173,9 @@ class EventEmitter:
                     envelope.ts_wall.isoformat(),
                     envelope.actor.kind.value,
                     envelope.actor.name,
+                    envelope.visit,
+                    envelope.turn,
+                    envelope.parent_id,
                     envelope.type,
                     envelope.summary,
                     json.dumps(envelope.payload, default=str),

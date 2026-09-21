@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -52,6 +54,9 @@ class EventEnvelope(BaseModel):
     parent_span_id: str | None
     ts_wall: datetime
     actor: Actor
+    visit: int = 1
+    turn: int = 0
+    parent_id: str | None = None
     type: str
     summary: str
     payload: dict[str, Any]
@@ -62,6 +67,9 @@ class EventEnvelope(BaseModel):
 
 class EventDraft(BaseModel):
     actor: Actor
+    visit: int | None = None
+    turn: int | None = None
+    parent_id: str | None = None
     type: str
     summary: str
     payload: dict[str, Any] = Field(default_factory=dict)
@@ -69,6 +77,33 @@ class EventDraft(BaseModel):
     span_id: str | None = None
     parent_span_id: str | None = None
     usage: EventUsage = Field(default_factory=EventUsage)
+
+
+class EventContext(BaseModel):
+    actor: str | None = None
+    visit: int = 1
+    turn: int = 0
+    parent_id: str | None = None
+
+
+_EVENT_CONTEXT: ContextVar[EventContext | None] = ContextVar(
+    "trajectory_event_context", default=None
+)
+
+
+def current_event_context() -> EventContext:
+    return _EVENT_CONTEXT.get() or EventContext()
+
+
+@contextmanager
+def event_context(*, actor: str, visit: int, turn: int, parent_id: str | None = None):
+    token = _EVENT_CONTEXT.set(
+        EventContext(actor=actor, visit=visit, turn=turn, parent_id=parent_id)
+    )
+    try:
+        yield
+    finally:
+        _EVENT_CONTEXT.reset(token)
 
 
 def event_json_schema() -> dict[str, Any]:
@@ -92,6 +127,9 @@ def event_from_row(row: sqlite3.Row) -> EventEnvelope:
             "parent_span_id": row["parent_span_id"],
             "ts_wall": row["ts_wall"],
             "actor": {"kind": row["actor_kind"], "name": row["actor_name"]},
+            "visit": row["visit"] if "visit" in row.keys() else 1,
+            "turn": row["turn"] if "turn" in row.keys() else 0,
+            "parent_id": row["parent_id"] if "parent_id" in row.keys() else None,
             "type": row["type"],
             "summary": row["summary"],
             "payload": json.loads(row["payload_json"]),

@@ -16,7 +16,7 @@ from langchain_core.runnables import Runnable
 from pydantic import BaseModel, ValidationError
 
 from config import ModelsConfig, load_models_config
-from domain.events import Actor, ActorKind, EventDraft, EventUsage
+from domain.events import Actor, ActorKind, EventDraft, EventUsage, current_event_context
 from observability.emitter import EventEmitter
 
 SchemaT = TypeVar("SchemaT", bound=BaseModel)
@@ -62,9 +62,10 @@ class ModelCallCallbackHandler(BaseCallbackHandler):
         )
         usage = _usage_from_response(response)
         usage.latency_ms = round((time.perf_counter() - started_at) * 1000)
+        context = current_event_context()
         self.emitter.emit(
             EventDraft(
-                actor=Actor(kind=ActorKind.AGENT, name=self.actor),
+                actor=Actor(kind=ActorKind.AGENT, name=context.actor or self.actor),
                 type="model_call",
                 summary=f"structured model call: {schema_name or 'unknown schema'}",
                 payload={
@@ -162,16 +163,21 @@ def _invoke_once(agent_or_model: Any, schema: type[SchemaT], messages: list[Any]
     if hasattr(agent_or_model, "with_structured_output"):
         structured = agent_or_model.with_structured_output(schema, strict=True)
         return _runnable_invoke(structured, messages, schema)
-    return _runnable_invoke(agent_or_model, messages, schema)
+    agent_input: Any = {"messages": messages} if _is_compiled_graph(agent_or_model) else messages
+    return _runnable_invoke(agent_or_model, agent_input, schema)
 
 
-def _runnable_invoke(runnable: Any, messages: list[Any], schema: type[SchemaT]) -> Any:
+def _runnable_invoke(runnable: Any, input_: Any, schema: type[SchemaT]) -> Any:
     if isinstance(runnable, Runnable):
         return runnable.invoke(
-            messages,
+            input_,
             config={"metadata": {"schema_name": schema.__name__}},
         )
-    return runnable.invoke(messages)
+    return runnable.invoke(input_)
+
+
+def _is_compiled_graph(value: Any) -> bool:
+    return value.__class__.__module__.startswith("langgraph.graph.state")
 
 
 def _coerce_output(raw: Any, schema: type[SchemaT]) -> SchemaT:
