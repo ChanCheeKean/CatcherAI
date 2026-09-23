@@ -21,7 +21,7 @@ const SETTLE_MS = 250
  * The evidence graph of a run: properties of every id the agents touched (plus anything a
  * conclusion cites), fetched in batches as the run grows, and the edge endpoints that come with them.
  */
-export function useEvidenceGraph(runId: string, ids: string[]): EvidenceGraph {
+export function useEvidenceGraph(ids: string[]): EvidenceGraph {
   const [data, setData] = useState<GraphData>(EMPTY)
   const asked = useRef(new Set<string>())
   const wanted = ids.join(',')
@@ -42,24 +42,24 @@ export function useEvidenceGraph(runId: string, ids: string[]): EvidenceGraph {
       need.forEach((id) => asked.current.add(id))
       for (let i = 0; i < need.length; i += BATCH) {
         api
-          .graphElements(need.slice(i, i + BATCH), runId)
+          .graphElements(need.slice(i, i + BATCH))
           .then((found) => merge(found.nodes, found.edges))
           .catch(() => need.slice(i, i + BATCH).forEach((id) => asked.current.delete(id)))
       }
     }, SETTLE_MS)
     return () => clearTimeout(timer)
-  }, [wanted, data, runId, merge])
+  }, [wanted, data, merge])
 
   const expand = useCallback(
     async (id: string) => {
-      const { neighbors } = await api.neighbors(id, runId)
+      const { neighbors } = await api.neighbors(id)
       const hits = neighbors.map((hit) => fromNeighbor(id, hit))
       merge(
         hits.map((h) => h.node),
         hits.map((h) => h.edge),
       )
     },
-    [runId, merge],
+    [merge],
   )
 
   return { ...data, expand }

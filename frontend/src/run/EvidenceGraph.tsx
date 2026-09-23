@@ -22,7 +22,7 @@ import type { GraphEdge, GraphNode } from '../api/types'
 import { bandBounds, columnsFor, layoutGraph, NODE_RADIUS, type Point } from './evidenceLayout'
 import { touchedBy } from './evidence'
 import { Icon } from './GraphIcon'
-import { caption, GRAPH_REGIONS, isAgentWritten, labelStyle } from './graphModel'
+import { caption } from './graphModel'
 import { useRunPanels } from './RunContext'
 
 type Ring = 'solution' | 'decoy' | null
@@ -58,7 +58,6 @@ interface GraphEdgeData extends Record<string, unknown> {
 type EvidenceEdge = Edge<GraphEdgeData, 'link'>
 
 const hidden = { opacity: 0, pointerEvents: 'none', width: 1, height: 1, left: '50%', top: '50%' } as const
-const AGENT = 'var(--color-agent)'
 
 /** One ring per node, in priority order: evaluation overlay, then selection, then citation. */
 function outlineFor({ ring, selected, cited }: GraphNodeData): string {
@@ -71,8 +70,8 @@ function outlineFor({ ring, selected, cited }: GraphNodeData): string {
 
 function EntityNode({ data }: NodeProps<EvidenceNode>) {
   const { node, context, dim, fresh } = data
-  const { color } = labelStyle(node.label)
-  const agent = isAgentWritten(node)
+  const { graphModel } = useRunPanels()
+  const { color } = graphModel.labelStyle(node.label)
   const outline = outlineFor(data)
   return (
     <div
@@ -87,11 +86,8 @@ function EntityNode({ data }: NodeProps<EvidenceNode>) {
           width: NODE_RADIUS * 2,
           height: NODE_RADIUS * 2,
           background: color,
-          borderColor: agent ? AGENT : 'transparent',
         }}
-        className={`flex cursor-pointer items-center justify-center rounded-full border-2 text-white outline-offset-2 ${
-          agent ? 'border-dashed' : ''
-        } ${outline} ${fresh ? 'arrival' : ''}`}
+        className={`flex cursor-pointer items-center justify-center rounded-full text-white outline-offset-2 ${outline} ${fresh ? 'arrival' : ''}`}
       >
         <Icon label={node.label} />
       </div>
@@ -119,7 +115,6 @@ function LinkView({ sourceX, sourceY, targetX, targetY, data, selected, markerEn
   const path = `M${sourceX},${sourceY} Q${cx},${cy} ${targetX},${targetY}`
   const labelX = (sourceX + 2 * cx + targetX) / 4
   const labelY = (sourceY + 2 * cy + targetY) / 4
-  const agent = isAgentWritten(edge)
   return (
     <>
       <BaseEdge
@@ -127,9 +122,8 @@ function LinkView({ sourceX, sourceY, targetX, targetY, data, selected, markerEn
         markerEnd={markerEnd}
         interactionWidth={14}
         style={{
-          stroke: agent ? AGENT : 'var(--color-graphite)',
+          stroke: 'var(--color-graphite)',
           strokeWidth: emphasised || selected ? 2.5 : 1.25,
-          strokeDasharray: agent ? '6 4' : undefined,
           opacity: dim ? 0.12 : 0.85,
         }}
       />
@@ -164,7 +158,7 @@ function ringFor(id: string, solution: Set<string>, decoy: Set<string>): Ring {
 }
 
 function GraphCanvas() {
-  const { view, flow, graph, selection, select, highlight, clearHighlight, cited } = useRunPanels()
+  const { view, flow, graph, graphModel, selection, select, highlight, clearHighlight, cited } = useRunPanels()
   const { fitView } = useReactFlow()
   const measured = useNodesInitialized()
   const running = view.status === 'running'
@@ -195,7 +189,7 @@ function GraphCanvas() {
       cited.nodeIds.has(node.id) ||
       highlight.nodeIds.has(node.id) ||
       node.id === selectedId ||
-      (scope === 'connected' && (linked.has(node.id) || isAgentWritten(node)))
+      (scope === 'connected' && linked.has(node.id))
     const nodes = [...graph.nodes.values()].filter(keep)
     const shown = new Set(nodes.map((n) => n.id))
     const edges = drawable.filter((e) => shown.has(e.src) && shown.has(e.dst))
@@ -206,7 +200,8 @@ function GraphCanvas() {
   let placed = settled.positions
   if (settled.shape !== shape) {
     placed = layoutGraph(
-      shape.nodes.map((n) => ({ id: n.id, region: labelStyle(n.label).region })),
+      graphModel.regions,
+      shape.nodes.map((n) => ({ id: n.id, region: graphModel.labelStyle(n.label).region })),
       shape.edges.map((e) => ({ source: e.src, target: e.dst })),
       settled.positions,
     )
@@ -216,9 +211,9 @@ function GraphCanvas() {
   const { nodes, edges } = useMemo(() => {
     const solution = new Set(overlay ? (truth?.solution_node_ids ?? []) : [])
     const decoy = new Set(overlay ? (truth?.decoy_node_ids ?? []) : [])
-    const columns = columnsFor(shape.nodes.map((n) => ({ region: labelStyle(n.label).region })))
-    const bands: BandNode[] = GRAPH_REGIONS.map(({ id, title }) => {
-      const inside = shape.nodes.filter((n) => labelStyle(n.label).region === id)
+    const columns = columnsFor(graphModel.regions, shape.nodes.map((n) => ({ region: graphModel.labelStyle(n.label).region })))
+    const bands: BandNode[] = graphModel.regions.map(({ id, title }) => {
+      const inside = shape.nodes.filter((n) => graphModel.labelStyle(n.label).region === id)
       const bounds = bandBounds(columns[id], inside.map((n) => placed.get(n.id)!))
       return {
         id: `band-${id}`,
@@ -284,7 +279,7 @@ function GraphCanvas() {
       }
     })
     return { nodes: [...bands, ...entities], edges: links }
-  }, [shape, placed, focus, selectedId, cited, truth, overlay, running, view.touched, highlight])
+  }, [shape, placed, focus, selectedId, cited, truth, overlay, running, view.touched, highlight, graphModel])
 
   // Frame the graph when it grows or the cited set changes; not on every selection.
   // Both keys are strings so the effect compares by value rather than by array identity.
@@ -358,7 +353,7 @@ function GraphCanvas() {
       </Panel>
       <Panel position="bottom-left" className="max-w-[26rem] rounded-sm border bg-vellum px-2 py-1.5 text-xs text-graphite">
         <Legend labels={[...new Set(shape.nodes.map((n) => n.label))].sort()} />
-        <p className="mt-1">Dashed accent: written by an agent. Faded: context. Double-click a node to expand it.</p>
+        <p className="mt-1">Faded: context. Double-click a node to expand it.</p>
         {overlay && <p>Green ring: solution. Red dashed ring: decoy.</p>}
       </Panel>
     </ReactFlow>
@@ -366,13 +361,14 @@ function GraphCanvas() {
 }
 
 function Legend({ labels }: { labels: string[] }) {
+  const { graphModel } = useRunPanels()
   return (
     <ul className="flex flex-wrap gap-x-3 gap-y-0.5">
       {labels.map((label) => (
         <li key={label} className="flex items-center gap-1">
           <span
             className="flex size-4 items-center justify-center rounded-full text-white"
-            style={{ background: labelStyle(label).color }}
+            style={{ background: graphModel.labelStyle(label).color }}
           >
             <Icon label={label} size={11} />
           </span>

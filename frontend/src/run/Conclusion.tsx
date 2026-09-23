@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import type { CaseReport, EvidenceLink } from '../api/types'
 import { Prose, Ref } from './Fields'
-import { money, verdictLabel, verdictTone, words } from './format'
+import { categoryLabel, money, verdictLabel, verdictTone, words } from './format'
 import { useRunPanels } from './RunContext'
 import { openPlanItems } from './store'
 
@@ -24,9 +24,9 @@ function savedHeight(): number {
 
 const SECTIONS = [
   { id: 'report-summary', label: 'Summary' },
-  { id: 'report-transactions', label: 'Transactions' },
+  { id: 'report-charges', label: 'Charges' },
   { id: 'report-hypotheses', label: 'Hypotheses' },
-  { id: 'report-context', label: 'Decoys and policy' },
+  { id: 'report-context', label: 'Context and improvements' },
   { id: 'report-letter', label: 'Letter' },
 ]
 
@@ -87,7 +87,7 @@ export function Conclusion() {
     box.scrollTo({ top: box.scrollTop + offset, behavior: 'smooth' })
   }
 
-  const { verdict, headline } = view.report
+  const { verdict, category, headline } = view.report
   const tone = verdictTone[verdict]
   return (
     <section aria-label="Conclusion" className="flex flex-col border-t bg-vellum">
@@ -107,6 +107,7 @@ export function Conclusion() {
       <div className={`flex items-start gap-4 border-l-8 px-4 py-3 sm:px-6 ${tone.band}`}>
         <div className="min-w-0 flex-1">
           <p className={`font-serif text-2xl font-semibold ${tone.text}`}>{verdictLabel[verdict]}</p>
+          <p className="mt-0.5 text-sm font-medium">{category} · {categoryLabel[category]}</p>
           <p className="mt-0.5 font-serif text-lg leading-snug">{headline}</p>
         </div>
         <button
@@ -176,10 +177,6 @@ function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) 
       <Block id="report-summary" title="Summary">
         <p className="max-w-3xl leading-relaxed">{report.executive_summary}</p>
         <div className="mt-3 flex max-w-3xl flex-wrap items-center gap-x-5 gap-y-1 text-sm">
-          <span>
-            <span className="text-graphite">Claim </span>
-            <span className="font-medium">{words(report.claim_family)}</span>
-          </span>
           <span className="flex items-center gap-2">
             <span className="text-graphite">Confidence</span>
             <span aria-hidden className="h-1.5 w-20 overflow-hidden rounded-full bg-rule">
@@ -201,43 +198,40 @@ function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) 
         <p className="mt-2 leading-relaxed whitespace-pre-line">{report.detailed_reasoning}</p>
       </details>
 
-      <Block id="report-transactions" title="Transactions">
+      <Block id="report-charges" title="Charges">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] text-left text-sm">
+          <table className="w-full min-w-[44rem] text-left text-sm">
             <thead className="text-graphite">
               <tr>
-                <th className="py-1 pr-3 font-medium">Transaction</th>
-                <th className="py-1 pr-3 font-medium">Outcome</th>
+                <th className="py-1 pr-3 font-medium">Charge</th>
+                <th className="py-1 pr-3 font-medium">Category</th>
+                <th className="py-1 pr-3 font-medium">Verdict</th>
                 <th className="py-1 pr-3 text-right font-medium">Disputed</th>
-                <th className="py-1 pr-3 text-right font-medium">Credited</th>
-                <th className="py-1 pr-3 text-right font-medium">Cardholder pays</th>
-                <th className="py-1 font-medium">Network action</th>
+                <th className="py-1 pr-3 text-right font-medium">Credit</th>
+                <th className="py-1 pr-3 text-right font-medium">Card Member liability</th>
               </tr>
             </thead>
             <tbody>
-              {report.transactions.map((t) => (
-                <tr key={t.txn_id} className="border-t align-top">
-                  <td className="id-chip py-2 pr-3">{t.txn_id}</td>
+              {report.charges.map((t) => (
+                <tr key={t.charge_id} className="border-t align-top">
+                  <td className="id-chip py-2 pr-3">{t.charge_id}</td>
+                  <td className="py-2 pr-3">{t.category} · {categoryLabel[t.category]}</td>
                   <td className={`py-2 pr-3 font-medium ${verdictTone[t.verdict].text}`}>
                     {verdictLabel[t.verdict]}
                   </td>
                   <td className="py-2 pr-3 text-right tabular-nums">{money(t.disputed_amount)}</td>
                   <td className="py-2 pr-3 text-right tabular-nums">{money(t.credit_amount)}</td>
-                  <td className="py-2 pr-3 text-right tabular-nums">{money(t.cardholder_liability)}</td>
-                  <td className="py-2">
-                    {words(t.network_action)}
-                    {t.reason_code && <span className="text-graphite"> ({t.reason_code})</span>}
-                  </td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{money(t.card_member_liability)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         <ul className="mt-3 space-y-3">
-          {report.transactions.map((t) => (
-            <li key={t.txn_id} className="max-w-3xl">
+          {report.charges.map((t) => (
+            <li key={t.charge_id} className="max-w-3xl">
               <p className="text-sm leading-relaxed">
-                <Ref id={t.txn_id} /> <Prose>{t.rationale}</Prose>
+                <Ref id={t.charge_id} /> <Prose>{t.rationale}</Prose>
               </p>
               <EvidenceRows links={t.evidence} onShow={onShow} />
             </li>
@@ -273,7 +267,6 @@ function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) 
 
       <div id="report-context" className="grid gap-6 md:grid-cols-2">
         <TextList title="Decoys ruled out" items={report.decoys_ruled_out} />
-        <TextList title="Missing evidence" items={report.missing_evidence} />
         <Block title="Policy basis">
           <ul className="stack text-sm">
             {report.policy_basis.map((c) => (
@@ -286,28 +279,26 @@ function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) 
             ))}
           </ul>
         </Block>
-        {report.account_actions.length > 0 && (
-          <Block title="Account actions">
-            <ul className="stack text-sm">
-              {report.account_actions.map((a) => (
-                <li key={`${a.action}-${a.target_id}`}>
-                  <p className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{words(a.action)}</span>
-                    {a.target_id && <Ref id={a.target_id} />}
-                  </p>
-                  <p className="mt-0.5 leading-relaxed text-graphite">
-                    <Prose>{a.reason}</Prose>
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </Block>
-        )}
       </div>
 
-      <Block id="report-letter" title="Letter to the cardholder">
+      <Block title="System Improvements">
+        {report.system_improvements.length ? (
+          <ul className="stack max-w-3xl">
+            {report.system_improvements.map((item, index) => (
+              <li key={index} className="rounded-sm border bg-paper p-3">
+                <span className="rounded-full bg-vellum px-2 py-0.5 text-xs font-medium">{words(item.target)}</span>
+                <p className="mt-2 font-medium">{item.issue}</p>
+                <p className="mt-1 text-sm text-graphite">{item.suggestion}</p>
+                <EvidenceRows links={item.evidence} onShow={onShow} />
+              </li>
+            ))}
+          </ul>
+        ) : <p className="text-sm text-graphite">None — the policies were clear and followed.</p>}
+      </Block>
+
+      <Block id="report-letter" title="Letter to the Card Member">
         <p className="max-w-2xl font-serif text-[1.05rem] leading-relaxed whitespace-pre-line">
-          {report.cardholder_letter}
+          {report.card_member_letter}
         </p>
       </Block>
     </div>

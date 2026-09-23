@@ -1,6 +1,7 @@
 // Mirrors the backend contracts in src/schemas.py and src/api/models.py.
 
-export type Verdict = 'accepted' | 'partially_accepted' | 'rejected' | 'not_a_dispute'
+export type Verdict = 'accepted' | 'partially_accepted' | 'rejected' | 'goodwill_credit' | 'not_a_dispute' | 'fraud_referral'
+export type DisputeCategory = 'NKN' | 'RET' | 'CNC' | 'CNR' | 'DMG' | 'DSS' | 'DUP' | 'NRC' | 'OVR' | 'PDD'
 
 /** Pydantic serialises Decimal as a string; amounts are read with `Number()`. */
 export type Money = string | number
@@ -8,7 +9,7 @@ export type Money = string | number
 export interface CaseSummary {
   case_id: string
   title: string
-  claim_type: string
+  claim: string
   amount: number
   summary: string
   /** Newest finished run of this case, when there is one: opening the case shows it without running. */
@@ -23,14 +24,13 @@ export interface EvidenceLink {
   source_excerpt: string | null
 }
 
-export interface TransactionDecision {
-  txn_id: string
+export interface ChargeDecision {
+  charge_id: string
   verdict: Verdict
+  category: DisputeCategory
   disputed_amount: Money
   credit_amount: Money
-  cardholder_liability: Money
-  network_action: 'file_dispute' | 'no_dispute' | 'pre_arbitration' | 'none'
-  reason_code: string | null
+  card_member_liability: Money
   rationale: string
   evidence: EvidenceLink[]
 }
@@ -47,28 +47,44 @@ export interface Citation {
   why: string
 }
 
-export interface AccountAction {
-  action: string
-  target_id: string | null
-  reason: string
+export interface SystemImprovement {
+  target: 'amex_policy' | 'merchant_policy' | 'process' | 'product' | 'data'
+  issue: string
+  suggestion: string
+  evidence: EvidenceLink[]
 }
 
 export interface CaseReport {
   case_id: string
   verdict: Verdict
-  claim_family: string
+  category: DisputeCategory
   headline: string
   executive_summary: string
   detailed_reasoning: string
-  transactions: TransactionDecision[]
+  charges: ChargeDecision[]
   hypotheses: HypothesisAssessment[]
   decoys_ruled_out: string[]
-  missing_evidence: string[]
   policy_basis: Citation[]
-  account_actions: AccountAction[]
+  system_improvements: SystemImprovement[]
   confidence: number
   flip_fact: string
-  cardholder_letter: string
+  card_member_letter: string
+}
+
+export interface NotebookEntry {
+  entry_id: string
+  seq: number
+  author: string
+  kind: 'fact' | 'hypothesis' | 'policy_reading' | 'conflict' | 'ruled_out' | 'improvement_idea'
+  text: string
+  node_ids: string[]
+  edge_ids: string[]
+}
+
+export interface GraphOntology {
+  groups: Record<string, { title: string; description: string }>
+  labels: Record<string, { group: string; description: string }>
+  edges: Record<string, { description: string }>
 }
 
 export type RunState = 'running' | 'completed' | 'failed'

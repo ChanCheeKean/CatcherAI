@@ -1,8 +1,4 @@
-"""A hermetic API for the browser E2E: a tiny graph and scripted agents that call the real tools.
-
-Run from the repo root:
-    PYTHONPATH=data/generator:tests uv run uvicorn e2e_server:app --app-dir tests --port 8100
-"""
+"""Hermetic browser E2E API with a small ontology-valid graph and scripted agents."""
 
 from __future__ import annotations
 
@@ -11,106 +7,79 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from conftest import StructuredModel
 from graph_builder import Graph
-from test_runtime import (
-    CASE_ID,
-    TXN_ID,
-    AgentStub,
-    StructuredModel,
-    decide_turn,
-    delegate_turn,
-    empty_findings,
-    finding,
-    report,
-    triage,
-)
+from test_runtime import CASE_ID, CHARGE_ID, decide, delegate, report, triage
 
 import graph_store
 from api.app import create_app
 from api.context import ApiContext
 from memory import retrieval
 from runtime import RuntimePaths
-from schemas import CaseReport, SupervisorTurn, Triage
+from schemas import CaseReport, Findings, SupervisorTurn, Triage
 
-RUNS = 20  # the scripted model answers this many runs before it runs dry
-HOME = "ADR-TEST-1"
+RUNS = 20
+CARD_MEMBER = "CMB-TEST-1"
+MERCHANT = "MER-TEST-1"
 
 
 def build_graph(jsonl: Path) -> None:
     graph = Graph()
-    graph.node("Customer", "CUS-TEST-1", name="Test Customer")
-    graph.node("Customer", "CUS-TEST-2", name="Second Customer")
-    graph.node(
-        "Address", HOME, street="100 Amber Street", unit="1A", city="Austin", postcode="10000"
-    )
-    graph.node(
-        "Transaction",
-        TXN_ID,
-        ts="2026-09-01T10:00:00Z",
-        amount=10.0,
-        currency="USD",
-        kind="purchase",
-        channel="card_present",
-        status="posted",
-    )
-    graph.node(
-        "Dispute",
-        CASE_ID,
-        filed_at="2026-09-02",
-        claim_type="fraud",
-        amount=10.0,
-        intake="I do not recognize this charge.",
-        status="open",
-    )
-    graph.edge("LIVES_AT", "CUS-TEST-1", HOME, valid_from="2026-01-01", valid_to="")
-    graph.edge("LIVES_AT", "CUS-TEST-2", HOME, valid_from="2026-03-01", valid_to="")
-    graph.edge("FILED_BY", CASE_ID, "CUS-TEST-1")
-    graph.edge("DISPUTES", CASE_ID, TXN_ID, amount=10.0)
+    graph.node("CardMember", CARD_MEMBER, name="Test Card Member")
+    graph.node("CardAccount", "ACC-TEST-1", product="Gold")
+    graph.node("Card", "CRD-TEST-1", product="Gold")
+    graph.node("Merchant", MERCHANT, name="Test Merchant")
+    graph.node("Charge", CHARGE_ID, amount=10.0)
+    graph.node("Dispute", CASE_ID, amount=10.0, status="open", intake="Wrong amount")
+    graph.edge("HOLDS", CARD_MEMBER, "ACC-TEST-1", role="basic")
+    graph.edge("ISSUED_ON", "CRD-TEST-1", "ACC-TEST-1")
+    graph.edge("CHARGED_TO", CHARGE_ID, "CRD-TEST-1")
+    graph.edge("AT_MERCHANT", CHARGE_ID, MERCHANT)
+    graph.edge("FILED_BY", CASE_ID, CARD_MEMBER)
+    graph.edge("DISPUTES", CASE_ID, CHARGE_ID, amount=10.0)
     graph.write(jsonl)
 
 
-class ToolCallingAgent(AgentStub):
-    """Calls real tools (so the trajectory carries graph ids), then answers with a fixed result."""
-
-    def __init__(self, response: Any, tools: list, calls: list[tuple[str, dict]]) -> None:
-        super().__init__(response)
+class Agent:
+    def __init__(self, name: str, tools: list, answer: Any):
+        self.name = name
         self.tools = {tool.name: tool for tool in tools}
-        self.calls = calls
+        self.answer = answer
 
     def invoke(self, messages: list[Any]) -> dict[str, Any]:
-        for name, args in self.calls:
-            self.tools[name].invoke(args)
-        return super().invoke(messages)
+        if self.name == "graph_analyst":
+            self.tools["graph_query"].invoke(
+                {"cypher": "MATCH (c:CardMember)-[h:HOLDS]->(a:CardAccount) RETURN c, h, a"}
+            )
+            self.tools["notebook_write"].invoke(
+                {
+                    "kind": "fact",
+                    "text": "The Card Member holds this account.",
+                    "node_ids": [CARD_MEMBER],
+                }
+            )
+        elif self.name == "evidence_analyst":
+            self.tools["graph_neighbors"].invoke({"id": CHARGE_ID})
+        return {"structured_response": self.answer}
 
 
 def scripted_agents(cited: CaseReport):
-    calls = {
-        "graph_analyst": [
-            (
-                "graph_query",
-                {"cypher": "MATCH (c:Customer)-[l:LIVES_AT]->(a:Address) RETURN c, l, a"},
-            )
-        ],
-        "evidence_analyst": [("graph_neighbors", {"id": TXN_ID})],
-    }
-    findings = {
-        "graph_analyst": finding("Two customers share one address.", HOME),
-        "evidence_analyst": finding("The transaction is disputed.", TXN_ID),
-    }
-
-    def build(**kwargs: Any) -> AgentStub:
+    def build(**kwargs: Any) -> Agent:
         name = kwargs["name"]
-        if kwargs["response_format"].schema is CaseReport:
-            return AgentStub(cited)
-        return ToolCallingAgent(
-            findings.get(name, empty_findings()), kwargs["tools"], calls.get(name, [])
+        answer = (
+            cited
+            if kwargs["response_format"].schema is CaseReport
+            else Findings(
+                facts=[], hypothesis_updates=[], suggested_next=[], node_ids=[], edge_ids=[]
+            )
         )
+        return Agent(name, kwargs["tools"], answer)
 
     return build
 
 
 def create() -> Any:
-    root = Path(tempfile.mkdtemp(prefix="catcher-e2e-"))
+    root = Path(tempfile.mkdtemp(prefix="disputeai-e2e-"))
     build_graph(root / "jsonl")
     source_graph = root / "evidence.lbug"
     graph_store.load(root / "jsonl", source_graph).close()
@@ -122,26 +91,21 @@ def create() -> Any:
             [
                 {
                     "case_id": CASE_ID,
-                    "title": "Shared address",
-                    "claim_type": "fraud",
+                    "title": "Wrong amount",
+                    "claim": "Charged too much",
                     "amount": 10.0,
-                    "summary": "I do not recognize this charge.",
+                    "summary": "The Card Member questions the amount.",
                 }
             ]
         )
     )
     cited = report()
-    evidence = cited.transactions[0].evidence[0]
-    evidence.node_ids = [HOME, "CUS-TEST-1", "CUS-TEST-2"]
-    evidence.claim = "Both customers live at the same address."
+    cited.charges[0].evidence[0].node_ids = [CHARGE_ID, CARD_MEMBER, MERCHANT]
+    cited.charges[0].evidence[0].claim = "The charge and Card Member are linked."
     model = StructuredModel(
         {
             Triage: [triage() for _ in range(RUNS)],
-            SupervisorTurn: [
-                turn
-                for _ in range(RUNS)
-                for turn in (delegate_turn(), decide_turn(close_plan=True))
-            ],
+            SupervisorTurn: [turn for _ in range(RUNS) for turn in (delegate(), decide())],
         }
     )
     paths = RuntimePaths(
@@ -154,15 +118,16 @@ def create() -> Any:
         models_config=Path("config/models.yaml"),
         skills_dir=Path("skills"),
     )
-    context = ApiContext(
-        paths=paths,
-        catalog=catalog,
-        ground_truth_dir=root / "truth",
-        eval_dir=root / "eval",
-        model=model,
-        agent_builder=scripted_agents(cited),
+    return create_app(
+        ApiContext(
+            paths=paths,
+            catalog=catalog,
+            ground_truth_dir=root / "truth",
+            eval_dir=root / "eval",
+            model=model,
+            agent_builder=scripted_agents(cited),
+        )
     )
-    return create_app(context)
 
 
 app = create()

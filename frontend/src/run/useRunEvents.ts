@@ -5,7 +5,7 @@ import { emptyRun, reduceEvent, type RunView } from './store'
 
 const EVENT_TYPES = [
   'run_started', 'triage', 'plan_updated', 'supervisor_turn', 'delegation_started',
-  'delegation_finished', 'skill_loaded', 'tool_call', 'tool_result', 'graph_write',
+  'delegation_finished', 'skill_loaded', 'tool_call', 'tool_result', 'notebook_write',
   'memory_write', 'decision', 'termination', 'node_entered', 'node_exited', 'edge_taken',
   'model_call', 'error',
 ] as const

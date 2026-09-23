@@ -29,11 +29,18 @@ describe('reduceEvent', () => {
         { caller, tool: 'graph_query', node_ids: ids, edge_ids: ['E-1'] },
         { actor: { kind: 'tool', name: 'graph_query' }, turn: 1 },
       )
-    const view = fold([toolEvent('graph_analyst', ['ADR-1']), toolEvent('critic', ['ADR-1', 'CUS-2'])])
-    expect(view.touched.get('ADR-1')).toMatchObject({ actor: 'graph_analyst', tool: 'graph_query', turn: 1 })
-    expect(view.touched.get('CUS-2')?.actor).toBe('critic')
+    const view = fold([toolEvent('graph_analyst', ['CHG-1']), toolEvent('critic', ['CHG-1', 'CMB-2'])])
+    expect(view.touched.get('CHG-1')).toMatchObject({ actor: 'graph_analyst', tool: 'graph_query', turn: 1 })
+    expect(view.touched.get('CMB-2')?.actor).toBe('critic')
     expect(view.touched.size).toBe(3)
     expect(view.visits.size).toBe(0)
+  })
+
+  it('collects notebook entries in sequence order', () => {
+    const entry = { entry_id: 'NBK-1', seq: 1, author: 'graph_analyst', kind: 'fact', text: 'Checked charge', node_ids: ['CHG-1'], edge_ids: [] }
+    const view = fold([event('notebook_write', 'notebook_write', { entry, node_ids: entry.node_ids, edge_ids: [] })])
+    expect(view.notebook).toEqual([entry])
+    expect(view.touched.has('CHG-1')).toBe(true)
   })
 
   it('ignores an event it has already seen, as after an SSE reconnect', () => {

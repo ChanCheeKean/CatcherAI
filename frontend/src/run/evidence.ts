@@ -10,7 +10,7 @@ export function touchedBy(flow: Flow, name: string): Set<string> {
 
 /** Everything the final report cites as evidence. */
 export function citedBy(report: CaseReport | null): Highlight {
-  const links = [...(report?.transactions ?? []), ...(report?.hypotheses ?? [])].flatMap((x) => x.evidence)
+  const links = [...(report?.charges ?? []), ...(report?.hypotheses ?? []), ...(report?.system_improvements ?? [])].flatMap((x) => x.evidence)
   return {
     nodeIds: new Set(links.flatMap((l) => l.node_ids)),
     edgeIds: new Set(links.flatMap((l) => l.edge_ids)),

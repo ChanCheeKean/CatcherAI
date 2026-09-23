@@ -7,6 +7,7 @@ import { Canvas } from '../run/Canvas'
 import { Conclusion } from '../run/Conclusion'
 import { citedBy } from '../run/evidence'
 import { deriveFlow } from '../run/flow'
+import { graphModel } from '../run/graphModel'
 import { Inspector } from '../run/Inspector'
 import { type CanvasTab, type Highlight, RunPanelsContext, type Selection } from '../run/RunContext'
 import { useEvidenceGraph } from '../run/useEvidenceGraph'
@@ -28,6 +29,8 @@ function RunView() {
   const navigate = useNavigate()
   const view = useRunEvents(runId)
   const cases = useQuery({ queryKey: ['cases'], queryFn: api.listCases })
+  const ontology = useQuery({ queryKey: ['ontology'], queryFn: api.getOntology, staleTime: Infinity })
+  const model = useMemo(() => ontology.data && graphModel(ontology.data), [ontology.data])
   const title = cases.data?.find((item) => item.case_id === caseId)?.title ?? caseId
 
   const [selection, select] = useState<Selection>(null)
@@ -45,7 +48,7 @@ function RunView() {
   })
   const flow = useMemo(() => deriveFlow(view.events), [view.events])
   const cited = useMemo(() => citedBy(view.report), [view.report])
-  const graph = useEvidenceGraph(runId, [
+  const graph = useEvidenceGraph([
     ...view.touched.keys(),
     ...cited.nodeIds,
     ...cited.edgeIds,
@@ -53,12 +56,15 @@ function RunView() {
     ...highlight.edgeIds,
   ])
   const panels = useMemo(
-    () => ({ view, flow, selection, select, highlight, clearHighlight, cited, graph, showEvidence, tab, setTab }),
-    [view, flow, selection, highlight, clearHighlight, cited, graph, showEvidence, tab],
+    () => model && ({ view, flow, selection, select, highlight, clearHighlight, cited, graph, graphModel: model, showEvidence, tab, setTab }),
+    [view, flow, selection, highlight, clearHighlight, cited, graph, model, showEvidence, tab],
   )
 
   return (
-    <RunPanelsContext.Provider value={panels}>
+    <RunPanelsContext.Provider value={panels ?? null}>
+      {!model ? (
+        <p className="p-4">{ontology.error ? `Could not load graph ontology: ${ontology.error.message}` : 'Loading graph ontology…'}</p>
+      ) : (
       <div className="flex min-h-screen flex-col lg:h-screen">
         <header className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b bg-vellum px-4 py-3 sm:px-6">
           <Link to="/" className="text-sm text-graphite underline-offset-4 hover:text-ink hover:underline">
@@ -85,6 +91,7 @@ function RunView() {
         </div>
         <Conclusion />
       </div>
+      )}
     </RunPanelsContext.Provider>
   )
 }

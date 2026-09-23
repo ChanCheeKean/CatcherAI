@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import type { CaseSummary } from '../api/types'
-import { money, verdictLabel, verdictTone, words } from '../run/format'
+import { money, verdictLabel, verdictTone } from '../run/format'
 
 export function CasesPage() {
   const navigate = useNavigate()
@@ -73,7 +73,7 @@ function CaseCard({ item, busy, onOpen, onRerun }: CaseCardProps) {
         className="flex w-full flex-1 cursor-pointer flex-col p-5 pb-3 text-left disabled:cursor-wait disabled:opacity-60"
       >
         <span className="text-lg leading-snug font-semibold">{item.title}</span>
-        <span className="mt-1 text-sm text-graphite">{words(item.claim_type)}</span>
+        <span className="mt-1 text-sm text-graphite">{item.claim}</span>
         <span className="mt-3 flex-1 text-[0.95rem] leading-relaxed">{item.summary}</span>
       </button>
       <div className="flex items-baseline justify-between gap-3 border-t px-5 py-3 text-sm">

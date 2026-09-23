@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S9 complete**
-Next stage: **S10 — Frontend**
+Current phase: **S10 complete**
+Next stage: **S11 — Real-LLM eval + tuning**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -118,7 +118,7 @@ Details for each stage are in the plan section of the same name.
 | **S7** Report, prompts, skills, evaluation | Complex | Six verdicts, Dispute Category, `ChargeDecision`, `SystemImprovement`; new `agents.yaml`; 9 label-agnostic skills; label-agnostic guard test; eval scoring. | ☑ |
 | **S8** Merchant agent extension (not wired) | Medium | `respond()` Deep Agent over merchant records, `save_submission`, guard test that nothing imports it, README section. | ☑ |
 | **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☑ |
-| **S10** Frontend | Medium | Ontology-driven regions/colours; Notebook tab; Conclusion with category, six verdicts, System Improvements. | ☐ |
+| **S10** Frontend | Medium | Ontology-driven regions/colours; Notebook tab; Conclusion with category, six verdicts, System Improvements. | ☑ |
 | **S11** Real-LLM eval + tuning | Complex | pass@1 5/5 on A–E by improving skills, policy wording, ontology descriptions and prompts only. | ☐ |
 | **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☐ |
 
@@ -472,3 +472,22 @@ Details for each stage are in the plan section of the same name.
   dead code, legacy paths and redundant abstraction, then reran checks.
 - No design decision changed; the spec was not edited. Frontend and E2E fixture references to
   `claim_type` remain for S10.
+
+### S10 — 2026-09-24
+- Updated frontend API types and client for the current case catalog, static graph endpoints,
+  six verdicts, ten Dispute Categories, per-charge decisions, and System Improvements.
+- The graph model now builds regions, colours and group icons from `/graph/ontology`. Removed the
+  old label table, agent-written graph styling, and run-specific graph query parameters. The
+  layout keeps existing nodes in place when new graph evidence arrives.
+- Added a Notebook tab fed by `notebook_write` events. Entries appear in sequence by author;
+  clicking a cited id opens and highlights it in the evidence graph. The Conclusion now shows
+  category, charges, System Improvements and the Card Member letter.
+- Rebuilt the hermetic browser fixture in `tests/e2e_server.py` with the Amex ontology and
+  current report contract. Updated frontend fixtures, unit tests and Playwright assertions.
+  `frontend/src/run/Fields.tsx` recognises current graph ids in prose.
+- `uv run pytest -q`: 67 passed. Ruff check and format check, `git diff --check`, `npx tsc -b`,
+  `npx vitest run` (35 passed), `npm run build`, and `npm run e2e` (1 passed) all passed. No
+  tests were deleted. The `simplify` skill is not installed; manually reviewed every changed
+  file for dead code, old graph paths and redundant abstraction, then reran the checks.
+- No design decision changed; the spec was not edited. The frontend flow tests still use old
+  synthetic ids in their fixtures; S12's legacy sweep can rename those without changing behavior.

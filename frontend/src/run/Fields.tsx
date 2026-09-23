@@ -2,9 +2,8 @@ import { Fragment } from 'react'
 import { words } from './format'
 
 const ID = /^[A-Z]{1,4}-[\w-]+$/
-/** Graph ids inside prose: a known prefix and at least one digit, so "IP-based" and "T-Mobile" stay words. */
-const REF_IN_TEXT =
-  /((?:CUS|ACC|CRD|DEV|IP|PHN|EML|ADR|MER|TRM|DSC|AUT|TXN|ORD|SHP|TOK|AGP|MDT|DSP|EVI|ERQ|COM|AEV|MEM|FND|MAC|E)-(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]*)/
+/** Graph ids inside prose have an uppercase prefix and a digit, so ordinary hyphenated words stay words. */
+const REF_IN_TEXT = /([A-Z]{1,3}-(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]*)/
 
 /** A graph id as a small monospace chip. */
 export function Ref({ id }: { id: string }) {

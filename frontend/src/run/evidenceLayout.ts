@@ -1,5 +1,5 @@
 import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from 'd3-force'
-import { GRAPH_REGIONS, type GraphRegion } from './graphModel'
+import type { GraphRegion } from './graphModel'
 
 const MIN_BAND_WIDTH = 420
 const BAND_GAP = 24
@@ -12,15 +12,15 @@ interface Column {
 type Columns = Record<GraphRegion, Column>
 
 /** Side-by-side region columns, each wide enough for the nodes it holds (in steps, so growth rarely moves them). */
-export function columnsFor(nodes: { region: GraphRegion }[]): Columns {
-  const widths = GRAPH_REGIONS.map(({ id }) => {
+export function columnsFor(regions: { id: GraphRegion }[], nodes: { region: GraphRegion }[]): Columns {
+  const widths = regions.map(({ id }) => {
     const count = nodes.filter((n) => n.region === id).length
     return Math.max(MIN_BAND_WIDTH, Math.ceil((Math.sqrt(count) * 80) / 120) * 120)
   })
   const total = widths.reduce((sum, w) => sum + w, 0) + BAND_GAP * (widths.length - 1)
   let left = -total / 2
   const columns = {} as Columns
-  GRAPH_REGIONS.forEach(({ id }, i) => {
+  regions.forEach(({ id }, i) => {
     columns[id] = { centre: left + widths[i] / 2, width: widths[i] }
     left += widths[i] + BAND_GAP
   })
@@ -34,6 +34,8 @@ export interface Point {
 interface SimNode extends Point {
   id: string
   region: GraphRegion
+  fx?: number
+  fy?: number
   vx?: number
   vy?: number
 }
@@ -46,15 +48,16 @@ interface SimNode extends Point {
  * spot derived from their index, and d3-force's own random source is a fixed LCG.
  */
 export function layoutGraph(
+  regions: { id: GraphRegion }[],
   nodes: { id: string; region: GraphRegion }[],
   edges: { source: string; target: string }[],
   previous: Map<string, Point>,
 ): Map<string, Point> {
-  const columns = columnsFor(nodes)
+  const columns = columnsFor(regions, nodes)
   const start = new Map(previous)
   const simNodes: SimNode[] = nodes.map((node, index) => {
     const known = start.get(node.id)
-    if (known) return { ...node, ...known }
+    if (known) return { ...node, ...known, fx: known.x, fy: known.y }
     const anchor = edges
       .filter((e) => e.source === node.id || e.target === node.id)
       .map((e) => start.get(e.source === node.id ? e.target : e.source))

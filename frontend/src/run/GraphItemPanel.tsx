@@ -2,17 +2,10 @@ import type { GraphEdge, GraphNode } from '../api/types'
 import { Capsule } from './Capsule'
 import { Fields, Json } from './Fields'
 import { Icon } from './GraphIcon'
-import { caption, isAgentWritten, labelStyle } from './graphModel'
+import { caption } from './graphModel'
 import { useRunPanels } from './RunContext'
 
 const MAX_EVENTS = 100
-const TIME_KEYS = new Set(['valid_from', 'valid_to'])
-
-const validity = (edge: GraphEdge) =>
-  edge.properties.valid_from || edge.properties.valid_to
-    ? `${edge.properties.valid_from || 'always'} to ${edge.properties.valid_to || 'now'}`
-    : null
-
 function IdButton({ id, label }: { id: string; label?: string }) {
   const { select } = useRunPanels()
   return (
@@ -70,12 +63,13 @@ export function GraphItemPanel({ id }: { id: string }) {
 }
 
 function NodeHeader({ node }: { node: GraphNode }) {
+  const { graphModel } = useRunPanels()
   return (
     <>
       <div className="mb-1 flex items-center gap-2">
         <span
           className="flex size-7 shrink-0 items-center justify-center rounded-full text-white"
-          style={{ background: labelStyle(node.label).color }}
+          style={{ background: graphModel.labelStyle(node.label).color }}
         >
           <Icon label={node.label} />
         </span>
@@ -83,7 +77,6 @@ function NodeHeader({ node }: { node: GraphNode }) {
           <h2 className="truncate font-semibold">{node.label}</h2>
           <p className="id-chip text-graphite">{node.id}</p>
         </div>
-        {isAgentWritten(node) && <span className="ml-auto rounded-sm border border-agent px-1 text-xs text-agent">agent-written</span>}
       </div>
       <div className="my-3">
         <Capsule tone="facts" title="Properties" pill={Object.keys(node.properties).length} open>
@@ -96,7 +89,6 @@ function NodeHeader({ node }: { node: GraphNode }) {
 
 function EdgeHeader({ edge }: { edge: GraphEdge }) {
   const { graph } = useRunPanels()
-  const valid = validity(edge)
   const end = (id: string) => {
     const other = graph.nodes.get(id)
     return <IdButton id={id} label={other ? `${other.label} ${caption(other)}` : id} />
@@ -108,10 +100,9 @@ function EdgeHeader({ edge }: { edge: GraphEdge }) {
       <p className="mb-2 flex flex-wrap items-center gap-1.5 text-sm">
         {end(edge.src)} <span aria-label="to">to</span> {end(edge.dst)}
       </p>
-      {valid && <p className="mb-2 text-sm">Valid {valid}</p>}
       <div className="my-3">
         <Capsule tone="facts" title="Properties" open>
-          <Fields value={Object.fromEntries(Object.entries(edge.properties).filter(([key]) => !TIME_KEYS.has(key)))} />
+          <Fields value={edge.properties} />
         </Capsule>
       </div>
     </>
@@ -129,7 +120,6 @@ function NodeEdges({ node }: { node: GraphNode }) {
           const out = edge.src === node.id
           const otherId = out ? edge.dst : edge.src
           const other = graph.nodes.get(otherId)
-          const valid = validity(edge)
           return (
             <li key={edge.id} className="rounded-sm border bg-paper px-2 py-1">
               <div className="flex flex-wrap items-baseline gap-x-1.5">
@@ -137,7 +127,6 @@ function NodeEdges({ node }: { node: GraphNode }) {
                 <span className="text-graphite">{out ? 'to' : 'from'}</span>
                 <IdButton id={otherId} label={other ? `${other.label} ${caption(other)}` : otherId} />
               </div>
-              {valid && <p className="text-xs text-graphite">{valid}</p>}
             </li>
           )
         })}

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Conclusion } from './Conclusion'
 import { evidence, event, report } from './fixtures'
 import { deriveFlow } from './flow'
+import { graphModel } from './graphModel'
 import { emptyRun, reduceEvent } from './store'
 import { RunPanelsContext, type RunPanels } from './RunContext'
 
@@ -17,6 +18,7 @@ function renderWith(events: ReturnType<typeof event>[], showEvidence = vi.fn()) 
     clearHighlight: vi.fn(),
     cited: { nodeIds: new Set(), edgeIds: new Set() },
     graph: { nodes: new Map(), edges: new Map(), expand: vi.fn() },
+    graphModel: graphModel({ groups: { case: { title: 'Case', description: '' } }, labels: {}, edges: {} }),
     showEvidence,
     tab: 'flow',
     setTab: vi.fn(),
@@ -49,15 +51,22 @@ describe('Conclusion', () => {
     expect(screen.getAllByText('Rejected').length).toBeGreaterThan(0)
     expect(screen.getByText(report.headline)).toBeInTheDocument()
     expect(screen.getAllByText('$120.50', { selector: 'td' })).toHaveLength(2)
-    expect(screen.getByText('Shared IP is a CGNAT block')).toBeInTheDocument()
-    expect(screen.getByText(/Dear customer/)).toBeInTheDocument()
+    expect(screen.getByText('Another order was refunded')).toBeInTheDocument()
+    expect(screen.getByText(/Dear Card Member/)).toBeInTheDocument()
 
     await userEvent.click(screen.getAllByRole('button', { name: evidence.claim })[0])
     expect(showEvidence).toHaveBeenCalledWith(evidence)
     // The report steps aside so the graph is visible, and "Show details" brings it back.
-    expect(screen.queryByText(/Dear customer/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Dear Card Member/)).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Show details' }))
-    expect(screen.getByText(/Dear customer/)).toBeInTheDocument()
+    expect(screen.getByText(/Dear Card Member/)).toBeInTheDocument()
+  })
+
+  it('shows goodwill, category and no improvements', () => {
+    renderWith([event('decision', 'adjudicator', { report: { ...report, verdict: 'goodwill_credit' } })])
+    expect(screen.getByText('Goodwill credit')).toBeInTheDocument()
+    expect(screen.getAllByText(/OVR · Overcharged/).length).toBeGreaterThan(0)
+    expect(screen.getByText('None — the policies were clear and followed.')).toBeInTheDocument()
   })
 
   it('resizes with the keyboard and collapses to the verdict strip', async () => {
@@ -69,13 +78,13 @@ describe('Conclusion', () => {
     expect(Number(handle.getAttribute('aria-valuenow'))).toBe(before + 40)
     await userEvent.keyboard('{ArrowDown>40/}')
     expect(handle).toHaveAttribute('aria-valuenow', '0')
-    expect(screen.queryByText(/Dear customer/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Dear Card Member/)).not.toBeInTheDocument()
   })
 
   it('collapses the details but keeps the verdict visible', async () => {
     renderWith([event('decision', 'adjudicator', { report, reason: 'decided' })])
     await userEvent.click(screen.getByRole('button', { name: 'Hide details' }))
-    expect(screen.queryByText(/Dear customer/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Dear Card Member/)).not.toBeInTheDocument()
     expect(screen.getByText('Rejected')).toBeInTheDocument()
   })
 

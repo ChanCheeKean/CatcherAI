@@ -1,4 +1,4 @@
-import type { CaseReport, PlanItem, RunState, TrajectoryEvent } from '../api/types'
+import type { CaseReport, NotebookEntry, PlanItem, RunState, TrajectoryEvent } from '../api/types'
 
 /** Who found a graph item, and where: the frontend's "found by <agent> via <tool>" answer. */
 export interface Touch {
@@ -14,6 +14,7 @@ export interface RunView {
   error: string | null
   turn: number
   plan: PlanItem[]
+  notebook: NotebookEntry[]
   /** Highest visit number per graph actor, in order of first appearance. */
   visits: Map<string, number>
   /** Every node and edge id the run has touched, with its first discovery. */
@@ -27,12 +28,13 @@ export const emptyRun = (): RunView => ({
   error: null,
   turn: 0,
   plan: [],
+  notebook: [],
   visits: new Map(),
   touched: new Map(),
   report: null,
 })
 
-const GRAPH_TYPES = new Set(['tool_result', 'graph_write', 'memory_write'])
+const GRAPH_TYPES = new Set(['tool_result', 'notebook_write'])
 
 /** Fold one event into the view; replays and live streams go through the same path. */
 export function reduceEvent(view: RunView, event: TrajectoryEvent): RunView {
@@ -52,6 +54,7 @@ export function reduceEvent(view: RunView, event: TrajectoryEvent): RunView {
   }
   if (event.type === 'plan_updated') next.plan = payload.plan as PlanItem[]
   if (event.type === 'triage' && !view.plan.length) next.plan = payload.plan as PlanItem[]
+  if (event.type === 'notebook_write') next.notebook = [...view.notebook, payload.entry as NotebookEntry].sort((a, b) => a.seq - b.seq)
   if (GRAPH_TYPES.has(event.type)) {
     const touched = new Map(view.touched)
     const found = {
@@ -60,7 +63,7 @@ export function reduceEvent(view: RunView, event: TrajectoryEvent): RunView {
       turn: event.turn,
       seq: event.seq,
     }
-    for (const id of [...(payload.node_ids as string[]), ...(payload.edge_ids as string[])]) {
+    for (const id of [...((payload.node_ids as string[]) ?? []), ...((payload.edge_ids as string[]) ?? [])]) {
       if (!touched.has(id)) touched.set(id, found)
     }
     next.touched = touched

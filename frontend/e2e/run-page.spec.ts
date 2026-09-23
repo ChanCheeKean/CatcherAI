@@ -4,7 +4,7 @@ test('a case run fills the agent map and the evidence graph, ends in a verdict, 
   page,
 }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: /Shared address/ }).click()
+  await page.getByRole('button', { name: /Wrong amount/ }).click()
   await expect(page).toHaveURL(/\/cases\/DSP-TEST-1\/runs\/run-/)
 
   // The agent map shows the roles that ran.
@@ -16,18 +16,23 @@ test('a case run fills the agent map and the evidence graph, ends in a verdict, 
   await page.getByRole('tab', { name: 'Evidence graph' }).click()
   const nodes = page.locator('.react-flow__node-entity')
   await expect(nodes.first()).toBeVisible()
-  await expect(page.getByText('100 Amber Street')).toBeVisible()
+  await expect(page.getByText('Test Merchant')).toBeVisible()
   expect(await nodes.count()).toBeGreaterThanOrEqual(4)
+
+  await page.getByRole('tab', { name: 'Notebook' }).click()
+  await expect(page.getByText('The Card Member holds this account.')).toBeVisible()
+  await page.getByRole('button', { name: 'CMB-TEST-1' }).click()
+  await expect(page.getByRole('tab', { name: 'Evidence graph' })).toHaveAttribute('aria-selected', 'true')
 
   // The conclusion shows the verdict.
   await expect(page.getByText('Accepted', { exact: true }).first()).toBeVisible()
 
   // Selecting a node explains where it came from.
-  await nodes.filter({ hasText: '100 Amber Street' }).click()
+  await nodes.filter({ hasText: 'Test Card Member' }).click()
   await expect(page.getByRole('complementary', { name: 'Inspector' })).toContainText(/Found by graph_analyst with graph_query/)
 
   // An evidence chip focuses exactly the cited nodes.
-  await page.getByRole('button', { name: 'Both customers live at the same address.' }).first().click()
+  await page.getByRole('button', { name: 'The charge and Card Member are linked.' }).first().click()
   await expect(page.getByRole('button', { name: /Showing cited evidence/ })).toBeVisible()
   await expect(page.locator('.react-flow__node-entity.react-flow__node').first()).toBeVisible()
   await expect(page.locator('.react-flow__node-entity div.opacity-25').first()).toBeAttached()

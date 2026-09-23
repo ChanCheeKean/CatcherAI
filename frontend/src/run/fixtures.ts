@@ -27,34 +27,25 @@ export function event(
   }
 }
 
-export const evidence = { claim: 'Both cards share one drop address', node_ids: ['ADR-1'], edge_ids: ['E-1'], source_excerpt: null }
+export const evidence = { claim: 'The charge exceeds the agreed amount', node_ids: ['CHG-1'], edge_ids: ['E-1'], source_excerpt: null }
 
 export const report: CaseReport = {
   case_id: 'DSP-1',
   verdict: 'rejected',
-  claim_family: 'card_not_present_fraud',
-  headline: 'The cardholder authorised this purchase through a family tablet.',
-  executive_summary: 'The tablet belongs to the household.',
-  detailed_reasoning: 'Step one.\nStep two.',
-  transactions: [
-    {
-      txn_id: 'TXN-1',
-      verdict: 'rejected',
-      disputed_amount: '120.50',
-      credit_amount: '0',
-      cardholder_liability: '120.50',
-      network_action: 'no_dispute',
-      reason_code: null,
-      rationale: 'Authorised by an household member.',
-      evidence: [evidence],
-    },
-  ],
-  hypotheses: [{ hypothesis: 'Card stolen', status: 'rejected', why: 'The device is known.', evidence: [evidence] }],
-  decoys_ruled_out: ['Shared IP is a CGNAT block'],
-  missing_evidence: [],
-  policy_basis: [{ document_id: 'POL-9', why: 'Authorised use' }],
-  account_actions: [],
+  category: 'OVR',
+  headline: 'The charged amount matches the agreed price.',
+  executive_summary: 'The Merchant charged the agreed price.',
+  detailed_reasoning: 'The order confirms the price.',
+  charges: [{
+    charge_id: 'CHG-1', verdict: 'rejected', category: 'OVR',
+    disputed_amount: '120.50', credit_amount: '0', card_member_liability: '120.50',
+    rationale: 'The charge matches the order.', evidence: [evidence],
+  }],
+  hypotheses: [{ hypothesis: 'Wrong amount', status: 'rejected', why: 'The order confirms the amount.', evidence: [evidence] }],
+  decoys_ruled_out: ['Another order was refunded'],
+  policy_basis: [{ document_id: 'CLS-9', why: 'The accepted price applies.' }],
+  system_improvements: [],
   confidence: 0.9,
-  flip_fact: 'The tablet was reported stolen before the purchase',
-  cardholder_letter: 'Dear customer, …',
+  flip_fact: 'The order stated a lower price',
+  card_member_letter: 'Dear Card Member, …',
 }
