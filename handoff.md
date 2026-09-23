@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-23
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S0 complete**
-Next stage: **S1 — Ontology as data + static graph store**
+Current phase: **S1 complete**
+Next stage: **S2 — Policy corpus, clause search, memory in knowledge**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -109,7 +109,7 @@ Details for each stage are in the plan section of the same name.
 | Stage | Complexity | Goal | Done |
 |---|---|---|---|
 | **S0** Teardown of the Visa world | Simple | Delete Visa/LFB/Reg E/Reg Z corpus, the 10 cases, the showcase data, retired skills and screenshots; empty the case kit. | ☑ |
-| **S1** Ontology as data + static graph store | Medium | `ontology.yaml` + loader; builder validates against it; `GraphStore` read-only by default, schema with descriptions, `node`, `find`; all write paths and `copy_store` removed. | ☐ |
+| **S1** Ontology as data + static graph store | Medium | `ontology.yaml` + loader; builder validates against it; `GraphStore` read-only by default, schema with descriptions, `node`, `find`; all write paths and `copy_store` removed. | ☑ |
 | **S2** Policy corpus, clause search, memory in knowledge | Complex | 6 Amex + 8 Merchant policy markdown docs grounded in the research; `policies.py` projects them into graph nodes and clause-level search; retrieval without `as_of`; Memory Notes in SQLite; Amex precedents. | ☐ |
 | **S3** Background world | Medium | Deterministic dispute-only world (~150 Card Members, ~30 Merchants with template policies, ~3k charges, Offers, program, subscriptions, invoices, ~60 past Disputes). | ☐ |
 | **S4** Submission contract, case kit, cases A and B | Complex | `MerchantSubmission` contract + `insert_submission`; case kit for Amex; case A "Final Sale Means Final", case B "Platinum Rate, Gold Card". | ☐ |
@@ -162,3 +162,25 @@ Details for each stage are in the plan section of the same name.
   `tests/test_schemas_models.py` / `tests/test_runtime.py` (S7/S6).
 - No design decision changed; the spec was not edited. The app remains intentionally
   unrunnable end to end until later stages restore the generated world and runtime.
+
+### S1 — 2026-09-23
+- Added the described schema in `data/generator/ontology.yaml` and a validating loader in
+  `ontology.py`. `Graph` now validates labels, prefixes, properties and edge pairs from that YAML
+  and exports the full spec. Tests cover descriptions, references and builder rejection.
+- `GraphStore` opens read-only by default; the bulk loader explicitly opens writable. Its schema
+  includes groups and descriptions, and it provides `node` and case-insensitive `find` lookups.
+  Removed graph mutation methods, temporal neighbor filtering and `copy_store`. Escaped graph
+  identifiers in Cypher so the `Order` label works with Ladybug.
+- `runtime_entry.py` now opens the shared graph read-only. `showcase.py` exports run events without
+  per-run graph differences and no longer restores graph copies. These small changes keep imports
+  valid until the full runtime and showcase rewrites in S6 and S9; the app is still not runnable.
+- Deleted `tests/test_runtime.py`, `tests/test_api.py`, `tests/test_evaluation.py` and
+  `tests/test_generator_world.py`: they exercise old labels, copied graphs or the old world, and
+  are scheduled for replacement in S3/S6/S7/S9. No shims or skips were added.
+- Verified Ladybug `lower()` and `CONTAINS` in its official text-function documentation.
+  `uv run pytest -q`: 30 passed. `uv run ruff check src tests data/generator` and
+  `uv run ruff format --check src tests data/generator`: passed. `git diff --check`: passed.
+  The `simplify` skill is not installed; manually reviewed all changed files for dead code,
+  legacy paths and redundant abstractions, then reran the checks.
+- No design decision changed. Remaining old tool, API and frontend graph-copy references are
+  assigned to their later stages.

@@ -1,0 +1,249 @@
+# The evidence-graph schema. Changing the graph = editing this file + the generator.
+# Every label, edge and property has a description: agents read them through graph_schema.
+groups:
+  parties: {title: Parties, description: Card Members, their accounts and Cards, and Merchants.}
+  commerce: {title: Commerce, description: What was bought, charged, paid, returned or subscribed.}
+  terms: {title: Terms, description: Amex Policies and Merchant Policies and their Clauses.}
+  case: {title: Case, description: Disputes and the evidence filed with them.}
+
+nodes:
+  CardMember:
+    prefix: CMB
+    group: parties
+    description: A person holding an Amex Card, as Basic or Additional Card Member.
+    props:
+      name: {type: STRING, description: Full name; namesakes exist, so never match people by name alone.}
+      member_since: {type: STRING, description: ISO date the person became a Card Member.}
+  CardAccount:
+    prefix: ACC
+    group: parties
+    description: An Amex account that Cards bill to; the Basic Card Member is responsible for it.
+    props:
+      product: {type: STRING, description: Card Product of the account, e.g. Platinum, Gold, Green, Blue Cash.}
+      status: {type: STRING, description: open or closed.}
+  Card:
+    prefix: CRD
+    group: parties
+    description: A physical or virtual Amex Card issued on an account to one Card Member.
+    props:
+      last4: {type: STRING, description: Last four digits.}
+      product: {type: STRING, description: Card Product, which decides benefit and Offer eligibility.}
+      role: {type: STRING, description: basic or additional.}
+      status: {type: STRING, description: active or cancelled.}
+  Merchant:
+    prefix: MER
+    group: parties
+    description: A business that accepts Amex under a direct agreement with Amex.
+    props:
+      name: {type: STRING, description: Trading name.}
+      category: {type: STRING, description: Line of business, e.g. furniture, lodging, streaming, events.}
+      channel: {type: STRING, description: online, in_person or both.}
+  Descriptor:
+    prefix: DSC
+    group: parties
+    description: The merchant name text printed on the Card Member's statement.
+    props:
+      text: {type: STRING, description: Statement text exactly as shown.}
+  Charge:
+    prefix: CHG
+    group: commerce
+    description: A posted amount on a Card; negative amounts are credits.
+    props:
+      date: {type: STRING, description: ISO posting date.}
+      amount: {type: DOUBLE, description: Amount in currency units; negative for credits.}
+      currency: {type: STRING, description: ISO currency code.}
+      kind: {type: STRING, description: purchase, recurring or credit.}
+      status: {type: STRING, description: posted.}
+  Order:
+    prefix: ORD
+    group: commerce
+    description: A purchase or booking agreed between a Card Member and a Merchant.
+    props:
+      date: {type: STRING, description: ISO date the order or booking was placed.}
+      kind: {type: STRING, description: retail, lodging, event or service.}
+      total: {type: DOUBLE, description: Agreed total at the time of ordering.}
+      currency: {type: STRING, description: ISO currency code.}
+      summary: {type: STRING, description: What was ordered or booked, including rate or options.}
+  LineItem:
+    prefix: LIN
+    group: commerce
+    description: One item on an order with the options chosen.
+    props:
+      description: {type: STRING, description: Item as described on the order.}
+      quantity: {type: INT64, description: Units ordered.}
+      unit_price: {type: DOUBLE, description: Price per unit.}
+      option: {type: STRING, description: Option chosen, e.g. fabric, colour, size, rate plan.}
+  Product:
+    prefix: PRD
+    group: commerce
+    description: A catalogue product and the options the Merchant offers for it.
+    props:
+      name: {type: STRING, description: Product name.}
+      standard_options: {type: STRING, description: Options the Merchant stocks as standard.}
+      custom_options: {type: STRING, description: Options the Merchant makes to order (custom).}
+  Return:
+    prefix: RTN
+    group: commerce
+    description: An attempt to send goods back to a Merchant and what happened to it.
+    props:
+      method: {type: STRING, description: How the goods were sent back.}
+      status: {type: STRING, description: Outcome, e.g. received and refunded, refused.}
+      note: {type: STRING, description: Free-text detail recorded with the return.}
+  Subscription:
+    prefix: SUB
+    group: commerce
+    description: A recurring billing arrangement for one plan at a Merchant.
+    props:
+      plan: {type: STRING, description: Plan name.}
+      amount: {type: DOUBLE, description: Amount per billing period.}
+      frequency: {type: STRING, description: Billing frequency, e.g. monthly.}
+      status: {type: STRING, description: active or cancelled.}
+  Invoice:
+    prefix: INV
+    group: commerce
+    description: A Merchant's bill to a Card Member, split into installments.
+    props:
+      date: {type: STRING, description: ISO issue date.}
+      total: {type: DOUBLE, description: Invoice total.}
+      currency: {type: STRING, description: ISO currency code.}
+      description: {type: STRING, description: What the invoice is for.}
+  Installment:
+    prefix: INS
+    group: commerce
+    description: One scheduled part of an invoice.
+    props:
+      label: {type: STRING, description: e.g. Deposit, Balance.}
+      amount: {type: DOUBLE, description: Amount due for this part.}
+  Payment:
+    prefix: PAY
+    group: commerce
+    description: A payment made by other means than an Amex Card (bank transfer, cheque, cash).
+    props:
+      date: {type: STRING, description: ISO payment date.}
+      method: {type: STRING, description: bank_transfer, cheque or cash.}
+      amount: {type: DOUBLE, description: Amount paid.}
+      reference: {type: STRING, description: Payment reference text.}
+  Offer:
+    prefix: OFR
+    group: commerce
+    description: A spend-and-get deal at a Merchant, funded by Amex (Amex Offer) or by the Merchant.
+    props:
+      title: {type: STRING, description: Offer as shown to the Card Member.}
+      spend_threshold: {type: DOUBLE, description: Minimum qualifying spend.}
+      credit_amount: {type: DOUBLE, description: Credit or discount granted.}
+      funded_by: {type: STRING, description: amex or merchant.}
+  Program:
+    prefix: PRG
+    group: commerce
+    description: An Amex benefit program that participating Merchants honour, e.g. a hotel program.
+    props:
+      name: {type: STRING, description: Program name.}
+      eligible_product: {type: STRING, description: Card Product the program is for.}
+  PolicyDocument:
+    prefix: POL
+    group: terms
+    description: One version of an Amex Policy or Merchant Policy.
+    props:
+      title: {type: STRING, description: Document title.}
+      owner: {type: STRING, description: amex or merchant.}
+      kind: {type: STRING, description: e.g. merchant_regulations, offer_terms, returns, folio_terms, subscription_terms.}
+      version: {type: STRING, description: Version label.}
+      audience: {type: STRING, description: card_member or merchant.}
+      source_url: {type: STRING, description: Public source the Amex text is paraphrased from; empty for Merchant Policies.}
+  Clause:
+    prefix: CLS
+    group: terms
+    description: One numbered provision of a policy document; its id is also a search document id.
+    props:
+      number: {type: STRING, description: Clause number within its document.}
+      heading: {type: STRING, description: Clause heading.}
+      text: {type: STRING, description: Full clause text.}
+  Dispute:
+    prefix: DSP
+    group: case
+    description: A Card Member's challenge to one or more charges; past ones carry their outcome.
+    props:
+      filed_at: {type: STRING, description: ISO date filed.}
+      amount: {type: DOUBLE, description: Total amount the Card Member disputes.}
+      intake: {type: STRING, description: The Card Member's own words.}
+      status: {type: STRING, description: open or resolved.}
+      outcome: {type: STRING, description: Verdict of a resolved Dispute; empty while open.}
+  MerchantSubmission:
+    prefix: MSB
+    group: case
+    description: What a Merchant submitted for a Dispute.
+    props:
+      statement: {type: STRING, description: The Merchant's own account of the charge.}
+  EvidenceItem:
+    prefix: EVI
+    group: case
+    description: A document or record filed as evidence (receipt, log, folio, invoice ledger).
+    props:
+      kind: {type: STRING, description: e.g. acceptance_log, folio, invoice_ledger, usage_log.}
+      source: {type: STRING, description: merchant or card_member.}
+      text: {type: STRING, description: Content of the record.}
+  Communication:
+    prefix: COM
+    group: case
+    description: A message between a Merchant and a Card Member filed as evidence.
+    props:
+      channel: {type: STRING, description: email, chat or letter.}
+      sender: {type: STRING, description: Who sent it.}
+      date: {type: STRING, description: ISO date sent.}
+      text: {type: STRING, description: Message text.}
+
+edges:
+  HOLDS:
+    description: A Card Member holds an account.
+    pairs: [[CardMember, CardAccount]]
+    props:
+      role: {type: STRING, description: basic (responsible for the account) or additional.}
+  ISSUED_ON: {description: A Card bills to an account., pairs: [[Card, CardAccount]]}
+  CARRIED_BY: {description: The Card Member a Card was issued to., pairs: [[Card, CardMember]]}
+  CHARGED_TO: {description: The Card a charge posted to., pairs: [[Charge, Card]]}
+  AT_MERCHANT:
+    description: The Merchant a record belongs to.
+    pairs: [[Charge, Merchant], [Order, Merchant], [Subscription, Merchant], [Invoice, Merchant], [Payment, Merchant]]
+  DESCRIBED_AS: {description: The statement descriptor a charge showed., pairs: [[Charge, Descriptor]]}
+  DESCRIBES: {description: The Merchant a descriptor belongs to., pairs: [[Descriptor, Merchant]]}
+  AFFILIATE_OF: {description: A Merchant is a sister or subsidiary business of another., pairs: [[Merchant, Merchant]]}
+  FOR_ORDER: {description: The order a charge pays for or credits., pairs: [[Charge, Order]]}
+  HAS_LINE: {description: An order's line items., pairs: [[Order, LineItem]]}
+  OF_PRODUCT: {description: The catalogue product a line item is., pairs: [[LineItem, Product]]}
+  SOLD_BY: {description: The Merchant whose catalogue lists a product., pairs: [[Product, Merchant]]}
+  REFUNDS: {description: A credit reverses (part of) an earlier charge., pairs: [[Charge, Charge]]}
+  RETURNED_AS: {description: A return of goods from an order., pairs: [[Order, Return]]}
+  GUARANTEED_WITH: {description: The Card used to place or guarantee a booking (may differ from the Card charged)., pairs: [[Order, Card]]}
+  UNDER_PROGRAM: {description: A booking made under an Amex benefit program., pairs: [[Order, Program]]}
+  PARTICIPATES_IN: {description: A Merchant takes part in an Amex benefit program., pairs: [[Merchant, Program]]}
+  FOR_SUBSCRIPTION: {description: The subscription a recurring charge bills for., pairs: [[Charge, Subscription]]}
+  SUBSCRIBED_WITH: {description: The Card a subscription bills to., pairs: [[Subscription, Card]]}
+  HAS_INSTALLMENT: {description: The installments of an invoice., pairs: [[Invoice, Installment]]}
+  SETTLES: {description: A charge or other-means payment pays an installment., pairs: [[Charge, Installment], [Payment, Installment]]}
+  BILLED_TO: {description: The Card Member an invoice is addressed to., pairs: [[Invoice, CardMember]]}
+  PAID_BY: {description: The Card Member who made an other-means payment., pairs: [[Payment, CardMember]]}
+  OFFER_AT: {description: The Merchant an Offer is valid at., pairs: [[Offer, Merchant]]}
+  ENROLLED_ON: {description: The specific Card an Offer was added to., pairs: [[Offer, Card]]}
+  PUBLISHED_BY: {description: The Merchant that wrote a Merchant Policy., pairs: [[PolicyDocument, Merchant]]}
+  HAS_CLAUSE: {description: A document's clauses., pairs: [[PolicyDocument, Clause]]}
+  ACCEPTED:
+    description: The exact policy version a Card Member accepted for this order, subscription or invoice.
+    pairs: [[Order, PolicyDocument], [Subscription, PolicyDocument], [Invoice, PolicyDocument]]
+    props:
+      method: {type: STRING, description: How acceptance was recorded, e.g. checkbox at checkout, signature, booking confirmation.}
+  BOUND_BY: {description: An Amex Policy that binds a Merchant or governs an account., pairs: [[Merchant, PolicyDocument], [CardAccount, PolicyDocument]]}
+  GOVERNS: {description: The Amex terms that govern an Offer or program., pairs: [[PolicyDocument, Offer], [PolicyDocument, Program]]}
+  FILED_BY: {description: The Card Member who filed a Dispute., pairs: [[Dispute, CardMember]]}
+  DISPUTES:
+    description: A charge a Dispute challenges.
+    pairs: [[Dispute, Charge]]
+    props:
+      amount: {type: DOUBLE, description: Part of the charge in dispute.}
+  HAS_SUBMISSION: {description: A Merchant Submission for a Dispute., pairs: [[Dispute, MerchantSubmission]]}
+  HAS_EVIDENCE:
+    description: Evidence filed with a Dispute (by the Card Member) or with a submission (by the Merchant).
+    pairs: [[Dispute, EvidenceItem], [Dispute, Communication], [MerchantSubmission, EvidenceItem], [MerchantSubmission, Communication]]
+  CITES: {description: A policy clause or document a Merchant Submission relies on., pairs: [[MerchantSubmission, Clause], [MerchantSubmission, PolicyDocument]]}
+  ASSERTS:
+    description: The record an evidence item or message makes a claim about.
+    pairs: [[EvidenceItem, Order], [EvidenceItem, Charge], [EvidenceItem, Return], [EvidenceItem, Subscription], [EvidenceItem, Invoice], [EvidenceItem, Installment], [EvidenceItem, LineItem], [Communication, Order], [Communication, Subscription], [Communication, Return]]

@@ -11,7 +11,7 @@ from typing import Any
 from deepagents import create_deep_agent
 
 from domain.events import Actor, ActorKind, EventDraft, RuntimeSnapshot
-from graph_store import copy_store
+from graph_store import GraphStore
 from models import chat_model
 from observability.emitter import EventEmitter
 from schemas import CaseReport
@@ -38,7 +38,7 @@ def run_case(
     agent_builder=create_deep_agent,
     agents_config=None,
 ) -> CaseReport:
-    """Run a case to a final report, with an isolated graph and SQLite checkpoints."""
+    """Run a case to a final report, with a static evidence graph and SQLite checkpoints."""
 
     from langgraph.checkpoint.sqlite import SqliteSaver
 
@@ -50,7 +50,7 @@ def run_case(
     paths.run_dir.mkdir(parents=True, exist_ok=True)
     paths.trajectory_db.parent.mkdir(parents=True, exist_ok=True)
     paths.checkpoint_db.parent.mkdir(parents=True, exist_ok=True)
-    store = copy_store(paths.source_graph, paths.run_dir / f"{run_id}.lbug")
+    store = GraphStore(paths.source_graph)
     config = agents_config or load_agents_config(paths.agents_config)
     models = load_models_config(paths.models_config)
     emitter = EventEmitter(

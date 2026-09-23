@@ -1,17 +1,14 @@
-"""LadybugDB evidence store: bulk load, read-only Cypher, temporal neighbours, agent findings."""
+"""LadybugDB evidence store: bulk load and read-only Cypher."""
 
 from __future__ import annotations
 
 import csv
 import json
 import re
-import shutil
 import tempfile
 import threading
-import uuid
 import weakref
 from collections import defaultdict
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -35,15 +32,15 @@ def load(jsonl_dir: Path, db_path: Path) -> GraphStore:
     for stale in (db_path, Path(str(db_path) + ".wal")):
         stale.unlink(missing_ok=True)
     _ontology_path(db_path).write_text(json.dumps(ontology))
-    store = GraphStore(db_path)
+    store = GraphStore(db_path, read_only=False)
     nodes, edges = ontology["nodes"], ontology["edges"]
     for label, spec in nodes.items():
-        cols = "".join(f", {k} {t}" for k, t in spec["props"].items())
-        store.conn.execute(f"CREATE NODE TABLE {label}(id STRING PRIMARY KEY{cols})")
+        cols = "".join(f", {k} {p['type']}" for k, p in spec["props"].items())
+        store.conn.execute(f"CREATE NODE TABLE `{label}`(id STRING PRIMARY KEY{cols})")
     for etype, spec in edges.items():
-        pairs = ", ".join(f"FROM {s} TO {d}" for s, d in spec["pairs"])
-        cols = "".join(f", {k} {t}" for k, t in spec["props"].items())
-        store.conn.execute(f"CREATE REL TABLE {etype}({pairs}, id STRING{cols})")
+        pairs = ", ".join(f"FROM `{s}` TO `{d}`" for s, d in spec["pairs"])
+        cols = "".join(f", {k} {p['type']}" for k, p in spec["props"].items())
+        store.conn.execute(f"CREATE REL TABLE `{etype}`({pairs}, id STRING{cols})")
 
     # One CSV per node table and per (edge type, src label, dst label) table pair.
     csv_rows: dict[tuple, list[list]] = defaultdict(list)
@@ -64,17 +61,8 @@ def load(jsonl_dir: Path, db_path: Path) -> GraphStore:
             opts = "header=false, parallel=false"
             if len(key) == 3:
                 opts += f", from='{key[1]}', to='{key[2]}'"
-            store.conn.execute(f"COPY {key[0]} FROM '{path}' ({opts})")
+            store.conn.execute(f"COPY `{key[0]}` FROM '{path}' ({opts})")
     return store
-
-
-def copy_store(src: Path, dst: Path) -> GraphStore:
-    """Copy a store for per-run isolation (the source must not be open for writing)."""
-    src, dst = Path(src), Path(dst)
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    for a, b in ((src, dst), (_ontology_path(src), _ontology_path(dst))):
-        shutil.copy2(a, b)
-    return GraphStore(dst)
 
 
 def _jsonl(path: Path):
@@ -105,7 +93,7 @@ def _database(path: Path, read_only: bool) -> lb.Database:
 
 
 class GraphStore:
-    def __init__(self, db_path: Path, read_only: bool = False) -> None:
+    def __init__(self, db_path: Path, read_only: bool = True) -> None:
         self.db_path = Path(db_path)
         self.conn = lb.Connection(_database(self.db_path, read_only))
         onto = _ontology_path(self.db_path)
@@ -121,20 +109,21 @@ class GraphStore:
         return label
 
     def schema(self) -> dict:
-        """Labels, edge types, their properties and counts."""
+        """Ontology descriptions, groups, properties and graph counts."""
         nodes = {
-            label: {"props": {"id": "STRING", **s["props"]}, "count": self._count(f"(n:{label})")}
-            for label, s in self.ontology["nodes"].items()
+            label: {
+                "group": spec["group"],
+                "description": spec["description"],
+                "props": spec["props"],
+                "count": self._count(f"(n:`{label}`)"),
+            }
+            for label, spec in self.ontology["nodes"].items()
         }
         edges = {
-            etype: {
-                "pairs": s["pairs"],
-                "props": {"id": "STRING", **s["props"]},
-                "count": self._count(f"()-[n:{etype}]->()"),
-            }
-            for etype, s in self.ontology["edges"].items()
+            etype: {**spec, "count": self._count(f"()-[n:`{etype}`]->()")}
+            for etype, spec in self.ontology["edges"].items()
         }
-        return {"nodes": nodes, "edges": edges}
+        return {"groups": self.ontology["groups"], "nodes": nodes, "edges": edges}
 
     def _count(self, pattern: str) -> int:
         return self.conn.execute(f"MATCH {pattern} RETURN count(n)").get_next()[0]
@@ -166,11 +155,9 @@ class GraphStore:
         node_id: str,
         rel_types: list[str] | None = None,
         direction: str = "both",
-        since: str = "",
-        until: str = "",
         limit: int = 50,
     ) -> dict:
-        """Edges around a node, active within [since, until] when the edge is temporal."""
+        """Return one-hop edges around a node."""
         label = self.label_of(node_id)
         found: list[dict] = []
         seen = _new_seen()
@@ -180,13 +167,11 @@ class GraphStore:
             for way in ("out", "in") if direction == "both" else (direction,):
                 if not any(p[0 if way == "out" else 1] == label for p in spec["pairs"]):
                     continue
-                arrow = f"-[r:{etype}]->" if way == "out" else f"<-[r:{etype}]-"
-                when, params = _active_between(spec["props"], since, until)
-                cypher = (
-                    f"MATCH (a:{label} {{id: $id}}){arrow}(b) WHERE true{when} "
-                    f"RETURN r, b LIMIT {limit + 1}"
+                arrow = f"-[r:`{etype}`]->" if way == "out" else f"<-[r:`{etype}`]-"
+                result = self.conn.execute(
+                    f"MATCH (a:`{label}` {{id: $id}}){arrow}(b) RETURN r, b LIMIT {limit + 1}",
+                    {"id": node_id},
                 )
-                result = self.conn.execute(cypher, {"id": node_id, **params})
                 while result.has_next():
                     edge, node = result.get_next()
                     found.append(
@@ -206,114 +191,33 @@ class GraphStore:
             "edge_ids": sorted(f["edge"]["id"] for f in found),
         }
 
-    def write_finding(
-        self,
-        text: str,
-        run_id: str,
-        confidence: float,
-        evidence_path: str = "",
-        kind: str = "",
-        edges: list[dict] | None = None,
-    ) -> dict:
-        """Create a Finding plus inferred edges `{type, src, dst}`; src defaults to the finding."""
-        finding_id = f"FND-{uuid.uuid4().hex[:10]}"
-        provenance = {"run_id": run_id, "confidence": confidence, "evidence_path": evidence_path}
-        edges = [{**e, "src": e.get("src", finding_id)} for e in edges or []]
-        self._check_edges(edges, {finding_id: "Finding"})
-        self.conn.execute(
-            "CREATE (:Finding {id: $id, text: $text, kind: $kind, run_id: $run_id, "
-            "confidence: $confidence, evidence_path: $evidence_path})",
-            {"id": finding_id, "text": text, "kind": kind, **provenance},
-        )
-        return {
-            "finding_id": finding_id,
-            "edge_ids": [self._create_edge(e, provenance) for e in edges],
-        }
-
-    def write_note(
-        self,
-        text: str,
-        run_id: str,
-        confidence: float,
-        about: list[str],
-        supersedes: list[str] | None = None,
-        status: str = "active",
-    ) -> dict:
-        """Create an active MemoryNote with ABOUT edges; the notes it replaces get `status`."""
-        note_id = f"MEM-{uuid.uuid4().hex[:10]}"
-        supersedes = supersedes or []
-        provenance = {"run_id": run_id, "confidence": confidence, "evidence_path": ""}
-        edges = [{"type": "ABOUT", "src": note_id, "dst": dst} for dst in about]
-        self._check_edges(edges, {note_id: "MemoryNote"})
-        for old in supersedes:
-            self._require(old, "MemoryNote")
-        self.conn.execute(
-            "CREATE (:MemoryNote {id: $id, text: $text, status: 'active', "
-            "created_at: $now, run_id: $run_id, confidence: $confidence})",
-            {"id": note_id, "text": text, "now": datetime.now(UTC).isoformat(), **provenance},
-        )
-        for old in supersedes:
-            self.set_note_status(old, status)
-        return {"note_id": note_id, "edge_ids": [self._create_edge(e, provenance) for e in edges]}
-
-    def set_note_status(self, note_id: str, status: str) -> None:
-        self._require(note_id, "MemoryNote")
-        self.conn.execute(
-            "MATCH (m:MemoryNote {id: $id}) SET m.status = $status",
-            {"id": note_id, "status": status},
-        )
-
-    def _require(self, node_id: str, label: str | None = None) -> str:
-        found = self.label_of(node_id)
-        if label and found != label:
-            raise ValueError(f"{node_id} is a {found}, expected {label}")
-        if not self.conn.execute(
-            f"MATCH (n:{found} {{id: $id}}) RETURN count(n)", {"id": node_id}
-        ).get_next()[0]:
+    def node(self, node_id: str) -> dict:
+        label = self.label_of(node_id)
+        rows = self.query(f"MATCH (n:`{label}` {{id: $id}}) RETURN n", {"id": node_id}, 1)["rows"]
+        if not rows:
             raise ValueError(f"no such node {node_id}")
-        return found
+        return rows[0][0]
 
-    def _check_edges(self, edges: list[dict], new_nodes: dict[str, str]) -> None:
-        """Agents may only add edges whose ontology type carries provenance, between real nodes."""
-        for e in edges:
-            spec = self.ontology["edges"].get(e["type"])
-            if spec is None or "run_id" not in spec["props"]:
-                raise ValueError(f"agents may not write edge type {e['type']!r}")
-            labels = [new_nodes.get(n) or self._require(n) for n in (e["src"], e["dst"])]
-            if labels not in [list(p) for p in spec["pairs"]]:
-                raise ValueError(f"{e['type']} cannot connect {labels[0]} -> {labels[1]}")
-
-    def _create_edge(self, edge: dict, provenance: dict) -> str:
-        edge_id = f"E-{uuid.uuid4().hex[:10]}"
-        src, dst = edge["src"], edge["dst"]
-        self.conn.execute(
-            f"MATCH (a:{self.label_of(src)} {{id: $src}}), (b:{self.label_of(dst)} {{id: $dst}}) "
-            f"CREATE (a)-[:{edge['type']} {{id: $id, run_id: $run_id, confidence: $confidence, "
-            "evidence_path: $evidence_path}]->(b)",
-            {"src": src, "dst": dst, "id": edge_id, **provenance},
-        )
-        return edge_id
+    def find(self, text: str, labels: list[str] | None = None, limit: int = 25) -> dict:
+        """Find nodes by case-insensitive substring in any string property."""
+        matches: list[dict] = []
+        seen = _new_seen()
+        for label, spec in self.ontology["nodes"].items():
+            if labels is not None and label not in labels:
+                continue
+            fields = ["id", *(k for k, p in spec["props"].items() if p["type"] == "STRING")]
+            where = " OR ".join(f"lower(n.{field}) CONTAINS lower($text)" for field in fields)
+            result = self.conn.execute(
+                f"MATCH (n:`{label}`) WHERE {where} RETURN n LIMIT {limit}", {"text": text}
+            )
+            while result.has_next() and len(matches) < limit:
+                matches.append(_clean(result.get_next()[0], seen))
+            if len(matches) == limit:
+                break
+        return {"matches": matches, "node_ids": sorted(seen["node_ids"]), "edge_ids": []}
 
     def close(self) -> None:
         self.conn.close()
-
-
-def _active_between(props: dict, since: str, until: str) -> tuple[str, dict]:
-    """Cypher conditions (and params) keeping edges whose validity overlaps [since, until]."""
-    when, params = "", {}
-    if "valid_from" in props:
-        if until:
-            when += " AND (r.valid_from IS NULL OR r.valid_from = '' OR r.valid_from <= $until)"
-            params["until"] = until
-        if since:
-            when += " AND (r.valid_to IS NULL OR r.valid_to = '' OR r.valid_to >= $since)"
-            params["since"] = since
-    elif "ts" in props:
-        for op, key, bound in ((">=", "since", since), ("<=", "until", until)):
-            if bound:
-                when += f" AND r.ts {op} ${key}"
-                params[key] = bound
-    return when, params
 
 
 def _new_seen() -> dict[str, set[str]]:
