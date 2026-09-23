@@ -737,6 +737,14 @@ def test_every_merchant_bound_by_amex_regulations():
 
 ## Stage 4 — Merchant Submission contract, case kit, cases A and B (Complex)
 
+> **Changed in Stage 3 (applies to every case builder in Stages 4–5).** `build_world` adds every corpus policy, so the Merchants that publish them must already exist. The world therefore owns these nodes and edges, and the case builders **reference them and never create them**:
+> - Merchants MER-HGF, MER-NWO, MER-HPH, MER-STC, MER-WBV and MER-WBC, each BOUND_BY POL-AMX-MR.
+> - MER-HPH PARTICIPATES_IN PRG-PLAT and BOUND_BY POL-AMX-PS-PART.
+> - MER-WBC AFFILIATE_OF MER-WBV.
+> - Descriptor DSC-STC ("SC*DIGITAL SVCS") DESCRIBES MER-STC.
+>
+> Where the node and edge lists below create any of these, drop those lines. The world also generates ordinary background orders, subscriptions, invoices and past Disputes at these Merchants, so proof and decoy patterns must stay anchored on case ids, as they already are.
+
 ### Task 4.1: Submission contract and `insert_submission`
 
 **Files:** Create `src/extensions/__init__.py`, `src/extensions/merchant_agent/__init__.py`, `src/extensions/merchant_agent/contract.py`, `data/generator/submissions.py`; Test `tests/test_submissions.py`. Modify `world.py` to use `insert_submission` for past Disputes.

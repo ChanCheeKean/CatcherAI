@@ -58,7 +58,9 @@ def load(jsonl_dir: Path, db_path: Path) -> GraphStore:
             path = Path(tmp) / f"{i}.csv"
             with path.open("w", newline="") as f:
                 csv.writer(f).writerows(rows)
-            opts = "header=false, parallel=false"
+            # csv.writer's dialect, stated so Ladybug never guesses it from a sample of rows.
+            opts = "header=false, parallel=false, auto_detect=false, "
+            opts += "delim=',', quote='\"', escape='\"'"
             if len(key) == 3:
                 opts += f", from='{key[1]}', to='{key[2]}'"
             store.conn.execute(f"COPY `{key[0]}` FROM '{path}' ({opts})")

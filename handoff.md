@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-23
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S2 complete**
-Next stage: **S3 — Background world**
+Current phase: **S3 complete**
+Next stage: **S4 — Submission contract, case kit, cases A and B**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -111,7 +111,7 @@ Details for each stage are in the plan section of the same name.
 | **S0** Teardown of the Visa world | Simple | Delete Visa/LFB/Reg E/Reg Z corpus, the 10 cases, the showcase data, retired skills and screenshots; empty the case kit. | ☑ |
 | **S1** Ontology as data + static graph store | Medium | `ontology.yaml` + loader; builder validates against it; `GraphStore` read-only by default, schema with descriptions, `node`, `find`; all write paths and `copy_store` removed. | ☑ |
 | **S2** Policy corpus, clause search, memory in knowledge | Complex | 6 Amex + 8 Merchant policy markdown docs grounded in the research; `policies.py` projects them into graph nodes and clause-level search; retrieval without `as_of`; Memory Notes in SQLite; Amex precedents. | ☑ |
-| **S3** Background world | Medium | Deterministic dispute-only world (~150 Card Members, ~30 Merchants with template policies, ~3k charges, Offers, program, subscriptions, invoices, ~60 past Disputes). | ☐ |
+| **S3** Background world | Medium | Deterministic dispute-only world (~150 Card Members, ~30 Merchants with template policies, ~3k charges, Offers, program, subscriptions, invoices, ~60 past Disputes). | ☑ |
 | **S4** Submission contract, case kit, cases A and B | Complex | `MerchantSubmission` contract + `insert_submission`; case kit for Amex; case A "Final Sale Means Final", case B "Platinum Rate, Gold Card". | ☐ |
 | **S5** Cases C, D, E + end-to-end generator | Complex | Case C "The Offer on the Other Card", case D "Paid by Transfer", case E "Cancelled the Wrong Plan"; `gen.py` ingests saved submissions; every ontology label/edge used. | ☐ |
 | **S6** Case Notebook, tools, read-only runtime | Medium | `notebook.py`; tools `graph_find`, `notebook_write`/`notebook_read`, memory in knowledge; runtime and API read the static graph; notebook in supervisor/adjudicator input. | ☐ |
@@ -222,3 +222,69 @@ Details for each stage are in the plan section of the same name.
 - Open issue for S6: `src/tools.py` still calls `retrieval.search(..., as_of=…)` and the old
   graph-note store methods. It imports cleanly but fails at call time until S6 rewrites it.
 - No design decision changed; the spec was not edited.
+
+### S3 — 2026-09-23
+- Rewrote `data/generator/world.py`. `build_world(seed=7, corpus=…)` returns `(graph, docs)` and exports
+  the Amex anchors (`AMEX_MR`, `AMEX_CMA`, `AMEX_OFFER`, `AMEX_PLAT_BEN`, `AMEX_PS_PART`,
+  `PLATINUM_STAYS`). The world is deterministic and dispute-only:
+  - 150 Card Members: 135 Basic, a third of them holding two Card Products, and 15 Additional Card
+    Members on others' accounts. There are three namesake pairs.
+  - 180 accounts, each BOUND_BY the CMA; Platinum accounts are also BOUND_BY PLAT-BEN.
+  - 30 Merchants across furniture, apparel, lodging, streaming, events, catering and dining.
+    Benign look-alikes include "Northwind Outdoor Supply", "Harbor Point Inn" and
+    "Harbor Point Marina Grill", plus two streaming Merchants that share the parent-brand
+    descriptor "NVP*NOVAPLAY".
+  - 31 generated template policies (`POL-BG-…`); background retailers have a v1 and a stricter v2,
+    and orders from 2026-05-01 accept v2.
+  - 1,200 orders (retail with line items and products; lodging GUARANTEED_WITH the paying Card).
+    Platinum Stays bookings are made only with a Platinum Card at the 6 participating hotels.
+  - 2,949 charges: 137 of them are credits with REFUNDS. There are 35 returns (16 refused as
+    custom/final sale), 20 subscriptions, and 10 invoices with 22 installments settled by
+    charges or other-means payments.
+  - 12 Offers (10 Amex-funded with GOVERNS and ENROLLED_ON; 2 merchant-funded).
+  - 60 resolved past Disputes spread over the ten categories and all six verdicts. 33 have a
+    Merchant Submission, written in the node shape `insert_submission` will use
+    (`EVI-<submission suffix>-1`).
+  - The world uses every edge type. The only label it leaves unused is Communication, which the
+    cases supply.
+- **Deviation: the world owns the six corpus-publisher Merchants.** `build_world` must add every
+  corpus policy, and PUBLISHED_BY needs the publishing Merchant to exist first. `world.py`
+  therefore creates MER-HGF/NWO/HPH/STC/WBV/WBC, their BOUND_BY POL-AMX-MR, MER-HPH's
+  PARTICIPATES_IN/PS-PART, MER-WBC AFFILIATE_OF MER-WBV, and DSC-STC. The plan now has a note at
+  the top of Stage 4: case builders reference these and must not create them. These Merchants
+  also carry background activity; case proofs and decoys stay anchored on case ids. This closes
+  the S2 open issue about policy ordering.
+- `gen.py` calls `build_world()` and indexes its docs; the separate policy load and add loop are
+  gone. `uv run python data/generator/gen.py` succeeds: 136 knowledge documents, and the graph
+  loads into Ladybug.
+- Two infrastructure fixes surfaced by real data:
+  - `Graph.node`/`Graph.edge` parameters are positional-only, because the ontology's
+    `Installment.label` property collided with the `label` argument.
+  - `graph_store.load` COPY now passes `auto_detect=false` plus an explicit delimiter, quote and
+    escape. Ladybug sniffs the CSV dialect from the first rows and decided "no quoting" when
+    850 unquoted order rows came before the first summary containing a comma. This was verified
+    against the Ladybug CSV import docs (context7). There is a regression test in
+    `tests/test_graph_store.py`.
+- Tests: new `tests/test_generator_world.py` (determinism, scale and policies, every Merchant
+  BOUND_BY MR, corpus publishers and program wiring, installments add up and are settled in
+  full). `uv run pytest`: 42 passed. `ruff check` and `ruff format --check`: passed. No tests
+  were deleted.
+- `simplify` ran as four review agents.
+  - Efficiency: no findings; `build_world` takes about 30 ms.
+  - Applied:
+    - One `_merchants_in(*categories)` helper replaces five tuple-unpacking filters.
+    - `_offers` excludes corpus Merchants by `_CORPUS_TERMS` rather than by list position.
+    - `_issue` derives the Card role.
+    - Removed the dead DUP evidence entry and the `setdefault` idiom.
+    - `_lodging` computes its total once.
+    - `_invoices` uses if/else instead of `continue`.
+    - `gen.py` uses the default corpus path.
+    - The read-only world tests share a module fixture.
+    - `Graph.edge` is also positional-only, and the CSV dialect is stated explicitly.
+  - Skipped:
+    - A shared `clause_id` helper for `policies.parse` and the template generator. It would be
+      two call sites of one f-string.
+    - Deriving `_CORPUS_TERMS` from front matter. It records which of a Merchant's corpus
+      documents customers accept (HGF and HPH each publish two), which front matter does not say.
+- No design decision changed; the spec was not edited. The plan gained the Stage 4 ownership note
+  above.

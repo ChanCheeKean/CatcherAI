@@ -132,3 +132,15 @@ def test_node_and_find(store):
 def test_store_opened_by_runs_is_read_only(store):
     with pytest.raises(RuntimeError):
         store.conn.execute("CREATE (:Merchant {id: 'MER-X', name: 'x'})")
+
+
+def test_load_keeps_quoted_commas_after_many_plain_rows(tmp_path: Path):
+    g = Graph()
+    for n in range(1200):
+        g.node("Clause", f"CLS-{n}", text="plain")
+    g.node("Clause", "CLS-X", text='2 nights, "Platinum Stays" rate, arriving later')
+    g.write(tmp_path / "jsonl")
+    graph_store.load(tmp_path / "jsonl", tmp_path / "g.lbug").close()
+    db = graph_store.GraphStore(tmp_path / "g.lbug")
+    assert db.node("CLS-X")["text"] == '2 nights, "Platinum Stays" rate, arriving later'
+    db.close()

@@ -1,497 +1,927 @@
-"""Seeded background world with realistic identity sharing, commerce, and ordinary disputes."""
+"""Seeded, dispute-only background: Card Members, Merchants and their policies, commerce, and
+resolved past Disputes."""
 
 from __future__ import annotations
 
 import json
 import random
-from collections import Counter
-from datetime import date, datetime, timedelta
+from collections import Counter, defaultdict
+from datetime import date, timedelta
+from itertools import count
+from pathlib import Path
+from typing import NamedTuple
 
 from graph_builder import Graph
+from policies import Clause, PolicyDoc, add_to_graph, load_policies
 
-_START = date(2026, 3, 1)
-_FIRST = ("Avery", "Blake", "Casey", "Devon", "Emery", "Finley", "Gray", "Harper")
-_LAST = ("Chen", "Garcia", "Johnson", "Khan", "Lim", "Martin", "Ng", "Patel")
-_STREETS = ("Amber", "Cedar", "Harbour", "Juniper", "Orchard", "Pine", "River", "Willow")
-_CITIES = ("Austin", "Chicago", "Denver", "Miami", "Portland", "Seattle")
-_MERCHANTS = ("Market", "Books", "Travel", "Cafe", "Supply", "Digital", "Pharmacy", "Home")
-_CLAIMS = ("fraud", "duplicate", "not_received", "refund", "descriptor", "not_as_described")
+AMEX_MR = "POL-AMX-MR"
+AMEX_CMA = "POL-AMX-CMA"
+AMEX_OFFER = "POL-AMX-OFFER"
+AMEX_PLAT_BEN = "POL-AMX-PLAT-BEN"
+AMEX_PS_PART = "POL-AMX-PS-PART"
+PLATINUM_STAYS = "PRG-PLAT"
+
+_CORPUS = Path(__file__).resolve().parents[1] / "corpus" / "policies"
+_YEAR = date(2026, 1, 1)
+_SECOND_VERSION = date(2026, 5, 1)  # background retailers' second returns policy applies from here
+
+# (id, name, category, channel). The first six publish the corpus Merchant Policies.
+_MERCHANTS = (
+    ("MER-HGF", "Hearth & Grain Furniture", "furniture", "online"),
+    ("MER-NWO", "Northwind Outfitters", "apparel", "online"),
+    ("MER-HPH", "Harbor Point Hotel", "lodging", "in_person"),
+    ("MER-STC", "StreamCo", "streaming", "online"),
+    ("MER-WBV", "Willow Barn Venue", "events", "in_person"),
+    ("MER-WBC", "Willow Barn Catering", "catering", "in_person"),
+    ("MER-BG-0001", "Oakline Home", "furniture", "online"),
+    ("MER-BG-0002", "Brightwater Sofa Co.", "furniture", "both"),
+    ("MER-BG-0003", "Kestrel Design Studio", "furniture", "both"),
+    ("MER-BG-0004", "Northwind Outdoor Supply", "apparel", "in_person"),
+    ("MER-BG-0005", "Linen & Loom", "apparel", "online"),
+    ("MER-BG-0006", "Cobalt Running", "apparel", "both"),
+    ("MER-BG-0007", "Fernhill Tailors", "apparel", "in_person"),
+    ("MER-BG-0008", "Harbor Point Inn", "lodging", "in_person"),
+    ("MER-BG-0009", "The Aldergate Hotel", "lodging", "in_person"),
+    ("MER-BG-0010", "Saltmarsh Resort", "lodging", "in_person"),
+    ("MER-BG-0011", "Meridian Grand", "lodging", "in_person"),
+    ("MER-BG-0012", "Copperleaf Suites", "lodging", "in_person"),
+    ("MER-BG-0013", "Lakehouse Lodge", "lodging", "in_person"),
+    ("MER-BG-0014", "Tunewell Music", "streaming", "online"),
+    ("MER-BG-0015", "Lumen Fitness", "streaming", "online"),
+    ("MER-BG-0016", "Pagecraft Books+", "streaming", "online"),
+    ("MER-BG-0017", "Granary Hall", "events", "in_person"),
+    ("MER-BG-0018", "Granary Kitchen", "catering", "in_person"),
+    ("MER-BG-0019", "Riverside Pavilion", "events", "in_person"),
+    ("MER-BG-0020", "Harbor Point Marina Grill", "dining", "in_person"),
+    ("MER-BG-0021", "Saffron Table", "dining", "in_person"),
+    ("MER-BG-0022", "Juniper & Rye", "dining", "in_person"),
+    ("MER-BG-0023", "Osteria Lume", "dining", "in_person"),
+    ("MER-BG-0024", "Blue Heron Cafe", "dining", "in_person"),
+)
+_NAMES = {m: name for m, name, _, _ in _MERCHANTS}
+_CATEGORIES = {m: category for m, _, category, _ in _MERCHANTS}
 
 
-def build_world(
-    seed: int = 42,
-    *,
-    customer_count: int = 2_500,
-    merchant_count: int = 250,
-    transaction_count: int = 50_000,
-    dispute_count: int = 300,
-) -> Graph:
-    """Build deterministic background data.
+def _merchants_in(*categories: str) -> list[str]:
+    return [m for m, category in _CATEGORIES.items() if category in categories]
 
-    Counts may be reduced for tests, but not below full ontology coverage.
-    """
-    if customer_count < 20 or merchant_count < 5 or transaction_count < 38 or dispute_count < 11:
-        raise ValueError("world counts are too small to cover the ontology")
 
+_AFFILIATES = (("MER-WBC", "MER-WBV"), ("MER-BG-0018", "MER-BG-0017"))
+_PLATINUM_STAYS_HOTELS = (
+    "MER-HPH",
+    "MER-BG-0009",
+    "MER-BG-0010",
+    "MER-BG-0011",
+    "MER-BG-0012",
+    "MER-BG-0013",
+)
+# Lumen Fitness and Pagecraft Books+ both bill under their parent brand's descriptor.
+_DESCRIPTORS = {
+    "MER-STC": ("DSC-STC", "SC*DIGITAL SVCS"),
+    "MER-BG-0014": ("DSC-BG-0001", "TUNEWELL*MUSIC"),
+    "MER-BG-0015": ("DSC-BG-0002", "NVP*NOVAPLAY"),
+    "MER-BG-0016": ("DSC-BG-0003", "NVP*NOVAPLAY"),
+}
+_PLANS = {
+    "MER-STC": (("Individual", 12.99), ("Family", 22.99)),
+    "MER-BG-0014": (("Solo", 10.99), ("Duo", 14.99)),
+    "MER-BG-0015": (("Monthly", 19.99),),
+    "MER-BG-0016": (("Reader", 8.99), ("Reader Plus", 13.99)),
+}
+# The corpus policy version each case Merchant's customers accept.
+_CORPUS_TERMS = {
+    "MER-HGF": "POL-HGF-CO-V4",
+    "MER-NWO": "POL-NWO-SALE-V1",
+    "MER-HPH": "POL-HPH-RES-V2",
+    "MER-STC": "POL-STC-SUB-V3",
+    "MER-WBV": "POL-WBV-CONTRACT-V2",
+    "MER-WBC": "POL-WBC-CATERING-V1",
+}
+_RETURNS = (
+    (
+        "Returns window",
+        "Items may be returned within {days} days of delivery for a refund to the original card.",
+    ),
+)
+# category: (kind, title, clauses). Background Merchant Policies are generated from these.
+_TEMPLATES = {
+    "furniture": (
+        "returns",
+        "Returns Policy",
+        _RETURNS
+        + (
+            (
+                "Final sale",
+                "Custom pieces, including Customer's Own Material (COM) and made-to-measure "
+                "items, are final sale and cannot be returned.",
+            ),
+            ("Return shipping", "Return shipping is {shipping}."),
+        ),
+    ),
+    "apparel": (
+        "returns",
+        "Returns Policy",
+        _RETURNS
+        + (
+            ("Final sale", "Monogrammed and tailored-to-measure items are final sale."),
+            ("Exchanges", "Unworn items may be exchanged for another size at no charge."),
+        ),
+    ),
+    "lodging": (
+        "reservation_terms",
+        "Reservation Terms",
+        (
+            (
+                "Confirmed rate",
+                "The rate on your booking confirmation is the rate charged for the stay.",
+            ),
+            (
+                "Cancellation",
+                "Bookings may be cancelled free of charge up to {hours} hours before "
+                "arrival; later cancellations are charged one night.",
+            ),
+        ),
+    ),
+    "streaming": (
+        "subscription_terms",
+        "Subscription Terms",
+        (
+            (
+                "Recurring billing",
+                "Plans renew monthly until cancelled, at the price shown at sign-up.",
+            ),
+            (
+                "Cancelling",
+                "Cancel any time in your account settings; billing stops at the end of the "
+                "current period.",
+            ),
+        ),
+    ),
+    "events": (
+        "event_contract",
+        "Event Hire Contract",
+        (
+            (
+                "Payment schedule",
+                "A deposit is due on signing; the balance is due before the event.",
+            ),
+            ("Payment methods", "Each installment may be paid by card, bank transfer or cheque."),
+            ("Cancellation", "The deposit is non-refundable once the date is confirmed."),
+        ),
+    ),
+    "catering": (
+        "event_contract",
+        "Catering Terms",
+        (
+            ("Payment", "Catering is invoiced separately from any venue hire."),
+            ("Payment methods", "Each installment may be paid by card, bank transfer or cheque."),
+        ),
+    ),
+    "dining": (
+        "reservation_terms",
+        "Booking Terms",
+        (
+            ("Large parties", "Parties of eight or more are charged a {service}% service charge."),
+            (
+                "No-shows",
+                "Reservations not cancelled by the day before may be charged $25 per guest.",
+            ),
+        ),
+    ),
+}
+# category: (name, price, standard options, custom options)
+_CATALOG = {
+    "furniture": (
+        (
+            "Harlow sectional",
+            2800.0,
+            "Sage linen; Oat linen; Charcoal velvet",
+            "Customer's Own Material (COM); made to measure",
+        ),
+        ("Birch armchair", 950.0, "Oat linen; Rust boucle", "Customer's Own Material (COM)"),
+        ("Mira dining table", 1600.0, "Natural oak; Smoked oak", "made to measure"),
+        ("Tallis bookcase", 700.0, "Natural oak; White", ""),
+        ("Wren bed frame", 1200.0, "Queen; King", ""),
+        ("Oona ottoman", 380.0, "Oat linen; Sage linen", "Customer's Own Material (COM)"),
+    ),
+    "apparel": (
+        ("Storm shell jacket", 260.0, "S; M; L; XL", ""),
+        ("Merino crew", 95.0, "S; M; L", "Monogramming"),
+        ("Trail runner", 140.0, "Size 8; Size 9; Size 10; Size 11", ""),
+        ("Wool overcoat", 420.0, "38; 40; 42", "Tailored to measure"),
+        ("Canvas tote", 45.0, "Natural; Navy", "Monogramming"),
+    ),
+}
+_INVOICES = {
+    "events": ("Wedding venue hire", "Corporate dinner venue hire", "Birthday party venue hire"),
+    "catering": ("Wedding catering, 80 guests", "Corporate lunch catering, 40 guests"),
+}
+_FIRST = (
+    "Avery",
+    "Blake",
+    "Camila",
+    "Darius",
+    "Elif",
+    "Farah",
+    "Gideon",
+    "Hana",
+    "Ines",
+    "Jamal",
+    "Keiko",
+    "Liam",
+    "Mateo",
+    "Nadia",
+    "Owen",
+    "Priyanka",
+    "Quinn",
+    "Rosa",
+    "Samir",
+    "Tessa",
+    "Umar",
+    "Vera",
+    "Wes",
+    "Yara",
+)
+_LAST = (
+    "Abbott",
+    "Brennan",
+    "Castillo",
+    "Dimitriou",
+    "Eriksen",
+    "Fontaine",
+    "Gallagher",
+    "Haddad",
+    "Iwasaki",
+    "Jovanovic",
+    "Kowalski",
+    "Lindgren",
+    "Mbeki",
+    "Novak",
+    "Oyelaran",
+    "Pereira",
+    "Rahman",
+    "Sandoval",
+    "Takahashi",
+    "Whitfield",
+)
+_PRODUCTS = ("Platinum", "Gold", "Green", "Blue Cash")
+_PRODUCT_PAIRS = (
+    ("Platinum", "Gold"),
+    ("Gold", "Blue Cash"),
+    ("Platinum", "Blue Cash"),
+    ("Green", "Gold"),
+)
+_RETURN_METHODS = ("carrier pickup", "customer freight", "prepaid label", "in-store drop-off")
+
+# Resolved past Disputes, one row per Dispute Category (as a comment): how many, which sales they
+# challenge, the Card Member's words, the Merchant's evidence, and the possible (verdict,
+# Merchant statement) outcomes; an empty statement means no Merchant Submission.
+_PAST = (
+    {  # RET
+        "count": 6,
+        "pool": "refused",
+        "intake": "I sent {subject} back to {shown} and they refused to refund ${amount}.",
+        "evidence": ("return_log", "Return of {subject} refused: made to order, final sale."),
+        "outcomes": (
+            (
+                "rejected",
+                "The item was a custom order, final sale under the terms accepted at purchase.",
+            ),
+            ("accepted", ""),
+        ),
+    },
+    {  # NRC
+        "count": 6,
+        "pool": "retail",
+        "intake": "I paid {shown} ${amount} for {subject} and it never arrived.",
+        "evidence": ("delivery_proof", "Carrier scan: {subject} delivered and signed for."),
+        "outcomes": (
+            ("accepted", ""),
+            ("rejected", "Carrier proof of delivery shows the order was delivered."),
+        ),
+    },
+    {  # DMG
+        "count": 5,
+        "pool": "furniture",
+        "intake": "{shown} delivered {subject} damaged.",
+        "evidence": ("photo_report", "Delivery photos of {subject}: minor scuff on one side."),
+        "outcomes": (
+            ("partially_accepted", "The damage is cosmetic; we offered part of the price back."),
+            ("accepted", ""),
+        ),
+    },
+    {  # OVR
+        "count": 7,
+        "pool": "lodging",
+        "share": 0.2,
+        "intake": "{shown} charged me ${amount} more than the rate I booked for {subject}.",
+        "evidence": ("folio", "Folio for {subject}: charged at the rate on the confirmation."),
+        "outcomes": (
+            ("accepted", ""),
+            ("rejected", "The amount charged matches the rate on the booking confirmation."),
+        ),
+    },
+    {  # CNC
+        "count": 5,
+        "pool": "lodging",
+        "intake": "I cancelled {subject} with {shown} but was still charged ${amount}.",
+        "evidence": (
+            "reservation_record",
+            "Reservation for {subject} cancelled after the free-cancellation cut-off.",
+        ),
+        "outcomes": (
+            (
+                "rejected",
+                "The booking was cancelled after the free-cancellation cut-off in the "
+                "reservation terms.",
+            ),
+            ("accepted", ""),
+        ),
+    },
+    {  # DSS
+        "count": 8,
+        "pool": "service",
+        "intake": "I paid {shown} ${amount} for {subject} and it was not as described.",
+        "evidence": ("itemised_receipt", "Itemised record for {subject}: provided as ordered."),
+        "outcomes": (
+            ("rejected", "The service was provided as ordered."),
+            ("goodwill_credit", "The service was provided as ordered."),
+        ),
+    },
+    {  # DUP
+        "count": 5,
+        "pool": "dining",
+        "duplicate": True,
+        "intake": "{shown} charged me twice, ${amount} each, for {subject}.",
+        "outcomes": (("accepted", ""),),
+    },
+    {  # CNR
+        "count": 7,
+        "pool": "subscription",
+        "intake": "I cancelled {subject} but {shown} charged me ${amount} again.",
+        "evidence": ("usage_log", "Usage log for {subject}: active and used in the billed period."),
+        "outcomes": (
+            ("accepted", ""),
+            ("rejected", "No cancellation was received; the plan remained in use."),
+            ("not_a_dispute", "This charge is for another plan on the account, never cancelled."),
+        ),
+    },
+    {  # NKN
+        "count": 7,
+        "pool": "subscription",
+        "intake": "I don't recognise a ${amount} charge from {shown}.",
+        "evidence": (
+            "usage_log",
+            "Usage log for {subject}: opened with the Card on file and used in the billed period.",
+        ),
+        "outcomes": (
+            (
+                "not_a_dispute",
+                "This is the Card Member's own subscription, billed under our "
+                "statement descriptor.",
+            ),
+            ("fraud_referral", ""),
+        ),
+    },
+    {  # PDD
+        "count": 4,
+        "pool": "installment",
+        "intake": "I already paid {subject} by bank transfer, so the ${amount} card charge is a "
+        "second payment.",
+        "evidence": (
+            "invoice_ledger",
+            "Ledger for {subject}: the transfer paid another "
+            "installment; the card charge paid this one.",
+        ),
+        "outcomes": (
+            ("rejected", "The transfer paid a different installment than the card charge."),
+            ("partially_accepted", "The card charge exceeded the installment it paid."),
+        ),
+    },
+)
+
+
+class _Card(NamedTuple):
+    id: str
+    account: str
+    product: str
+    holder: str  # the Card Member the Card was issued to
+    basic: str  # the Basic Card Member responsible for its account
+
+
+class _Sale(NamedTuple):
+    """A background charge a past Dispute can challenge, and what it paid for."""
+
+    charge: str
+    card: _Card
+    merchant: str
+    day: date
+    amount: float
+    subject: str  # what was bought, as the Card Member would name it
+    shown: str  # the name on the statement
+    record: str  # the order, return, subscription, installment or charge evidence speaks about
+    terms: str  # the policy version the Card Member accepted, or ""
+
+
+def build_world(seed: int = 7, corpus: Path = _CORPUS) -> tuple[Graph, list[PolicyDoc]]:
+    """Build the background graph, including every corpus policy, and return it with every
+    PolicyDoc (corpus and generated) for the knowledge build."""
     rng = random.Random(seed)
+    counters: defaultdict[str, count] = defaultdict(lambda: count(1))
+
+    def new_id(prefix: str) -> str:
+        return f"{prefix}-BG-{next(counters[prefix]):04d}"
+
     g = Graph()
-    identities = _identities(g, rng, customer_count)
-    commerce = _commerce(g, merchant_count, identities)
-    transactions = _transactions(g, rng, transaction_count, identities, commerce)
-    _disputes(g, dispute_count, identities, transactions)
-    _historical_findings(g, identities, commerce, transactions)
-    return g
-
-
-def _identities(g: Graph, rng: random.Random, count: int) -> dict:
-    address_count = max(20, count * 3 // 5)
-    device_count = max(20, count * 4 // 5)
-    ip_count = max(12, count // 3)
-    phone_count = max(20, count * 9 // 10)
-
-    addresses = []
-    for i in range(address_count):
-        household = i // 4
-        address_id = _id("ADR", i)
-        addresses.append(address_id)
-        g.node(
-            "Address",
-            address_id,
-            street=f"{100 + household} {_STREETS[household % len(_STREETS)]} Street",
-            unit=f"{i % 4 + 1}{chr(65 + household % 4)}",
-            city=_CITIES[household % len(_CITIES)],
-            postcode=f"{10000 + household % 89999:05d}",
-        )
-
-    devices = []
-    for i in range(device_count):
-        device_id = _id("DEV", i)
-        devices.append(device_id)
-        g.node(
-            "Device",
-            device_id,
-            kind=("phone", "laptop", "tablet")[i % 3],
-            fingerprint=f"fp-{rng.getrandbits(64):016x}",
-        )
-
-    ips = []
-    for i in range(ip_count):
-        ip_id = _id("IP", i)
-        ips.append(ip_id)
-        kind = "office" if i % 11 == 0 else "cgnat" if i % 3 == 0 else "residential"
-        g.node("IP", ip_id, address=f"10.{i // 65025}.{i // 255 % 255}.{i % 255}", kind=kind)
-
-    phones = []
-    for i in range(phone_count):
-        phone_id = _id("PHN", i)
-        phones.append(phone_id)
-        g.node("Phone", phone_id, number=f"+1-555-{i // 10000:03d}-{i % 10000:04d}")
-
-    customers, accounts, cards = [], [], []
-    for i in range(count):
-        customer_id, account_id, card_id, email_id = (
-            _id("CUS", i),
-            _id("ACC", i),
-            _id("CRD", i),
-            _id("EML", i),
-        )
-        customers.append(customer_id)
-        accounts.append(account_id)
-        cards.append(card_id)
-        opened = (_START - timedelta(days=400 + i % 1_200)).isoformat()
-        g.node(
-            "Customer",
-            customer_id,
-            name=f"{_FIRST[i % len(_FIRST)]} {_LAST[(i // len(_FIRST)) % len(_LAST)]}",
-            segment=("consumer", "student", "small_business")[i % 3],
-            opened_at=opened,
-        )
-        g.node(
-            "Account",
-            account_id,
-            kind="credit" if i % 4 else "debit",
-            status="open",
-            opened_at=opened,
-            credit_limit=float(1_000 + i % 20 * 500),
-        )
-        g.node(
-            "Card",
-            card_id,
-            last4=f"{i % 10000:04d}",
-            network="visa",
-            status="active",
-            issued_at=(_START - timedelta(days=180 + i % 500)).isoformat(),
-        )
-        g.node("Email", email_id, address=f"customer{i}@example.test")
-        address_id = addresses[(i // 2) % address_count]
-        device_id = devices[(i // 2) % device_count]
-        phone_id = phones[i % phone_count]
-        ip_id = ips[(i // 6) % ip_count]
-        g.edge("HOLDS", customer_id, account_id, role="primary", valid_from=opened, valid_to="")
-        g.edge("ISSUED_ON", card_id, account_id)
-        g.edge("CARRIES", customer_id, device_id)
-        g.edge("LIVES_AT", customer_id, address_id, valid_from="2024-01-01", valid_to="")
-        g.edge("HAS_PHONE", customer_id, phone_id, valid_from="2025-01-01", valid_to="")
-        g.edge("HAS_EMAIL", customer_id, email_id)
-        g.edge(
-            "LOGGED_IN_FROM",
-            customer_id,
-            device_id,
-            ts=_timestamp(i),
-            ip=g.nodes[ip_id]["props"]["address"],
-        )
-        if i % 8 == 0:
-            g.edge("WORKS_AT", customer_id, addresses[(i + 7) % address_count])
-
-    for i in range(0, count - 1, 10):
-        g.edge(
-            "HOLDS",
-            customers[i + 1],
-            accounts[i],
-            role="authorized",
-            valid_from="2025-06-01",
-            valid_to="",
-        )
-
-    # A recycled number whose ownership periods do not overlap.
-    recycled = phones[-1]
-    g.edge("HAS_PHONE", customers[0], recycled, valid_from="2024-01-01", valid_to="2025-05-31")
-    g.edge("HAS_PHONE", customers[1], recycled, valid_from="2025-06-01", valid_to="")
-
-    tokens = []
-    for i in range(max(5, count // 4)):
-        token_id = _id("TOK", i)
-        tokens.append(token_id)
-        g.node(
-            "Token",
-            token_id,
-            wallet=("apple", "google", "merchant")[i % 3],
-            created_at="2025-01-01",
-        )
-        g.edge("TOKENIZED_AS", cards[i % count], token_id)
-        g.edge("BOUND_TO_DEVICE", token_id, devices[(i // 2) % device_count])
-
-    return {
-        "customers": customers,
-        "accounts": accounts,
-        "cards": cards,
-        "tokens": tokens,
-        "devices": devices,
-        "ips": ips,
-        "phones": phones,
-        "addresses": addresses,
+    docs = load_policies(corpus)
+    _merchants(g)
+    for doc in docs:
+        add_to_graph(g, doc)
+    _amex_terms(g)
+    generated, terms = _merchant_policies(g, rng, new_id)
+    cards = _card_members(g, rng, new_id)
+    retail, refused = _retail(g, rng, new_id, cards, terms)
+    lodging = _lodging(g, rng, new_id, cards, terms)
+    dining = _dining(g, rng, new_id, cards)
+    subscriptions = _subscriptions(g, rng, new_id, cards, terms)
+    installments = _invoices(g, rng, new_id, cards, terms)
+    _offers(g, rng, new_id, cards)
+    pools = {
+        "refused": refused,
+        "retail": retail,
+        "furniture": [s for s in retail if _CATEGORIES[s.merchant] == "furniture"],
+        "lodging": lodging,
+        "dining": dining,
+        "service": lodging + dining,
+        "subscription": subscriptions,
+        "installment": installments,
     }
+    _past_disputes(g, rng, new_id, pools)
+    return g, docs + generated
 
 
-def _commerce(g: Graph, count: int, identities: dict) -> dict:
-    merchants, terminals, descriptors = [], [], []
-    for i in range(count):
-        merchant_id = _id("MER", i)
-        merchants.append(merchant_id)
-        g.node(
-            "Merchant",
-            merchant_id,
-            name=f"{_LAST[i % len(_LAST)]} {_MERCHANTS[i % len(_MERCHANTS)]} {i:03d}",
-            mcc=f"{5000 + i % 800:04d}",
-            kind="marketplace" if i < 2 else "retail",
-            country="US",
-        )
-        descriptor_id = _id("DSC", i)
-        descriptors.append(descriptor_id)
-        g.node(
-            "Descriptor", descriptor_id, text=f"{_MERCHANTS[i % len(_MERCHANTS)].upper()}*{i:04d}"
-        )
-        g.edge("DESCRIBES", descriptor_id, merchant_id, valid_from="2025-01-01", valid_to="")
-        account_id = _id("MAC", i)
-        g.node("MerchantAccount", account_id, handle=f"merchant-{i}", created_at="2024-01-01")
-        owner = identities["customers"][(i * 13) % len(identities["customers"])]
-        g.edge("HOLDS", owner, account_id, role="owner", valid_from="2024-01-01", valid_to="")
-        g.edge("AT_MERCHANT", account_id, merchant_id)
-        g.edge(
-            "MERCHANT_LOGIN_FROM",
-            account_id,
-            identities["ips"][i % len(identities["ips"])],
-            ts=_timestamp(i),
-        )
-        for j in range(2):
-            terminal_id = _id("TRM", i * 2 + j)
-            terminals.append(terminal_id)
-            g.node(
-                "Terminal",
-                terminal_id,
-                kind="physical" if j == 0 else "online",
-                location=f"site-{i}-{j}",
+def stats(graph: Graph) -> None:
+    """Print node and edge counts."""
+    for name, counts in (
+        ("nodes", Counter(n["label"] for n in graph.nodes.values())),
+        ("edges", Counter(e["type"] for e in graph.edges)),
+    ):
+        print(f"{name} {json.dumps(dict(sorted(counts.items())))}")
+
+
+def _merchants(g: Graph) -> None:
+    for merchant, name, category, channel in _MERCHANTS:
+        g.node("Merchant", merchant, name=name, category=category, channel=channel)
+    for merchant, (descriptor, text) in _DESCRIPTORS.items():
+        g.node("Descriptor", descriptor, text=text)
+        g.edge("DESCRIBES", descriptor, merchant)
+    for affiliate, parent in _AFFILIATES:
+        g.edge("AFFILIATE_OF", affiliate, parent)
+
+
+def _amex_terms(g: Graph) -> None:
+    """Every Merchant is bound by the Merchant Regulations; the Platinum Stays hotels also by the
+    program's participation terms."""
+    for merchant in _NAMES:
+        g.edge("BOUND_BY", merchant, AMEX_MR)
+    g.node("Program", PLATINUM_STAYS, name="Platinum Stays", eligible_product="Platinum")
+    g.edge("GOVERNS", AMEX_PLAT_BEN, PLATINUM_STAYS)
+    g.edge("GOVERNS", AMEX_PS_PART, PLATINUM_STAYS)
+    for hotel in _PLATINUM_STAYS_HOTELS:
+        g.edge("PARTICIPATES_IN", hotel, PLATINUM_STAYS)
+        g.edge("BOUND_BY", hotel, AMEX_PS_PART)
+
+
+def _merchant_policies(g: Graph, rng, new_id) -> tuple[list[PolicyDoc], dict[str, list[str]]]:
+    """Template policies for background Merchants; retailers get a second, stricter version.
+    Returns the new documents and each Merchant's policy versions, oldest first."""
+    docs = []
+    terms = {merchant: [doc] for merchant, doc in _CORPUS_TERMS.items()}
+    for merchant, name, category, _ in _MERCHANTS:
+        if merchant in terms:
+            continue
+        kind, title, clauses = _TEMPLATES[category]
+        params = {
+            "hours": rng.choice((24, 48, 72)),
+            "service": rng.choice((18, 20)),
+            "shipping": rng.choice(("free", "paid by the customer")),
+        }
+        windows = (30, rng.choice((14, 21))) if category in _CATALOG else (30,)
+        terms[merchant] = []
+        for version, days in enumerate(windows, start=1):
+            doc_id = new_id("POL")
+            suffix = doc_id.removeprefix("POL-")
+            doc = PolicyDoc(
+                id=doc_id,
+                title=f"{name} {title}",
+                owner="merchant",
+                kind=kind,
+                version=str(version),
+                audience="card_member",
+                source_url="",
+                publisher=merchant,
+                clauses=tuple(
+                    Clause(f"CLS-{suffix}-{n}", str(n), heading, text.format(days=days, **params))
+                    for n, (heading, text) in enumerate(clauses, start=1)
+                ),
             )
-            g.edge("AT_MERCHANT", terminal_id, merchant_id)
-        if i >= 2 and i % 5 == 0:
-            g.edge("SUB_MERCHANT_OF", merchant_id, merchants[i % 2])
-
-    alias = _id("DSC", count)
-    g.node("Descriptor", alias, text="MARKETPLACE*PARTNER")
-    g.edge("DESCRIBES", alias, merchants[2], valid_from="2025-01-01", valid_to="")
-    g.edge("SUB_MERCHANT_OF", alias, merchants[0])
-
-    providers, mandates = [], []
-    for i in range(3):
-        provider_id = _id("AGP", i)
-        providers.append(provider_id)
-        g.node("AgentProvider", provider_id, name=f"Booking Agent {i}", kind="travel")
-        g.edge("ACTING_FOR", provider_id, identities["customers"][i])
-    for i in range(5):
-        mandate_id = _id("MDT", i)
-        mandates.append(mandate_id)
-        g.node(
-            "Mandate",
-            mandate_id,
-            scope="travel_booking",
-            max_amount=float(500 + i * 250),
-            valid_from="2025-01-01",
-            valid_to="2027-01-01",
-        )
-        g.edge("AUTHORIZED_BY_MANDATE", mandate_id, providers[i % len(providers)])
-        g.edge("ACTING_FOR", identities["tokens"][i], providers[i % len(providers)])
-
-    return {
-        "merchants": merchants,
-        "terminals": terminals,
-        "descriptors": descriptors,
-        "mandates": mandates,
-    }
+            add_to_graph(g, doc)
+            docs.append(doc)
+            terms[merchant].append(doc_id)
+    return docs, terms
 
 
-def _transactions(
-    g: Graph, rng: random.Random, count: int, identities: dict, commerce: dict
-) -> list[dict]:
-    transactions: list[dict] = []
-    merchant_count = len(commerce["merchants"])
-    for i in range(count):
-        customer_index = rng.randrange(len(identities["customers"]))
-        merchant_index = rng.randrange(merchant_count)
-        txn_id, auth_id = _id("TXN", i), _id("AUT", i)
-        ts = _timestamp(rng.randrange(184 * 24), hours=True)
-        amount = round(4 + rng.random() * 496, 2)
-        refund = i > 0 and i % 37 == 0
-        channel = "ecommerce" if i % 3 == 0 else "card_present"
-        card_id = identities["cards"][customer_index]
-        device_id = identities["devices"][(customer_index // 2) % len(identities["devices"])]
-        ip_id = identities["ips"][(customer_index // 6) % len(identities["ips"])]
-        merchant_id = commerce["merchants"][merchant_index]
-        terminal_id = commerce["terminals"][merchant_index * 2 + (channel == "ecommerce")]
-        g.node(
-            "Transaction",
-            txn_id,
-            ts=ts,
-            amount=-amount if refund else amount,
-            currency="USD",
-            kind="refund" if refund else "purchase",
-            channel=channel,
-            status="posted",
-        )
-        g.node("Authorization", auth_id, ts=ts, amount=amount, currency="USD", status="approved")
-        payment = (
-            identities["tokens"][customer_index % len(identities["tokens"])]
-            if i % 7 == 0
-            else card_id
-        )
-        g.edge("PAID_WITH", txn_id, payment)
-        g.edge("PAID_WITH", auth_id, card_id)
-        g.edge("AT_MERCHANT", txn_id, merchant_id)
-        g.edge("VIA_TERMINAL", txn_id, terminal_id)
-        g.edge("CLEARS", txn_id, auth_id, seq=1)
-        g.edge("FROM_DEVICE", txn_id, device_id)
-        g.edge("FROM_IP", txn_id, ip_id)
-        descriptor = commerce["descriptors"][merchant_index]
-        g.edge("DESCRIBES", descriptor, txn_id, valid_from="2025-01-01", valid_to="")
-        if refund:
-            g.edge("REFUNDS", txn_id, transactions[-1]["id"])
-        order_id = ""
-        if channel == "ecommerce":
-            order_id, shipment_id = _id("ORD", i), _id("SHP", i)
-            g.node(
-                "PurchaseOrder",
-                order_id,
-                ts=ts,
-                total=amount,
-                currency="USD",
-                items=f"item-{i % 50}",
-            )
-            g.node(
-                "Shipment",
-                shipment_id,
-                carrier=("DHL", "UPS", "USPS")[i % 3],
-                tracking=f"TRACK{i:010d}",
-                shipped_at=ts[:10],
-            )
-            g.edge("FOR_ORDER", txn_id, order_id)
-            g.edge("FROM_DEVICE", order_id, device_id)
-            g.edge("FROM_IP", order_id, ip_id)
-            g.edge("SHIPPED_AS", order_id, shipment_id)
-            g.edge(
-                "DELIVERED_TO",
-                shipment_id,
-                identities["addresses"][(customer_index // 2) % len(identities["addresses"])],
-                pod="photo" if i % 4 else "none",
-                signer="resident" if i % 5 else "",
-            )
-        if i % 997 == 0:
-            g.edge(
-                "AUTHORIZED_BY_MANDATE", txn_id, commerce["mandates"][i % len(commerce["mandates"])]
-            )
-        transactions.append(
-            {
-                "id": txn_id,
-                "customer": identities["customers"][customer_index],
-                "account": identities["accounts"][customer_index],
-                "device": device_id,
-                "ip": ip_id,
-                "merchant": merchant_id,
-                "order": order_id,
-                "amount": amount,
-                "ts": ts,
-            }
-        )
-    return transactions
+def _accepted(terms: dict[str, list[str]], merchant: str, day: date) -> str:
+    versions = terms[merchant]
+    return versions[-1] if day >= _SECOND_VERSION else versions[0]
 
 
-def _disputes(
-    g: Graph,
-    count: int,
-    identities: dict,
-    transactions: list[dict],
-) -> None:
-    for i in range(count):
-        txn = transactions[(i * 137 + 11) % len(transactions)]
-        dispute_id, evidence_id = _id("DSP", i), _id("EVI", i)
-        filed = (_START + timedelta(days=184 + i % 30)).isoformat()
-        claim = _CLAIMS[i % len(_CLAIMS)]
-        g.node(
-            "Dispute",
-            dispute_id,
-            filed_at=filed,
-            claim_type=claim,
-            amount=txn["amount"],
-            intake=f"Customer reports {claim.replace('_', ' ')} for a ${txn['amount']:.2f} charge.",
-            status="closed" if i % 4 else "open",
-        )
-        g.edge("FILED_BY", dispute_id, txn["customer"])
-        g.edge("DISPUTES", dispute_id, txn["id"], amount=txn["amount"])
-        g.node(
-            "EvidenceItem",
-            evidence_id,
-            kind="merchant_record",
-            source="merchant",
-            text=f"Merchant record for order {txn['order'] or 'not supplied'}",
-            ts=txn["ts"],
-        )
-        g.edge("HAS_EVIDENCE", dispute_id, evidence_id)
-        assert_target = (txn["device"], txn["ip"], txn["id"], txn["order"] or txn["id"])[i % 4]
-        g.edge("ASSERTS", evidence_id, assert_target)
-        if i % 2 == 0:
-            communication_id = _id("COM", i)
-            g.node(
-                "Communication",
-                communication_id,
-                channel="secure_message",
-                ts=txn["ts"],
-                sender="cardholder",
-                text="I do not recognize this transaction."
-                if claim == "fraud"
-                else "Please investigate this purchase.",
-            )
-            g.edge("HAS_EVIDENCE", dispute_id, communication_id)
-        if i % 3 == 0:
-            request_id = _id("ERQ", i)
-            status = ("responded", "no_response", "pending")[(i // 3) % 3]
-            deadline = (_START + timedelta(days=210 + i)).isoformat()
-            g.node(
-                "EvidenceRequest",
-                request_id,
-                party="merchant",
-                status=status,
-                deadline=deadline,
-                deadline_passed=status != "pending",
-                responded_at=deadline if status == "responded" else "",
-            )
-            g.edge("REQUESTED", dispute_id, request_id, requested_at=filed)
-        if i and i % 10 == 0:
-            g.edge("RELATED_TO", dispute_id, _id("DSP", i - 1))
-        if i % 4 == 0:
-            event_id = _id("AEV", i)
-            g.node(
-                "AccountEvent",
-                event_id,
-                kind="phone_change",
-                ts=txn["ts"],
-                detail="self-service profile update",
-            )
-            g.edge(
-                "ABOUT",
-                event_id,
-                txn["account"],
-                run_id="seed",
-                confidence=1.0,
-                evidence_path=event_id,
-            )
-            g.edge("TRIGGERED_BY", event_id, txn["device"] if i % 8 else txn["ip"])
-            g.edge(
-                "CHANGED_PHONE_TO",
-                event_id,
-                identities["phones"][(i + 3) % len(identities["phones"])],
-            )
+def _card_members(g: Graph, rng, new_id) -> list[_Card]:
+    """135 Basic Card Members (a third with two Card Products, three namesakes of others) and
+    15 Additional Card Members on their accounts."""
+    names = rng.sample([f"{f} {last}" for f in _FIRST for last in _LAST], 132)
+    names += rng.sample(names, 3)
+    cards = []
+    for name in names:
+        member = _person(g, rng, new_id, name)
+        pair = rng.random() < 1 / 3
+        products = rng.choice(_PRODUCT_PAIRS) if pair else rng.choices(_PRODUCTS, (2, 4, 2, 3))
+        for product in products:
+            account = new_id("ACC")
+            g.node("CardAccount", account, product=product, status="open")
+            g.edge("HOLDS", member, account, role="basic")
+            g.edge("BOUND_BY", account, AMEX_CMA)
+            if product == "Platinum":
+                g.edge("BOUND_BY", account, AMEX_PLAT_BEN)
+            cards.append(_issue(g, rng, new_id, account, member, member, product))
+    for basic in rng.sample(cards, 15):
+        surname = g.nodes[basic.holder]["props"]["name"].split()[-1]
+        member = _person(g, rng, new_id, f"{rng.choice(_FIRST)} {surname}")
+        g.edge("HOLDS", member, basic.account, role="additional")
+        cards.append(_issue(g, rng, new_id, basic.account, member, basic.holder, basic.product))
+    return cards
 
 
-def _historical_findings(
-    g: Graph, identities: dict, commerce: dict, transactions: list[dict]
-) -> None:
-    for i in range(3):
-        note_id, finding_id = _id("MEM", i), _id("FND", i)
-        run_id = f"historical-{i}"
-        path = f"{transactions[i]['id']}>{transactions[i]['merchant']}"
-        g.node(
-            "MemoryNote",
-            note_id,
-            text="Historical merchant pattern; revalidate before use.",
-            status="active",
-            created_at="2026-01-01",
-            run_id=run_id,
-            confidence=0.6,
-        )
-        g.node(
-            "Finding",
-            finding_id,
-            text="Shared identifier observed in historical review.",
-            kind="pattern",
-            run_id=run_id,
-            confidence=0.7,
-            evidence_path=path,
-        )
-        provenance = {"run_id": run_id, "confidence": 0.7, "evidence_path": path}
-        g.edge("ABOUT", note_id, commerce["merchants"][i], **provenance)
-        g.edge("ABOUT", finding_id, transactions[i]["id"], **provenance)
-        g.edge("SUPPORTS", finding_id, _id("DSP", i), **provenance)
-        g.edge("CONTRADICTS", finding_id, note_id, **provenance)
-    provenance = {"run_id": "historical-link", "confidence": 0.55, "evidence_path": "shared-device"}
-    g.edge("SAME_ACTOR", identities["customers"][0], identities["customers"][1], **provenance)
-    g.edge("COMPROMISED_AT", identities["cards"][0], commerce["terminals"][0], **provenance)
+def _person(g: Graph, rng, new_id, name: str) -> str:
+    member = new_id("CMB")
+    since = date(2005, 1, 1) + timedelta(days=rng.randrange(7300))
+    g.node("CardMember", member, name=name, member_since=since.isoformat())
+    return member
 
 
-def stats(graph: Graph) -> dict[str, dict[str, int]]:
-    """Print and return counts by node label and edge type."""
-    result = {
-        "nodes": dict(sorted(Counter(n["label"] for n in graph.nodes.values()).items())),
-        "edges": dict(sorted(Counter(e["type"] for e in graph.edges).items())),
-    }
-    print(f"nodes {json.dumps(result['nodes'], sort_keys=True)}")
-    print(f"edges {json.dumps(result['edges'], sort_keys=True)}")
-    return result
-
-
-def _id(prefix: str, index: int) -> str:
-    return f"{prefix}-{index + 1:07d}"
-
-
-def _timestamp(offset: int, *, hours: bool = False) -> str:
-    moment = datetime.combine(_START, datetime.min.time()) + (
-        timedelta(hours=offset) if hours else timedelta(days=offset % 184, hours=offset % 24)
+def _issue(g: Graph, rng, new_id, account, holder, basic, product) -> _Card:
+    """A Card on `account` carried by `holder`; `basic` is the account's Basic Card Member."""
+    card = new_id("CRD")
+    role = "basic" if holder == basic else "additional"
+    g.node(
+        "Card",
+        card,
+        last4=f"{rng.randrange(10000):04d}",
+        product=product,
+        role=role,
+        status="active",
     )
-    return moment.isoformat(timespec="seconds") + "Z"
+    g.edge("ISSUED_ON", card, account)
+    g.edge("CARRIED_BY", card, holder)
+    return _Card(card, account, product, holder, basic)
+
+
+def _day(rng) -> date:
+    return _YEAR + timedelta(days=rng.randrange(230))
+
+
+def _charge(g: Graph, new_id, card: str, merchant: str, day: date, amount: float, kind: str) -> str:
+    charge = new_id("CHG")
+    g.node(
+        "Charge",
+        charge,
+        date=day.isoformat(),
+        amount=round(amount, 2),
+        currency="USD",
+        kind=kind,
+        status="posted",
+    )
+    g.edge("CHARGED_TO", charge, card)
+    g.edge("AT_MERCHANT", charge, merchant)
+    return charge
+
+
+def _credit(g: Graph, rng, new_id, sale: _Sale, amount: float) -> None:
+    day = sale.day + timedelta(days=rng.randint(10, 30))
+    credit = _charge(g, new_id, sale.card.id, sale.merchant, day, -amount, "credit")
+    g.edge("REFUNDS", credit, sale.charge)
+
+
+def _retail(g: Graph, rng, new_id, cards, terms) -> tuple[list[_Sale], list[_Sale]]:
+    """Furniture and apparel orders with line items; some returned (refused when an option is
+    custom), some partly credited. Returns every order's sale and those whose return was refused."""
+    catalog = {}
+    for merchant in _merchants_in(*_CATALOG):
+        catalog[merchant] = []
+        for name, price, standard, custom in rng.sample(_CATALOG[_CATEGORIES[merchant]], 4):
+            product = new_id("PRD")
+            g.node("Product", product, name=name, standard_options=standard, custom_options=custom)
+            g.edge("SOLD_BY", product, merchant)
+            catalog[merchant].append((product, name, price, standard, custom))
+    sales, refused = [], []
+    for _ in range(850):
+        merchant, card, day = rng.choice(list(catalog)), rng.choice(cards), _day(rng)
+        order, doc = new_id("ORD"), _accepted(terms, merchant, day)
+        chosen, is_custom = [], False
+        for product, name, price, standard, custom in rng.sample(
+            catalog[merchant], rng.randint(1, 2)
+        ):
+            custom_option = bool(custom) and rng.random() < 0.15
+            is_custom |= custom_option
+            option = rng.choice((custom if custom_option else standard).split("; "))
+            chosen.append((product, name, price, option))
+        total = sum(price for _, _, price, _ in chosen)
+        g.node(
+            "Order",
+            order,
+            date=day.isoformat(),
+            kind="retail",
+            total=total,
+            currency="USD",
+            summary="; ".join(f"{name} ({option})" for _, name, _, option in chosen),
+        )
+        g.edge("AT_MERCHANT", order, merchant)
+        g.edge("ACCEPTED", order, doc, method="checkbox at checkout")
+        for product, name, price, option in chosen:
+            line = new_id("LIN")
+            g.node("LineItem", line, description=name, quantity=1, unit_price=price, option=option)
+            g.edge("HAS_LINE", order, line)
+            g.edge("OF_PRODUCT", line, product)
+        charge = _charge(g, new_id, card.id, merchant, day, total, "purchase")
+        g.edge("FOR_ORDER", charge, order)
+        sale = _Sale(
+            charge, card, merchant, day, total, f"the {chosen[0][1]}", _NAMES[merchant], order, doc
+        )
+        sales.append(sale)
+        roll = rng.random()
+        if is_custom and roll < 0.15:
+            ret = _return(
+                g, rng, new_id, order, "refused", "Return refused: custom item, final sale."
+            )
+            refused.append(sale._replace(record=ret))
+        elif not is_custom and roll < 0.03:
+            _return(
+                g,
+                rng,
+                new_id,
+                order,
+                "received and refunded",
+                "Received in original condition; refunded to the original Card.",
+            )
+            _credit(g, rng, new_id, sale, total)
+        elif roll > 0.92:
+            _credit(g, rng, new_id, sale, round(total * rng.choice((0.1, 0.15, 0.25)), 2))
+    return sales, refused
+
+
+def _return(g: Graph, rng, new_id, order: str, status: str, note: str) -> str:
+    ret = new_id("RTN")
+    g.node("Return", ret, method=rng.choice(_RETURN_METHODS), status=status, note=note)
+    g.edge("RETURNED_AS", order, ret)
+    return ret
+
+
+def _lodging(g: Graph, rng, new_id, cards, terms) -> list[_Sale]:
+    """Hotel bookings guaranteed with the Card that pays; Platinum Stays bookings only with a
+    Platinum Card at a participating hotel."""
+    hotels = _merchants_in("lodging")
+    rates = {hotel: rng.randrange(180, 520, 10) for hotel in hotels}
+    platinum = [c for c in cards if c.product == "Platinum"]
+    sales = []
+    for _ in range(350):
+        hotel = rng.choice(hotels)
+        program = hotel in _PLATINUM_STAYS_HOTELS and rng.random() < 0.5
+        card = rng.choice(platinum if program else cards)
+        rate = round(rates[hotel] * 0.8) if program else rates[hotel]
+        booked = _day(rng)
+        arrival = booked + timedelta(days=rng.randint(7, 60))
+        nights = rng.randint(1, 4)
+        plan = "Platinum Stays rate" if program else "Best Available Rate"
+        stay = f"{nights} night" + ("s" if nights > 1 else "")
+        total = float(nights * rate)
+        order, doc = new_id("ORD"), _accepted(terms, hotel, booked)
+        g.node(
+            "Order",
+            order,
+            date=booked.isoformat(),
+            kind="lodging",
+            total=total,
+            currency="USD",
+            summary=f"{stay}, {plan} ${rate}/night, arriving {arrival}",
+        )
+        g.edge("AT_MERCHANT", order, hotel)
+        g.edge("GUARANTEED_WITH", order, card.id)
+        g.edge("ACCEPTED", order, doc, method="booking confirmation")
+        if program:
+            g.edge("UNDER_PROGRAM", order, PLATINUM_STAYS)
+        day = arrival + timedelta(days=nights)
+        charge = _charge(g, new_id, card.id, hotel, day, total, "purchase")
+        g.edge("FOR_ORDER", charge, order)
+        sale = _Sale(charge, card, hotel, day, total, "my stay", _NAMES[hotel], order, doc)
+        sales.append(sale)
+        if rng.random() < 0.08:
+            _credit(g, rng, new_id, sale, float(rng.choice((25, 40, 60))))
+    return sales
+
+
+def _dining(g: Graph, rng, new_id, cards) -> list[_Sale]:
+    restaurants = _merchants_in("dining")
+    sales = []
+    for _ in range(1500):
+        merchant, card, day = rng.choice(restaurants), rng.choice(cards), _day(rng)
+        amount = rng.randrange(1800, 24000) / 100
+        charge = _charge(g, new_id, card.id, merchant, day, amount, "purchase")
+        sales.append(
+            _Sale(charge, card, merchant, day, amount, "a meal", _NAMES[merchant], charge, "")
+        )
+    return sales
+
+
+def _subscriptions(g: Graph, rng, new_id, cards, terms) -> list[_Sale]:
+    """Monthly plans billed under each streaming Merchant's descriptor; some cancelled."""
+    sales = []
+    for _ in range(20):
+        merchant = rng.choice(list(_PLANS))
+        plan, price = rng.choice(_PLANS[merchant])
+        card = rng.choice(cards)
+        first = rng.randint(1, 5)
+        cancelled = rng.random() < 0.3
+        last = rng.randint(first + 1, 7) if cancelled else 8
+        descriptor, shown = _DESCRIPTORS[merchant]
+        start = date(2026, first, rng.randint(1, 28))
+        subscription, doc = new_id("SUB"), _accepted(terms, merchant, start)
+        g.node(
+            "Subscription",
+            subscription,
+            plan=plan,
+            amount=price,
+            frequency="monthly",
+            status="cancelled" if cancelled else "active",
+        )
+        g.edge("AT_MERCHANT", subscription, merchant)
+        g.edge("SUBSCRIBED_WITH", subscription, card.id)
+        g.edge("ACCEPTED", subscription, doc, method="checkbox at sign-up")
+        for month in range(first, last + 1):
+            day = start.replace(month=month)
+            charge = _charge(g, new_id, card.id, merchant, day, price, "recurring")
+            g.edge("FOR_SUBSCRIPTION", charge, subscription)
+            g.edge("DESCRIBED_AS", charge, descriptor)
+            sales.append(
+                _Sale(
+                    charge, card, merchant, day, price, f"the {plan} plan", shown, subscription, doc
+                )
+            )
+    return sales
+
+
+def _invoices(g: Graph, rng, new_id, cards, terms) -> list[_Sale]:
+    """Venue and catering invoices split into installments, each paid by Card or by other means.
+    Returns the installments paid by Card."""
+    venues = _merchants_in(*_INVOICES)
+    sales = []
+    for _ in range(10):
+        merchant, card = rng.choice(venues), rng.choice(cards)
+        description = rng.choice(_INVOICES[_CATEGORIES[merchant]])
+        total = float(rng.randrange(2000, 9001, 500))
+        shares = rng.choice(((0.25,), (0.2, 0.4)))
+        amounts = [round(total * s, -1) for s in shares]
+        amounts.append(total - sum(amounts))
+        labels = ("Deposit", "Second payment")[: len(shares)] + ("Balance",)
+        issued = _YEAR + timedelta(days=rng.randrange(120))
+        invoice, doc = new_id("INV"), _accepted(terms, merchant, issued)
+        g.node(
+            "Invoice",
+            invoice,
+            date=issued.isoformat(),
+            total=total,
+            currency="USD",
+            description=description,
+        )
+        g.edge("AT_MERCHANT", invoice, merchant)
+        g.edge("BILLED_TO", invoice, card.holder)
+        g.edge("ACCEPTED", invoice, doc, method="signature")
+        day = issued
+        for label, amount in zip(labels, amounts, strict=True):
+            installment = new_id("INS")
+            g.node("Installment", installment, label=label, amount=amount)
+            g.edge("HAS_INSTALLMENT", invoice, installment)
+            day += timedelta(days=rng.randint(20, 60))
+            if rng.random() < 0.6:
+                charge = _charge(g, new_id, card.id, merchant, day, amount, "purchase")
+                g.edge("SETTLES", charge, installment)
+                subject = description.lower()
+                sales.append(
+                    _Sale(
+                        charge,
+                        card,
+                        merchant,
+                        day,
+                        amount,
+                        subject,
+                        _NAMES[merchant],
+                        installment,
+                        doc,
+                    )
+                )
+            else:
+                payment = new_id("PAY")
+                surname = g.nodes[card.holder]["props"]["name"].split()[-1].upper()
+                g.node(
+                    "Payment",
+                    payment,
+                    date=day.isoformat(),
+                    method=rng.choice(("bank_transfer", "bank_transfer", "cheque")),
+                    amount=amount,
+                    reference=f"{_NAMES[merchant].upper()} {label.upper()} {surname}",
+                )
+                g.edge("PAID_BY", payment, card.holder)
+                g.edge("AT_MERCHANT", payment, merchant)
+                g.edge("SETTLES", payment, installment)
+    return sales
+
+
+def _offers(g: Graph, rng, new_id, cards) -> None:
+    """Twelve Offers at background Merchants: ten Amex Offers enrolled on specific Cards, two
+    merchant-funded promotions."""
+    eligible = [
+        m
+        for m in _merchants_in("furniture", "apparel", "lodging", "dining")
+        if m not in _CORPUS_TERMS
+    ]
+    for n, merchant in enumerate(rng.sample(eligible, 12)):
+        spend, credit = rng.choice(((100, 20), (150, 25), (200, 30), (250, 50), (500, 100)))
+        amex = n < 10
+        name = _NAMES[merchant]
+        title = (
+            f"Spend ${spend} or more at {name}, get ${credit} back"
+            if amex
+            else f"{name}: ${credit} off orders of ${spend} or more"
+        )
+        offer = new_id("OFR")
+        g.node(
+            "Offer",
+            offer,
+            title=title,
+            spend_threshold=float(spend),
+            credit_amount=float(credit),
+            funded_by="amex" if amex else "merchant",
+        )
+        g.edge("OFFER_AT", offer, merchant)
+        if amex:
+            g.edge("GOVERNS", AMEX_OFFER, offer)
+            for card in rng.sample(cards, rng.randint(3, 8)):
+                g.edge("ENROLLED_ON", offer, card.id)
+
+
+def _past_disputes(g: Graph, rng, new_id, pools: dict[str, list[_Sale]]) -> None:
+    """Resolved Disputes over distinct background charges, about half with a Merchant Submission."""
+    used: set[str] = set()
+    for spec in _PAST:
+        candidates = [s for s in pools[spec["pool"]] if s.charge not in used]
+        for sale in rng.sample(candidates, spec["count"]):
+            used.add(sale.charge)
+            if spec.get("duplicate"):
+                again = _charge(
+                    g, new_id, sale.card.id, sale.merchant, sale.day, sale.amount, "purchase"
+                )
+                sale = sale._replace(charge=again, record=again)
+            verdict, statement = rng.choice(spec["outcomes"])
+            disputed = round(sale.amount * spec.get("share", 1.0), 2)
+            words = {"subject": sale.subject, "shown": sale.shown, "amount": f"{disputed:,.2f}"}
+            dispute = new_id("DSP")
+            filed = sale.day + timedelta(days=rng.randint(5, 40))
+            g.node(
+                "Dispute",
+                dispute,
+                filed_at=filed.isoformat(),
+                amount=disputed,
+                intake=spec["intake"].format(**words),
+                status="resolved",
+                outcome=verdict,
+            )
+            g.edge("FILED_BY", dispute, sale.card.basic)
+            g.edge("DISPUTES", dispute, sale.charge, amount=disputed)
+            if verdict in ("accepted", "partially_accepted"):
+                share = 1 if verdict == "accepted" else 0.5
+                _credit(g, rng, new_id, sale, round(disputed * share, 2))
+            if statement:
+                kind, text = spec["evidence"]
+                _submission(g, new_id, dispute, sale, statement, kind, text.format(**words))
+
+
+def _submission(g: Graph, new_id, dispute, sale: _Sale, statement, kind, text) -> None:
+    """The node shape insert_submission writes: evidence ids derive from the submission id."""
+    submission = new_id("MSB")
+    item = f"EVI-{submission.removeprefix('MSB-')}-1"
+    g.node("MerchantSubmission", submission, statement=statement)
+    g.edge("HAS_SUBMISSION", dispute, submission)
+    g.node("EvidenceItem", item, kind=kind, source="merchant", text=text)
+    g.edge("HAS_EVIDENCE", submission, item)
+    g.edge("ASSERTS", item, sale.record)
+    if sale.terms:
+        g.edge("CITES", submission, sale.terms)

@@ -14,7 +14,7 @@ class Graph:
         self.nodes: dict[str, dict] = {}
         self.edges: list[dict] = []
 
-    def node(self, label: str, id: str, **props) -> str:
+    def node(self, label: str, id: str, /, **props) -> str:
         spec = self.spec["nodes"].get(label)
         if spec is None:
             raise ValueError(f"unknown node label {label!r}")
@@ -26,7 +26,7 @@ class Graph:
         self.nodes[id] = {"label": label, "id": id, "props": props}
         return id
 
-    def edge(self, type: str, src: str, dst: str, **props) -> str:
+    def edge(self, type: str, src: str, dst: str, /, **props) -> str:
         spec = self.spec["edges"].get(type)
         if spec is None:
             raise ValueError(f"unknown edge type {type!r}")
