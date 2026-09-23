@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S7 complete**
-Next stage: **S8 — Merchant agent extension (not wired)**
+Current phase: **S8 complete**
+Next stage: **S9 — API, showcase, schemas**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -116,7 +116,7 @@ Details for each stage are in the plan section of the same name.
 | **S5** Cases C, D, E + end-to-end generator | Complex | Case C "The Offer on the Other Card", case D "Paid by Transfer", case E "Cancelled the Wrong Plan"; `gen.py` ingests saved submissions; every ontology label/edge used. | ☑ |
 | **S6** Case Notebook, tools, read-only runtime | Medium | `notebook.py`; tools `graph_find`, `notebook_write`/`notebook_read`, memory in knowledge; runtime and API read the static graph; notebook in supervisor/adjudicator input. | ☑ |
 | **S7** Report, prompts, skills, evaluation | Complex | Six verdicts, Dispute Category, `ChargeDecision`, `SystemImprovement`; new `agents.yaml`; 9 label-agnostic skills; label-agnostic guard test; eval scoring. | ☑ |
-| **S8** Merchant agent extension (not wired) | Medium | `respond()` Deep Agent over merchant records, `save_submission`, guard test that nothing imports it, README section. | ☐ |
+| **S8** Merchant agent extension (not wired) | Medium | `respond()` Deep Agent over merchant records, `save_submission`, guard test that nothing imports it, README section. | ☑ |
 | **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☐ |
 | **S10** Frontend | Medium | Ontology-driven regions/colours; Notebook tab; Conclusion with category, six verdicts, System Improvements. | ☐ |
 | **S11** Real-LLM eval + tuning | Complex | pass@1 5/5 on A–E by improving skills, policy wording, ontology descriptions and prompts only. | ☐ |
@@ -436,3 +436,21 @@ Details for each stage are in the plan section of the same name.
   No tests were deleted. The `simplify` skill is not installed; manually reviewed every changed
   file for dead code, legacy paths and redundant abstraction, then reran checks.
 - No design decision changed; the spec was not edited. Real-LLM case performance remains for S11.
+
+### S8 — 2026-09-24
+- Added `src/extensions/merchant_agent/agent.py`: `respond` builds a Deep Agent with the shared
+  structured-output boundary and read-only list/read tools confined to one Merchant's records.
+  Added `store.py` to save a typed submission as `<dispute_id>.json` for the generator's existing
+  `load_saved` path. Added matching sample order and checkout terms under
+  `data/merchant_records/MER-HGF/`.
+- `tests/test_merchant_agent.py` covers structured response, save/load round-trip, clipped reads,
+  path traversal and symlink rejection, and the guard that runtime/config do not import or mention
+  the extension. Moved the reusable structured-model fake from `tests/test_runtime.py` into
+  `tests/conftest.py`. Extended the label-agnostic guard's required contract-name exception to
+  the new extension files. Added the README section for trying and later wiring the extension.
+- `uv run pytest`: 65 passed. `uv run ruff check src tests data/generator`,
+  `uv run ruff format --check src tests data/generator`, and `git diff --check`: passed.
+  No tests were deleted. The `simplify` skill is not installed; manually reviewed every changed
+  file for dead code, legacy paths and redundant abstraction, then reran checks.
+- No design decision changed; the spec was not edited. The Merchant agent remains intentionally
+  unwired, and its real-model behavior is untested until a live run is requested.

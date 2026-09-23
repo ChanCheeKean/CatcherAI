@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from conftest import StructuredModel
 from graph_builder import Graph
 
 from config import load_agents_config
@@ -158,20 +159,8 @@ def report():
     )
 
 
-class Model:
-    def __init__(self, turns):
-        self.responses = {Triage: [triage()], SupervisorTurn: list(turns)}
-        self.inputs = []
-        self.schema = None
-
-    def with_structured_output(self, schema, *, strict):
-        assert strict
-        self.schema = schema
-        return self
-
-    def invoke(self, messages):
-        self.inputs.append(json.loads(messages[0].content))
-        return self.responses[self.schema].pop(0)
+def model(turns):
+    return StructuredModel({Triage: [triage()], SupervisorTurn: list(turns)})
 
 
 class Agent:
@@ -205,15 +194,17 @@ class Builder:
 
 
 def test_parallel_delegation_notebook_and_static_graph(paths):
-    model, builder = Model([delegate(), decide(False), decide(True)]), Builder()
-    result = run_case(CASE_ID, paths=paths, run_id="run-test", model=model, agent_builder=builder)
+    fake_model, builder = model([delegate(), decide(False), decide(True)]), Builder()
+    result = run_case(
+        CASE_ID, paths=paths, run_id="run-test", model=fake_model, agent_builder=builder
+    )
     assert result.verdict == Verdict.ACCEPTED
     entries = read_entries(paths.notebook_db, "run-test")
     assert entries[0]["node_ids"] == [CHARGE_ID]
     assert entries[0] in builder.inputs["adjudicator"]["notebook"]
     assert any(
         entry in item.get("notebook", [])
-        for item in model.inputs
+        for item in fake_model.inputs
         if "notebook" in item
         for entry in entries
     )
@@ -246,7 +237,7 @@ def test_forced_termination(paths, reason, limits):
         CASE_ID,
         paths=paths,
         run_id=reason,
-        model=Model([delegate()]),
+        model=model([delegate()]),
         agent_builder=Builder(),
         agents_config=config,
     )

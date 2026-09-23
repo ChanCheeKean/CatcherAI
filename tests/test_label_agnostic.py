@@ -14,6 +14,8 @@ EXEMPT = {Path("src/graph_store.py")}
 CONTRACT_NAMES = {
     Path("src/schemas.py"): {"ACCEPTED"},
     Path("src/extensions/merchant_agent/contract.py"): {"MerchantSubmission"},
+    Path("src/extensions/merchant_agent/agent.py"): {"MerchantSubmission"},
+    Path("src/extensions/merchant_agent/store.py"): {"MerchantSubmission"},
 }
 
 

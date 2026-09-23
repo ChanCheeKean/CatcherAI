@@ -87,6 +87,40 @@ must find, and a skill teaches the cardholder-favourable default.
 Built on LangChain Deep Agents and LangGraph for the agents, LadybugDB for the graph, FastAPI for the
 server and React for the interface.
 
+## Merchant agent (built, not wired)
+
+The optional Merchant agent answers a typed evidence request from files under one Merchant's
+records folder. Its tools list and read those records, and it returns a structured Merchant
+Submission that can be saved as JSON. `data/merchant_records/MER-HGF/` contains sample order and
+checkout terms files. Every showcase Merchant Submission is already in the generated graph; live
+investigations do not call this agent.
+
+To try the extension from the repository root, with an OpenAI API key configured:
+
+```python
+from pathlib import Path
+
+from extensions.merchant_agent.agent import respond
+from extensions.merchant_agent.contract import EvidenceAsk, MerchantEvidenceRequest
+from extensions.merchant_agent.store import save_submission
+from models import chat_model
+
+request = MerchantEvidenceRequest(
+    dispute_id="DSP-2026-91001",
+    merchant_id="MER-HGF",
+    charge_ids=["CHG-A01"],
+    asks=[EvidenceAsk(topic="accepted terms", detail="Show the checkout acceptance for ORD-A01")],
+)
+submission = respond(request, Path("data/merchant_records"), chat_model())
+submission = submission.model_copy(update={"submission_id": "MSB-HGF-DEMO"})
+save_submission(submission)
+```
+
+Run `uv run python data/generator/gen.py` to rebuild the static graph with saved submissions.
+For future wiring, a `request_merchant_evidence` tool could call `respond` and trigger a rebuild,
+or the submission could be placed in the Case Notebook. The extension is intentionally not
+connected to the investigation runtime or agent configuration.
+
 ## How to run
 
 You need Python 3.11 or newer with [uv](https://docs.astral.sh/uv/), Node.js, and an OpenAI API key

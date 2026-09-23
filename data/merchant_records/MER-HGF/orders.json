@@ -1,0 +1,14 @@
+[
+  {
+    "order_id": "ORD-A01",
+    "merchant_id": "MER-HGF",
+    "card_member": "Priya Raman",
+    "ordered_at": "2026-07-02",
+    "item": "Alder three-seat sofa, Customer's Own Material fabric",
+    "charge_id": "CHG-A01",
+    "total": 2400.00,
+    "checkout_policy_id": "POL-HGF-CO-V4",
+    "checkout_acceptance": "Checkbox selected before placing order",
+    "confirmation": "Custom fabric orders are final sale."
+  }
+]
