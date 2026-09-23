@@ -1,0 +1,91 @@
+{
+  "case_id": "DSP-2026-91003",
+  "claim": "Promised discount not applied",
+  "code": "C",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (h:Dispute {id: 'DSP-HIST-C02'})-[:FILED_BY]->(x:CardMember), (y:CardMember {id: 'CMB-C01'}) WHERE x.name = y.name AND x.id <> y.id AND h.outcome = 'goodwill_credit' RETURN h, x, y",
+      "name": "the earlier Offer goodwill went to a namesake, not this Card Member"
+    }
+  ],
+  "expected": {
+    "category": "OVR",
+    "charges": [
+      {
+        "card_member_liability": 0.0,
+        "charge_id": "CHG-C01",
+        "credit_amount": 100.0,
+        "disputed_amount": 100.0,
+        "verdict": "goodwill_credit"
+      }
+    ],
+    "improvement_targets": [
+      "process"
+    ],
+    "verdict": "goodwill_credit"
+  },
+  "intake": "I spent $540 at Northwind with the $100-off Amex Offer and never got the $100. They overcharged me.",
+  "misleading_surface": "The Card Member calls the missing Offer credit a Merchant overcharge, and a Daniel Okafor already received an Offer goodwill credit.",
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-91003'})-[:DISPUTES]->(c:Charge)-[:CHARGED_TO]->(paid:Card)-[:CARRIED_BY]->(cm:CardMember), (o:Offer)-[:ENROLLED_ON]->(enrolled:Card)-[:CARRIED_BY]->(cm), (c)-[:AT_MERCHANT]->(m:Merchant)<-[:OFFER_AT]-(o) WHERE paid.id <> enrolled.id AND c.amount >= o.spend_threshold AND o.funded_by = 'amex' RETURN d, c, paid, enrolled, o, cm",
+      "name": "Amex Offer enrolled on another of the Card Member's own Cards, purchase met the threshold"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "memory_graph",
+      "label": "Graph",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "graph_query",
+        "graph_find"
+      ],
+      "why": "Follow the Offer to the Card it was enrolled on, to its Card Member, and to the other Card that paid."
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "triage",
+        "supervisor_turn",
+        "plan_updated"
+      ],
+      "why": "Tell the namesake's earlier Offer goodwill apart from this Card Member's history."
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ],
+      "why": "offers-and-benefits and dispute-outcomes: an Amex Offer is never a Merchant overcharge, and goodwill needs a written clause."
+    },
+    {
+      "capability": "tool_calling",
+      "label": "Tool calling",
+      "necessity": "supporting",
+      "trajectory_signals": [
+        "tool_call {tool, args}",
+        "tool_result {node_ids, edge_ids}"
+      ],
+      "why": "Search the Dispute Guide for the Offer goodwill clause."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-91003",
+    "CHG-C01",
+    "CRD-C02",
+    "OFR-NWO-100",
+    "CRD-C01",
+    "CMB-C01",
+    "CLS-AMX-OFFER-1",
+    "CLS-AMX-OFFER-3",
+    "CLS-AMX-DG-G-2",
+    "DSP-HIST-C01",
+    "MSB-C01"
+  ],
+  "title": "The Offer on the Other Card"
+}

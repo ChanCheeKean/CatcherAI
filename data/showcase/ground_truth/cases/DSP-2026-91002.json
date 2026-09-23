@@ -1,0 +1,93 @@
+{
+  "case_id": "DSP-2026-91002",
+  "claim": "Charged more than the booked rate",
+  "code": "B",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (o:`Order` {id: 'ORD-B02'})-[:GUARANTEED_WITH]->(g:Card) WHERE g.product = 'Gold' MATCH (h:Dispute {id: 'DSP-HIST-B02'}) WHERE h.outcome = 'rejected' RETURN o, g, h",
+      "name": "past program booking guaranteed with a Gold Card was rightly rejected"
+    }
+  ],
+  "expected": {
+    "category": "OVR",
+    "charges": [
+      {
+        "card_member_liability": 0.0,
+        "charge_id": "CHG-B01",
+        "credit_amount": 300.0,
+        "disputed_amount": 300.0,
+        "verdict": "accepted"
+      }
+    ],
+    "improvement_targets": [
+      "amex_policy",
+      "merchant_policy"
+    ],
+    "verdict": "accepted"
+  },
+  "intake": "Harbor Point charged me $1,300 for a two-night stay I booked at the $1,000 Platinum Stays rate.",
+  "misleading_surface": "The hotel's own folio terms say the Platinum rate needs a Platinum Card at checkout, and a similar past Dispute was rejected.",
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-91002'})-[:DISPUTES]->(c:Charge)-[:FOR_ORDER]->(o:`Order`)-[:GUARANTEED_WITH]->(g:Card), (c)-[:CHARGED_TO]->(p:Card), (o)-[:UNDER_PROGRAM]->(prg:Program)<-[:PARTICIPATES_IN]-(m:Merchant)-[:BOUND_BY]->(:PolicyDocument)-[:HAS_CLAUSE]->(cl:Clause {id: 'CLS-AMX-PS-PART-3.4'}) WHERE g.product = 'Platinum' AND p.product = 'Gold' RETURN d, o, g, p, prg, cl",
+      "name": "booked with Platinum, charged to Gold, at a hotel bound by the program's no-added-conditions clause"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "memory_graph",
+      "label": "Graph",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "graph_query",
+        "graph_find"
+      ],
+      "why": "Compare the Card that guaranteed the booking with the Card charged, through the program the hotel participates in."
+    },
+    {
+      "capability": "subagents",
+      "label": "Subagents",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "delegation_started",
+        "delegation_finished"
+      ],
+      "why": "Read three policy documents in parallel with the payments work."
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ],
+      "why": "policy-analysis and offers-and-benefits: a Merchant condition that contradicts program terms it agreed to is read against the Merchant."
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "supporting",
+      "trajectory_signals": [
+        "triage",
+        "supervisor_turn",
+        "plan_updated"
+      ],
+      "why": "Reject the rejected past Dispute whose booking used a Gold Card."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-91002",
+    "CHG-B01",
+    "CRD-B02",
+    "ORD-B01",
+    "CRD-B01",
+    "PRG-PLAT",
+    "MER-HPH",
+    "CLS-HPH-FOLIO-V1-7",
+    "CLS-AMX-PS-PART-3.2",
+    "CLS-AMX-PS-PART-3.4",
+    "CLS-AMX-PLAT-BEN-2.1",
+    "MSB-B01"
+  ],
+  "title": "Platinum Rate, Gold Card"
+}

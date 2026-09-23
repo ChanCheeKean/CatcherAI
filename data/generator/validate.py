@@ -30,6 +30,8 @@ def write_case_outputs(output_dir: Path, cases: list[CaseTruth], graph) -> None:
     """Write private evaluator truth and answer-free case-card data."""
     truth_dir = Path(output_dir) / "ground_truth" / "cases"
     truth_dir.mkdir(parents=True, exist_ok=True)
+    for stale in truth_dir.glob("*.json"):
+        stale.unlink()
     for case in cases:
         (truth_dir / f"{case['case_id']}.json").write_text(
             json.dumps(case, indent=2, sort_keys=True) + "\n"

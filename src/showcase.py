@@ -27,21 +27,30 @@ def _read_gz(path: Path) -> str:
         return f.read()
 
 
-def _latest_runs(paths: RuntimePaths) -> dict[str, str]:
-    """Per case, the newest run that reached a decision."""
+def _showcase_runs(paths: RuntimePaths, eval_dir: Path, cases: set[str]) -> dict[str, str]:
+    """Per catalog case, the newest decided run that passed evaluation, else the newest one."""
     with sqlite3.connect(paths.trajectory_db) as db:
         rows = db.execute(
             "SELECT case_id, run_id FROM run_events WHERE type = 'decision' ORDER BY ts_wall"
         ).fetchall()
-    return {case: run for case, run in rows}
+    rows = [(case, run) for case, run in rows if case in cases]
+    runs = {case: run for case, run in rows}
+    decided = {run for _, run in rows}
+    for path in sorted(eval_dir.glob("*/summary.json")):
+        for case in json.loads(path.read_text())["cases"]:
+            for run in case["runs"]:
+                if run["passed"] and run["run_id"] in decided:
+                    runs[run["case_id"]] = run["run_id"]
+    return runs
 
 
-def _merged_eval(eval_dir: Path) -> dict:
-    """The newest completed evaluation of every case across batches (crashed attempts skipped)."""
+def _merged_eval(eval_dir: Path, cases: set[str]) -> dict:
+    """The newest completed evaluation of every catalog case (crashed attempts skipped)."""
     latest: dict[str, dict] = {}
     for path in sorted(eval_dir.glob("*/summary.json")):
         for case in json.loads(path.read_text())["cases"]:
-            if not any("error" in run for run in case["runs"]):
+            runs = case["runs"]
+            if runs[0]["case_id"] in cases and not any("error" in run for run in runs):
                 latest[case["code"]] = case
     cases = list(latest.values())
     return {
@@ -53,7 +62,7 @@ def _merged_eval(eval_dir: Path) -> dict:
 
 
 def export(paths: RuntimePaths | None = None, out: Path = SHOWCASE) -> dict[str, str]:
-    """Snapshot the latest completed run per case into `out`; returns case id to run id."""
+    """Snapshot one completed run per case into `out`; returns case id to run id."""
     paths = paths or RuntimePaths()
     generated = paths.source_graph.parent
     shutil.rmtree(out, ignore_errors=True)
@@ -64,9 +73,10 @@ def export(paths: RuntimePaths | None = None, out: Path = SHOWCASE) -> dict[str,
     for name in ("case_catalog.json", "knowledge.sqlite"):
         shutil.copy2(generated / name, out / name)
     shutil.copytree(generated / "ground_truth", out / "ground_truth")
-    (out / "eval.json").write_text(json.dumps(_merged_eval(generated / "eval")))
+    cases = {case["case_id"] for case in json.loads((generated / "case_catalog.json").read_text())}
+    (out / "eval.json").write_text(json.dumps(_merged_eval(generated / "eval", cases)))
 
-    runs = _latest_runs(paths)
+    runs = _showcase_runs(paths, generated / "eval", cases)
     with sqlite3.connect(paths.trajectory_db) as db:
         db.row_factory = sqlite3.Row
         for run_id in runs.values():

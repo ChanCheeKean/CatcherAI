@@ -1,0 +1,82 @@
+{
+  "case_id": "DSP-2026-91004",
+  "claim": "Paid the same bill twice",
+  "code": "D",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (p:Payment {id: 'PAY-D02'})-[:SETTLES]->(:Installment)<-[:HAS_INSTALLMENT]-(:Invoice)-[:AT_MERCHANT]->(m:Merchant)-[:AFFILIATE_OF]->(:Merchant {id: 'MER-WBV'}) RETURN p, m",
+      "name": "the second transfer paid the affiliated caterer's invoice"
+    }
+  ],
+  "expected": {
+    "category": "PDD",
+    "charges": [
+      {
+        "card_member_liability": 4500.0,
+        "charge_id": "CHG-D01",
+        "credit_amount": 500.0,
+        "disputed_amount": 5000.0,
+        "verdict": "partially_accepted"
+      }
+    ],
+    "improvement_targets": [
+      "process"
+    ],
+    "verdict": "partially_accepted"
+  },
+  "intake": "I paid Willow Barn by bank transfer, $1,500 and then $4,500. The $5,000 card charge is a second payment for the same wedding.",
+  "misleading_surface": "Two transfers to 'Willow Barn' add up to the venue invoice, so the whole card charge looks like a second payment.",
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-91004'})-[:DISPUTES]->(c:Charge)-[:SETTLES]->(bal:Installment)<-[:HAS_INSTALLMENT]-(inv:Invoice)-[:HAS_INSTALLMENT]->(dep:Installment)<-[:SETTLES]-(p:Payment) WHERE c.amount > bal.amount RETURN d, c, bal, inv, dep, p",
+      "name": "card charge settles the balance installment and exceeds it; a transfer settled the deposit"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "sandbox",
+      "label": "Sandbox / Python",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "tool_call {tool: python}"
+      ],
+      "why": "Reconcile 6,000 against the 1,500 transfer and the 5,000 charge."
+    },
+    {
+      "capability": "memory_graph",
+      "label": "Graph",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "graph_query",
+        "graph_find"
+      ],
+      "why": "Trace each payment to the installment it settles, its invoice and its Merchant."
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "supporting",
+      "trajectory_signals": [
+        "triage",
+        "supervisor_turn",
+        "plan_updated"
+      ],
+      "why": "Recognise the second transfer as the affiliated caterer's invoice."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-91004",
+    "CHG-D01",
+    "INV-D01",
+    "INS-D01-DEP",
+    "INS-D01-BAL",
+    "PAY-D01",
+    "PAY-D02",
+    "INV-D02",
+    "MER-WBC",
+    "MER-WBV",
+    "CLS-WBV-CONTRACT-V2-3",
+    "CLS-AMX-MR-4.7"
+  ],
+  "title": "Paid by Transfer"
+}

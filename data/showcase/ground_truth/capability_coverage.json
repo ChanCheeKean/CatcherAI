@@ -1,0 +1,205 @@
+{
+  "agent_graph": {
+    "definition": "LangGraph control flow with supervisor revisits, parallel workers and adjudication.",
+    "label": "Agent graph",
+    "primary_cases": [],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "node_entered",
+      "node_exited",
+      "edge_taken"
+    ],
+    "why": {}
+  },
+  "agents": {
+    "definition": "Goal-directed investigators revise hypotheses and choose what evidence to pursue.",
+    "label": "Agents",
+    "primary_cases": [
+      "C"
+    ],
+    "supporting_cases": [
+      "A",
+      "B",
+      "D"
+    ],
+    "trajectory_signals": [
+      "triage",
+      "supervisor_turn",
+      "plan_updated"
+    ],
+    "why": {
+      "A": "Test and drop the website-promise hypothesis and the refunded look-alike.",
+      "B": "Reject the rejected past Dispute whose booking used a Gold Card.",
+      "C": "Tell the namesake's earlier Offer goodwill apart from this Card Member's history.",
+      "D": "Recognise the second transfer as the affiliated caterer's invoice."
+    }
+  },
+  "harness": {
+    "definition": "Deterministic scenario loading, trajectory capture and ground-truth evaluation.",
+    "label": "Harness",
+    "primary_cases": [],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "run_started",
+      "termination",
+      "eval result"
+    ],
+    "why": {}
+  },
+  "loop_termination": {
+    "definition": "Explicit decided, max-turn and no-progress endings with a closed-plan precondition.",
+    "label": "Loop termination",
+    "primary_cases": [],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "termination {reason}",
+      "edge_taken"
+    ],
+    "why": {}
+  },
+  "memory_graph": {
+    "definition": "Multi-hop retrieval over the static evidence graph and its policy clauses.",
+    "label": "Graph",
+    "primary_cases": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "graph_query",
+      "graph_find"
+    ],
+    "why": {
+      "A": "Match the line item's option to the product's custom options and reach the final-sale clause through the terms version the order accepted.",
+      "B": "Compare the Card that guaranteed the booking with the Card charged, through the program the hotel participates in.",
+      "C": "Follow the Offer to the Card it was enrolled on, to its Card Member, and to the other Card that paid.",
+      "D": "Trace each payment to the installment it settles, its invoice and its Merchant.",
+      "E": "Follow the disputed charges to their subscription, its Card and the Additional Card Member who holds it."
+    }
+  },
+  "memory_persistent": {
+    "definition": "Durable checkpoints, trajectories and reports preserve exact run state for replay.",
+    "label": "Memory \u2014 persistent",
+    "primary_cases": [],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "checkpoint persisted",
+      "event replay",
+      "decision persisted"
+    ],
+    "why": {}
+  },
+  "memory_semantic": {
+    "definition": "Hybrid retrieval over policy clauses, precedents and Memory Notes.",
+    "label": "Memory \u2014 semantic",
+    "primary_cases": [],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "tool_call {tool: search_knowledge}"
+    ],
+    "why": {}
+  },
+  "read_paths": {
+    "definition": "Selective graph and knowledge reads that find the policy version that applies and skip stale notes.",
+    "label": "Agent read paths",
+    "primary_cases": [],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "tool_result {node_ids, edge_ids}",
+      "search_knowledge"
+    ],
+    "why": {}
+  },
+  "router_triage": {
+    "definition": "Structured LLM classification and an initial evidence plan, including novel cases.",
+    "label": "Router / triage",
+    "primary_cases": [
+      "E"
+    ],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "triage {case_type, hypotheses, plan}"
+    ],
+    "why": {
+      "E": "Read past the cancellation claim to a misunderstanding of what was charged."
+    }
+  },
+  "sandbox": {
+    "definition": "Bounded Python execution for reconciliation, dates and aggregation.",
+    "label": "Sandbox / Python",
+    "primary_cases": [
+      "D"
+    ],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "tool_call {tool: python}"
+    ],
+    "why": {
+      "D": "Reconcile 6,000 against the 1,500 transfer and the 5,000 charge."
+    }
+  },
+  "skills": {
+    "definition": "Generic investigation and policy knowledge loaded for a delegated task.",
+    "label": "Skills",
+    "primary_cases": [
+      "A",
+      "B",
+      "C",
+      "E"
+    ],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "skill_loaded {skill}"
+    ],
+    "why": {
+      "A": "policy-analysis: the accepted checkout terms, not the website headline, decide the return.",
+      "B": "policy-analysis and offers-and-benefits: a Merchant condition that contradicts program terms it agreed to is read against the Merchant.",
+      "C": "offers-and-benefits and dispute-outcomes: an Amex Offer is never a Merchant overcharge, and goodwill needs a written clause.",
+      "E": "recurring-billing and dispute-outcomes: separate plans and Additional Card charges are not a Merchant error."
+    }
+  },
+  "subagents": {
+    "definition": "Specialist Deep Agents receive scoped tasks and may run in parallel.",
+    "label": "Subagents",
+    "primary_cases": [
+      "B"
+    ],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "delegation_started",
+      "delegation_finished"
+    ],
+    "why": {
+      "B": "Read three policy documents in parallel with the payments work."
+    }
+  },
+  "tool_calling": {
+    "definition": "Typed graph, knowledge, memory and computation tools used by workers.",
+    "label": "Tool calling",
+    "primary_cases": [],
+    "supporting_cases": [
+      "C"
+    ],
+    "trajectory_signals": [
+      "tool_call {tool, args}",
+      "tool_result {node_ids, edge_ids}"
+    ],
+    "why": {
+      "C": "Search the Dispute Guide for the Offer goodwill clause."
+    }
+  },
+  "write_paths": {
+    "definition": "Case Notebook entries citing graph ids, and memory write, supersede, retract or merge operations.",
+    "label": "Agent write paths",
+    "primary_cases": [],
+    "supporting_cases": [],
+    "trajectory_signals": [
+      "notebook_write",
+      "memory_write"
+    ],
+    "why": {}
+  }
+}

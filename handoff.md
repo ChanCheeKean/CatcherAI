@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S10 complete**
-Next stage: **S11 — Real-LLM eval + tuning**
+Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met)**
+Next stage: **S11b — Finish tuning (case C) and confirm 5/5**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -119,7 +119,8 @@ Details for each stage are in the plan section of the same name.
 | **S8** Merchant agent extension (not wired) | Medium | `respond()` Deep Agent over merchant records, `save_submission`, guard test that nothing imports it, README section. | ☑ |
 | **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☑ |
 | **S10** Frontend | Medium | Ontology-driven regions/colours; Notebook tab; Conclusion with category, six verdicts, System Improvements. | ☑ |
-| **S11** Real-LLM eval + tuning | Complex | pass@1 5/5 on A–E by improving skills, policy wording, ontology descriptions and prompts only. | ☐ |
+| **S11** Real-LLM eval + tuning | Complex | pass@1 5/5 on A–E by improving skills, policy wording, ontology descriptions and prompts only. | ☑ (3/5; remainder in S11b) |
+| **S11b** Finish tuning | Complex | Re-run eval on the final S11 skills and policy text (the case C fixes are untested live); tune until pass@1 5/5, then pass@3; refresh the showcase. | ☐ |
 | **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☐ |
 
 ## 7. Conflicts and open questions
@@ -491,3 +492,75 @@ Details for each stage are in the plan section of the same name.
   file for dead code, old graph paths and redundant abstraction, then reran the checks.
 - No design decision changed; the spec was not edited. The frontend flow tests still use old
   synthetic ids in their fixtures; S12's legacy sweep can rename those without changing behavior.
+
+### S11 — 2026-09-24
+- **Eval results** (`uv run inspect eval`, gpt-5.6-luna, `data/generated/eval/`):
+
+  | Round | Changes before it | pass@1 | pass@k | Per case |
+  |---|---|---|---|---|
+  | 1 (k=1) | none (baseline) | 1/5 | – | D ✓; A accepted, C not_a_dispute, E rejected, B missing `amex_policy` |
+  | 2 (k=1) | supervisor prompt, skills, MR 4.2 | 4/5 | – | A C D E ✓; B missing `merchant_policy` |
+  | 3 (k=3) | `merchant_policy` rule | 3/5 | 4/5 | A 3/3, D 3/3, E 3/3, B 1/3 (two crashes, below), C 0/3 |
+
+  Solution coverage was 1.00 in every run: the agents always reached the proof records, so every
+  failure was knowledge or judgement, not reachability. Runs now take about 5 minutes (baseline
+  about 20, always forced to decide at max_turns).
+- **Judgement: the supervisor never used the role catalog.** It invented ad-hoc roles, so no worker
+  received a role prompt or any skill (the trajectory showed zero `skill_loaded` events for
+  workers). `config/agents.yaml`'s supervisor prompt now names the catalog roles and the skills,
+  and asks for few, broad rounds (all relevant roles at once, then the critic, then decide).
+- **Skills.**
+  - `dispute-outcomes`: the graph is the complete case file (A had been accepted because
+    screenshots and receipts were "missing"). There is an explicit not_a_dispute vs rejected test,
+    a mandatory goodwill-clause check, and credit + liability = disputed amount, not the whole
+    charge. Per-target rules for System Improvements: address the cause; clear Clauses are not
+    `amex_policy` gaps; report a conflicting Merchant Clause even when Amex terms override it;
+    report or dismiss every Notebook `conflict`/`improvement_idea`.
+  - `policy-analysis`: an acceptance record proves disclosure; note silent Amex Clauses.
+  - `offers-and-benefits`: the Offer goodwill test.
+  - `recurring-billing`: a wrong plan points to not_a_dispute.
+  - `payments-and-credits`: what liability covers.
+- **Policy wording.** `merchant-regulations.md` 4.2 now says the acceptance record shows the
+  version was disclosed at the point of sale. `offer-terms.md` 1 points to the Dispute Guide's
+  Offer goodwill clause. Both are general rules, with no case ids and nothing revealing answers.
+- **Infrastructure fixes found by the eval.**
+  - `data/generator/validate.py`: stale ground-truth files are deleted before writing. The ten Visa
+    truths were still in `data/generated/`, so the first eval tried to run 15 cases.
+  - `src/evaluation.py`: the attempt timeout is now `AttemptTimeout(BaseException)`. The old
+    `TimeoutError` was swallowed by broad `except Exception` handlers, so hung attempts never timed
+    out.
+  - `src/models.py`: `invoke_structured` also retries LangChain's
+    `StructuredOutputValidationError`. Deep Agents wrap the Pydantic error in it, so the
+    documented one retry never happened; this caused the two B crashes in round 3 (liability
+    included the undisputed $1,000).
+  - `src/showcase.py`: the export keeps only cases in the current catalog (it had shipped ten
+    Visa runs and their scores) and prefers each case's newest run that passed evaluation.
+- **Tests.**
+  - `tests/test_cases.py`: stale truth removal.
+  - `tests/test_evaluation.py`: the timeout is not swallowed; checked to hang on the old code.
+  - `tests/test_schemas_models.py`: the wrapped validation error is retried; checked to fail on
+    the old code.
+  - `tests/test_showcase.py`: catalog filter and passing-run preference.
+  - `uv run pytest`: 69 passed. `ruff check`, `ruff format --check` and `git diff --check`: passed.
+    No tests were deleted.
+- **Showcase and README.**
+  - `data/showcase/` (2.0 MB) is committed: graph JSONL, ontology, knowledge index, catalog,
+    ground truth, merged scores, and one passing run per case (A-3, B-3, D-3 and E-3 from round 3;
+    C-1 from round 2).
+  - A fresh restore into an empty directory was verified: the graph loads, and five runs load with
+    their Notebook entries and decisions.
+  - README "How to run" and "The committed showcase" are rewritten for the Amex showcase; the
+    rest of the README is still Visa text for S12.
+  - The C-1 run predates the `offer-terms.md` sentence, so its events quote the older clause text
+    (same clause ids).
+- **`simplify`**: manual review of every changed file (the diff is small and mostly prose). No
+  dead code or legacy paths remain; the showcase helpers stay plain functions.
+- **Open for S11b.**
+  - Case C: 0/3 in round 3. Two attempts had the right verdict but gave the improvement target
+    `amex_policy`/`data` (timing and field wish-lists) instead of `process`; one missed goodwill
+    and rejected. The fixes are the offer-terms cross-reference and the cause-focused improvement
+    rules, not yet run live.
+  - B's liability fix is not yet run live either.
+  - Run `uv run inspect eval --k 3`, then `showcase-export`.
+- No design decision changed; the spec was not edited.
+

@@ -1,0 +1,977 @@
+{
+ "edges": {
+  "ACCEPTED": {
+   "description": "The exact policy version a Card Member accepted for this order, subscription or invoice.",
+   "pairs": [
+    [
+     "Order",
+     "PolicyDocument"
+    ],
+    [
+     "Subscription",
+     "PolicyDocument"
+    ],
+    [
+     "Invoice",
+     "PolicyDocument"
+    ]
+   ],
+   "props": {
+    "method": {
+     "booking confirmation.": null,
+     "description": "How acceptance was recorded",
+     "e.g. checkbox at checkout": null,
+     "signature": null,
+     "type": "STRING"
+    }
+   }
+  },
+  "AFFILIATE_OF": {
+   "description": "A Merchant is a sister or subsidiary business of another.",
+   "pairs": [
+    [
+     "Merchant",
+     "Merchant"
+    ]
+   ],
+   "props": {}
+  },
+  "ASSERTS": {
+   "description": "The record an evidence item or message makes a claim about.",
+   "pairs": [
+    [
+     "EvidenceItem",
+     "Order"
+    ],
+    [
+     "EvidenceItem",
+     "Charge"
+    ],
+    [
+     "EvidenceItem",
+     "Return"
+    ],
+    [
+     "EvidenceItem",
+     "Subscription"
+    ],
+    [
+     "EvidenceItem",
+     "Invoice"
+    ],
+    [
+     "EvidenceItem",
+     "Installment"
+    ],
+    [
+     "EvidenceItem",
+     "LineItem"
+    ],
+    [
+     "Communication",
+     "Order"
+    ],
+    [
+     "Communication",
+     "Subscription"
+    ],
+    [
+     "Communication",
+     "Return"
+    ]
+   ],
+   "props": {}
+  },
+  "AT_MERCHANT": {
+   "description": "The Merchant a record belongs to.",
+   "pairs": [
+    [
+     "Charge",
+     "Merchant"
+    ],
+    [
+     "Order",
+     "Merchant"
+    ],
+    [
+     "Subscription",
+     "Merchant"
+    ],
+    [
+     "Invoice",
+     "Merchant"
+    ],
+    [
+     "Payment",
+     "Merchant"
+    ]
+   ],
+   "props": {}
+  },
+  "BILLED_TO": {
+   "description": "The Card Member an invoice is addressed to.",
+   "pairs": [
+    [
+     "Invoice",
+     "CardMember"
+    ]
+   ],
+   "props": {}
+  },
+  "BOUND_BY": {
+   "description": "An Amex Policy that binds a Merchant or governs an account.",
+   "pairs": [
+    [
+     "Merchant",
+     "PolicyDocument"
+    ],
+    [
+     "CardAccount",
+     "PolicyDocument"
+    ]
+   ],
+   "props": {}
+  },
+  "CARRIED_BY": {
+   "description": "The Card Member a Card was issued to.",
+   "pairs": [
+    [
+     "Card",
+     "CardMember"
+    ]
+   ],
+   "props": {}
+  },
+  "CHARGED_TO": {
+   "description": "The Card a charge posted to.",
+   "pairs": [
+    [
+     "Charge",
+     "Card"
+    ]
+   ],
+   "props": {}
+  },
+  "CITES": {
+   "description": "A policy clause or document a Merchant Submission relies on.",
+   "pairs": [
+    [
+     "MerchantSubmission",
+     "Clause"
+    ],
+    [
+     "MerchantSubmission",
+     "PolicyDocument"
+    ]
+   ],
+   "props": {}
+  },
+  "DESCRIBED_AS": {
+   "description": "The statement descriptor a charge showed.",
+   "pairs": [
+    [
+     "Charge",
+     "Descriptor"
+    ]
+   ],
+   "props": {}
+  },
+  "DESCRIBES": {
+   "description": "The Merchant a descriptor belongs to.",
+   "pairs": [
+    [
+     "Descriptor",
+     "Merchant"
+    ]
+   ],
+   "props": {}
+  },
+  "DISPUTES": {
+   "description": "A charge a Dispute challenges.",
+   "pairs": [
+    [
+     "Dispute",
+     "Charge"
+    ]
+   ],
+   "props": {
+    "amount": {
+     "description": "Part of the charge in dispute.",
+     "type": "DOUBLE"
+    }
+   }
+  },
+  "ENROLLED_ON": {
+   "description": "The specific Card an Offer was added to.",
+   "pairs": [
+    [
+     "Offer",
+     "Card"
+    ]
+   ],
+   "props": {}
+  },
+  "FILED_BY": {
+   "description": "The Card Member who filed a Dispute.",
+   "pairs": [
+    [
+     "Dispute",
+     "CardMember"
+    ]
+   ],
+   "props": {}
+  },
+  "FOR_ORDER": {
+   "description": "The order a charge pays for or credits.",
+   "pairs": [
+    [
+     "Charge",
+     "Order"
+    ]
+   ],
+   "props": {}
+  },
+  "FOR_SUBSCRIPTION": {
+   "description": "The subscription a recurring charge bills for.",
+   "pairs": [
+    [
+     "Charge",
+     "Subscription"
+    ]
+   ],
+   "props": {}
+  },
+  "GOVERNS": {
+   "description": "The Amex terms that govern an Offer or program.",
+   "pairs": [
+    [
+     "PolicyDocument",
+     "Offer"
+    ],
+    [
+     "PolicyDocument",
+     "Program"
+    ]
+   ],
+   "props": {}
+  },
+  "GUARANTEED_WITH": {
+   "description": "The Card used to place or guarantee a booking (may differ from the Card charged).",
+   "pairs": [
+    [
+     "Order",
+     "Card"
+    ]
+   ],
+   "props": {}
+  },
+  "HAS_CLAUSE": {
+   "description": "A document's clauses.",
+   "pairs": [
+    [
+     "PolicyDocument",
+     "Clause"
+    ]
+   ],
+   "props": {}
+  },
+  "HAS_EVIDENCE": {
+   "description": "Evidence filed with a Dispute (by the Card Member) or with a submission (by the Merchant).",
+   "pairs": [
+    [
+     "Dispute",
+     "EvidenceItem"
+    ],
+    [
+     "Dispute",
+     "Communication"
+    ],
+    [
+     "MerchantSubmission",
+     "EvidenceItem"
+    ],
+    [
+     "MerchantSubmission",
+     "Communication"
+    ]
+   ],
+   "props": {}
+  },
+  "HAS_INSTALLMENT": {
+   "description": "The installments of an invoice.",
+   "pairs": [
+    [
+     "Invoice",
+     "Installment"
+    ]
+   ],
+   "props": {}
+  },
+  "HAS_LINE": {
+   "description": "An order's line items.",
+   "pairs": [
+    [
+     "Order",
+     "LineItem"
+    ]
+   ],
+   "props": {}
+  },
+  "HAS_SUBMISSION": {
+   "description": "A Merchant Submission for a Dispute.",
+   "pairs": [
+    [
+     "Dispute",
+     "MerchantSubmission"
+    ]
+   ],
+   "props": {}
+  },
+  "HOLDS": {
+   "description": "A Card Member holds an account.",
+   "pairs": [
+    [
+     "CardMember",
+     "CardAccount"
+    ]
+   ],
+   "props": {
+    "role": {
+     "description": "basic (responsible for the account) or additional.",
+     "type": "STRING"
+    }
+   }
+  },
+  "ISSUED_ON": {
+   "description": "A Card bills to an account.",
+   "pairs": [
+    [
+     "Card",
+     "CardAccount"
+    ]
+   ],
+   "props": {}
+  },
+  "OFFER_AT": {
+   "description": "The Merchant an Offer is valid at.",
+   "pairs": [
+    [
+     "Offer",
+     "Merchant"
+    ]
+   ],
+   "props": {}
+  },
+  "OF_PRODUCT": {
+   "description": "The catalogue product a line item is.",
+   "pairs": [
+    [
+     "LineItem",
+     "Product"
+    ]
+   ],
+   "props": {}
+  },
+  "PAID_BY": {
+   "description": "The Card Member who made an other-means payment.",
+   "pairs": [
+    [
+     "Payment",
+     "CardMember"
+    ]
+   ],
+   "props": {}
+  },
+  "PARTICIPATES_IN": {
+   "description": "A Merchant takes part in an Amex benefit program.",
+   "pairs": [
+    [
+     "Merchant",
+     "Program"
+    ]
+   ],
+   "props": {}
+  },
+  "PUBLISHED_BY": {
+   "description": "The Merchant that wrote a Merchant Policy.",
+   "pairs": [
+    [
+     "PolicyDocument",
+     "Merchant"
+    ]
+   ],
+   "props": {}
+  },
+  "REFUNDS": {
+   "description": "A credit reverses (part of) an earlier charge.",
+   "pairs": [
+    [
+     "Charge",
+     "Charge"
+    ]
+   ],
+   "props": {}
+  },
+  "RETURNED_AS": {
+   "description": "A return of goods from an order.",
+   "pairs": [
+    [
+     "Order",
+     "Return"
+    ]
+   ],
+   "props": {}
+  },
+  "SETTLES": {
+   "description": "A charge or other-means payment pays an installment.",
+   "pairs": [
+    [
+     "Charge",
+     "Installment"
+    ],
+    [
+     "Payment",
+     "Installment"
+    ]
+   ],
+   "props": {}
+  },
+  "SOLD_BY": {
+   "description": "The Merchant whose catalogue lists a product.",
+   "pairs": [
+    [
+     "Product",
+     "Merchant"
+    ]
+   ],
+   "props": {}
+  },
+  "SUBSCRIBED_WITH": {
+   "description": "The Card a subscription bills to.",
+   "pairs": [
+    [
+     "Subscription",
+     "Card"
+    ]
+   ],
+   "props": {}
+  },
+  "UNDER_PROGRAM": {
+   "description": "A booking made under an Amex benefit program.",
+   "pairs": [
+    [
+     "Order",
+     "Program"
+    ]
+   ],
+   "props": {}
+  }
+ },
+ "groups": {
+  "case": {
+   "description": "Disputes and the evidence filed with them.",
+   "title": "Case"
+  },
+  "commerce": {
+   "charged": null,
+   "description": "What was bought",
+   "paid": null,
+   "returned or subscribed.": null,
+   "title": "Commerce"
+  },
+  "parties": {
+   "and Merchants.": null,
+   "description": "Card Members",
+   "their accounts and Cards": null,
+   "title": "Parties"
+  },
+  "terms": {
+   "description": "Amex Policies and Merchant Policies and their Clauses.",
+   "title": "Terms"
+  }
+ },
+ "nodes": {
+  "Card": {
+   "description": "A physical or virtual Amex Card issued on an account to one Card Member.",
+   "group": "parties",
+   "prefix": "CRD",
+   "props": {
+    "last4": {
+     "description": "Last four digits.",
+     "type": "STRING"
+    },
+    "product": {
+     "description": "Card Product",
+     "type": "STRING",
+     "which decides benefit and Offer eligibility.": null
+    },
+    "role": {
+     "description": "basic or additional.",
+     "type": "STRING"
+    },
+    "status": {
+     "description": "active or cancelled.",
+     "type": "STRING"
+    }
+   }
+  },
+  "CardAccount": {
+   "description": "An Amex account that Cards bill to; the Basic Card Member is responsible for it.",
+   "group": "parties",
+   "prefix": "ACC",
+   "props": {
+    "product": {
+     "Blue Cash.": null,
+     "Gold": null,
+     "Green": null,
+     "description": "Card Product of the account",
+     "e.g. Platinum": null,
+     "type": "STRING"
+    },
+    "status": {
+     "description": "open or closed.",
+     "type": "STRING"
+    }
+   }
+  },
+  "CardMember": {
+   "description": "A person holding an Amex Card, as Basic or Additional Card Member.",
+   "group": "parties",
+   "prefix": "CMB",
+   "props": {
+    "member_since": {
+     "description": "ISO date the person became a Card Member.",
+     "type": "STRING"
+    },
+    "name": {
+     "description": "Full name; namesakes exist",
+     "so never match people by name alone.": null,
+     "type": "STRING"
+    }
+   }
+  },
+  "Charge": {
+   "description": "A posted amount on a Card; negative amounts are credits.",
+   "group": "commerce",
+   "prefix": "CHG",
+   "props": {
+    "amount": {
+     "description": "Amount in currency units; negative for credits.",
+     "type": "DOUBLE"
+    },
+    "currency": {
+     "description": "ISO currency code.",
+     "type": "STRING"
+    },
+    "date": {
+     "description": "ISO posting date.",
+     "type": "STRING"
+    },
+    "kind": {
+     "description": "purchase",
+     "recurring or credit.": null,
+     "type": "STRING"
+    },
+    "status": {
+     "description": "posted.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Clause": {
+   "description": "One numbered provision of a policy document; its id is also a search document id.",
+   "group": "terms",
+   "prefix": "CLS",
+   "props": {
+    "heading": {
+     "description": "Clause heading.",
+     "type": "STRING"
+    },
+    "number": {
+     "description": "Clause number within its document.",
+     "type": "STRING"
+    },
+    "text": {
+     "description": "Full clause text.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Communication": {
+   "description": "A message between a Merchant and a Card Member filed as evidence.",
+   "group": "case",
+   "prefix": "COM",
+   "props": {
+    "channel": {
+     "chat or letter.": null,
+     "description": "email",
+     "type": "STRING"
+    },
+    "date": {
+     "description": "ISO date sent.",
+     "type": "STRING"
+    },
+    "sender": {
+     "description": "Who sent it.",
+     "type": "STRING"
+    },
+    "text": {
+     "description": "Message text.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Descriptor": {
+   "description": "The merchant name text printed on the Card Member's statement.",
+   "group": "parties",
+   "prefix": "DSC",
+   "props": {
+    "text": {
+     "description": "Statement text exactly as shown.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Dispute": {
+   "description": "A Card Member's challenge to one or more charges; past ones carry their outcome.",
+   "group": "case",
+   "prefix": "DSP",
+   "props": {
+    "amount": {
+     "description": "Total amount the Card Member disputes.",
+     "type": "DOUBLE"
+    },
+    "filed_at": {
+     "description": "ISO date filed.",
+     "type": "STRING"
+    },
+    "intake": {
+     "description": "The Card Member's own words.",
+     "type": "STRING"
+    },
+    "outcome": {
+     "description": "Verdict of a resolved Dispute; empty while open.",
+     "type": "STRING"
+    },
+    "status": {
+     "description": "open or resolved.",
+     "type": "STRING"
+    }
+   }
+  },
+  "EvidenceItem": {
+   "description": "A document or record filed as evidence (receipt, log, folio, invoice ledger).",
+   "group": "case",
+   "prefix": "EVI",
+   "props": {
+    "kind": {
+     "description": "e.g. acceptance_log",
+     "folio": null,
+     "invoice_ledger": null,
+     "type": "STRING",
+     "usage_log.": null
+    },
+    "source": {
+     "description": "merchant or card_member.",
+     "type": "STRING"
+    },
+    "text": {
+     "description": "Content of the record.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Installment": {
+   "description": "One scheduled part of an invoice.",
+   "group": "commerce",
+   "prefix": "INS",
+   "props": {
+    "amount": {
+     "description": "Amount due for this part.",
+     "type": "DOUBLE"
+    },
+    "label": {
+     "Balance.": null,
+     "description": "e.g. Deposit",
+     "type": "STRING"
+    }
+   }
+  },
+  "Invoice": {
+   "description": "A Merchant's bill to a Card Member, split into installments.",
+   "group": "commerce",
+   "prefix": "INV",
+   "props": {
+    "currency": {
+     "description": "ISO currency code.",
+     "type": "STRING"
+    },
+    "date": {
+     "description": "ISO issue date.",
+     "type": "STRING"
+    },
+    "description": {
+     "description": "What the invoice is for.",
+     "type": "STRING"
+    },
+    "total": {
+     "description": "Invoice total.",
+     "type": "DOUBLE"
+    }
+   }
+  },
+  "LineItem": {
+   "description": "One item on an order with the options chosen.",
+   "group": "commerce",
+   "prefix": "LIN",
+   "props": {
+    "description": {
+     "description": "Item as described on the order.",
+     "type": "STRING"
+    },
+    "option": {
+     "colour": null,
+     "description": "Option chosen",
+     "e.g. fabric": null,
+     "rate plan.": null,
+     "size": null,
+     "type": "STRING"
+    },
+    "quantity": {
+     "description": "Units ordered.",
+     "type": "INT64"
+    },
+    "unit_price": {
+     "description": "Price per unit.",
+     "type": "DOUBLE"
+    }
+   }
+  },
+  "Merchant": {
+   "description": "A business that accepts Amex under a direct agreement with Amex.",
+   "group": "parties",
+   "prefix": "MER",
+   "props": {
+    "category": {
+     "description": "Line of business",
+     "e.g. furniture": null,
+     "events.": null,
+     "lodging": null,
+     "streaming": null,
+     "type": "STRING"
+    },
+    "channel": {
+     "description": "online",
+     "in_person or both.": null,
+     "type": "STRING"
+    },
+    "name": {
+     "description": "Trading name.",
+     "type": "STRING"
+    }
+   }
+  },
+  "MerchantSubmission": {
+   "description": "What a Merchant submitted for a Dispute.",
+   "group": "case",
+   "prefix": "MSB",
+   "props": {
+    "statement": {
+     "description": "The Merchant's own account of the charge.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Offer": {
+   "description": "A spend-and-get deal at a Merchant, funded by Amex (Amex Offer) or by the Merchant.",
+   "group": "commerce",
+   "prefix": "OFR",
+   "props": {
+    "credit_amount": {
+     "description": "Credit or discount granted.",
+     "type": "DOUBLE"
+    },
+    "funded_by": {
+     "description": "amex or merchant.",
+     "type": "STRING"
+    },
+    "spend_threshold": {
+     "description": "Minimum qualifying spend.",
+     "type": "DOUBLE"
+    },
+    "title": {
+     "description": "Offer as shown to the Card Member.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Order": {
+   "description": "A purchase or booking agreed between a Card Member and a Merchant.",
+   "group": "commerce",
+   "prefix": "ORD",
+   "props": {
+    "currency": {
+     "description": "ISO currency code.",
+     "type": "STRING"
+    },
+    "date": {
+     "description": "ISO date the order or booking was placed.",
+     "type": "STRING"
+    },
+    "kind": {
+     "description": "retail",
+     "event or service.": null,
+     "lodging": null,
+     "type": "STRING"
+    },
+    "summary": {
+     "description": "What was ordered or booked",
+     "including rate or options.": null,
+     "type": "STRING"
+    },
+    "total": {
+     "description": "Agreed total at the time of ordering.",
+     "type": "DOUBLE"
+    }
+   }
+  },
+  "Payment": {
+   "description": "A payment made by other means than an Amex Card (bank transfer, cheque, cash).",
+   "group": "commerce",
+   "prefix": "PAY",
+   "props": {
+    "amount": {
+     "description": "Amount paid.",
+     "type": "DOUBLE"
+    },
+    "date": {
+     "description": "ISO payment date.",
+     "type": "STRING"
+    },
+    "method": {
+     "cheque or cash.": null,
+     "description": "bank_transfer",
+     "type": "STRING"
+    },
+    "reference": {
+     "description": "Payment reference text.",
+     "type": "STRING"
+    }
+   }
+  },
+  "PolicyDocument": {
+   "description": "One version of an Amex Policy or Merchant Policy.",
+   "group": "terms",
+   "prefix": "POL",
+   "props": {
+    "audience": {
+     "description": "card_member or merchant.",
+     "type": "STRING"
+    },
+    "kind": {
+     "description": "e.g. merchant_regulations",
+     "folio_terms": null,
+     "offer_terms": null,
+     "returns": null,
+     "subscription_terms.": null,
+     "type": "STRING"
+    },
+    "owner": {
+     "description": "amex or merchant.",
+     "type": "STRING"
+    },
+    "source_url": {
+     "description": "Public source the Amex text is paraphrased from; empty for Merchant Policies.",
+     "type": "STRING"
+    },
+    "title": {
+     "description": "Document title.",
+     "type": "STRING"
+    },
+    "version": {
+     "description": "Version label.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Product": {
+   "description": "A catalogue product and the options the Merchant offers for it.",
+   "group": "commerce",
+   "prefix": "PRD",
+   "props": {
+    "custom_options": {
+     "description": "Options the Merchant makes to order (custom).",
+     "type": "STRING"
+    },
+    "name": {
+     "description": "Product name.",
+     "type": "STRING"
+    },
+    "standard_options": {
+     "description": "Options the Merchant stocks as standard.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Program": {
+   "description": "An Amex benefit program that participating Merchants honour, e.g. a hotel program.",
+   "group": "commerce",
+   "prefix": "PRG",
+   "props": {
+    "eligible_product": {
+     "description": "Card Product the program is for.",
+     "type": "STRING"
+    },
+    "name": {
+     "description": "Program name.",
+     "type": "STRING"
+    }
+   }
+  },
+  "Return": {
+   "description": "An attempt to send goods back to a Merchant and what happened to it.",
+   "group": "commerce",
+   "prefix": "RTN",
+   "props": {
+    "method": {
+     "description": "How the goods were sent back.",
+     "type": "STRING"
+    },
+    "note": {
+     "description": "Free-text detail recorded with the return.",
+     "type": "STRING"
+    },
+    "status": {
+     "description": "Outcome",
+     "e.g. received and refunded": null,
+     "refused.": null,
+     "type": "STRING"
+    }
+   }
+  },
+  "Subscription": {
+   "description": "A recurring billing arrangement for one plan at a Merchant.",
+   "group": "commerce",
+   "prefix": "SUB",
+   "props": {
+    "amount": {
+     "description": "Amount per billing period.",
+     "type": "DOUBLE"
+    },
+    "frequency": {
+     "description": "Billing frequency",
+     "e.g. monthly.": null,
+     "type": "STRING"
+    },
+    "plan": {
+     "description": "Plan name.",
+     "type": "STRING"
+    },
+    "status": {
+     "description": "active or cancelled.",
+     "type": "STRING"
+    }
+   }
+  }
+ }
+}

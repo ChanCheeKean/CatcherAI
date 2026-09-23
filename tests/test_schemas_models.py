@@ -4,6 +4,8 @@ from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from langchain.agents.structured_output import StructuredOutputValidationError
+from langchain_core.messages import AIMessage
 from pydantic import ValidationError
 
 from config import load_agents_config, load_models_config
@@ -197,6 +199,24 @@ def test_invoke_structured_retries_once_on_validation_error() -> None:
     result = invoke_structured(model, Triage, ["inspect the case"])
 
     assert result.case_type == "known"
+    assert model.calls == 2
+
+
+class _WrappedFailureStub(_StructuredStub):
+    """Like a Deep Agent, whose structured-output middleware wraps the validation error."""
+
+    def invoke(self, messages: list[object]) -> object:
+        response = super().invoke(messages)
+        if isinstance(response, Exception):
+            raise StructuredOutputValidationError("Triage", response, AIMessage(content=""))
+        return response
+
+
+def test_invoke_structured_retries_wrapped_validation_error() -> None:
+    valid = {"case_type": "known", "hypotheses": [], "plan": [], "rationale": "Clear."}
+    model = _WrappedFailureStub([ValueError("credit mismatch"), valid])
+
+    assert invoke_structured(model, Triage, ["inspect the case"]).case_type == "known"
     assert model.calls == 2
 
 

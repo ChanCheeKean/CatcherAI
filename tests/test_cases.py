@@ -24,7 +24,11 @@ def test_cases_validate_with_proofs_and_decoys(built):
 
 def test_catalog_never_reveals_category_or_verdict(built):
     g, cases, _, out = built
+    stale = out / "ground_truth" / "cases" / "DSP-OLD.json"
+    stale.parent.mkdir(parents=True, exist_ok=True)
+    stale.write_text("{}")
     write_case_outputs(out, cases, g)
+    assert not stale.exists()
     catalog = (out / "case_catalog.json").read_text()
     for case in cases:
         assert case["expected"]["verdict"] not in catalog

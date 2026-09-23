@@ -11,7 +11,7 @@ publisher: ""
 Paraphrased for this demo from the public Amex Offers terms; not Amex's verbatim text.
 
 ## 1 Enrolment is card-specific
-Add the Offer to the specific eligible Card you plan to use, and pay with that same Card. An Offer added to one Card does not apply to purchases made with any other Card, even one on the same account or held by the same Card Member.
+Add the Offer to the specific eligible Card you plan to use, and pay with that same Card. An Offer added to one Card does not apply to purchases made with any other Card, even one on the same account or held by the same Card Member. When the Offer was added to another Card held by the same Card Member, the Amex Dispute Guide's Offer goodwill clause decides whether Amex funds the credit.
 
 ## 2 Direct purchases
 The purchase must be made directly with the named Merchant. Purchases through resellers, third-party payment services or other intermediaries may not qualify.

@@ -1,0 +1,78 @@
+{
+  "case_id": "DSP-2026-91001",
+  "claim": "Refund refused after return",
+  "code": "A",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (o:`Order` {id: 'ORD-A02'})-[:HAS_LINE]->(l:LineItem), (o)-[:RETURNED_AS]->(r:Return), (cr:Charge)-[:REFUNDS]->(:Charge)-[:FOR_ORDER]->(o) WHERE r.status CONTAINS 'refunded' RETURN o, l, r, cr",
+      "name": "standard sofa under the same terms was refunded"
+    }
+  ],
+  "expected": {
+    "category": "RET",
+    "charges": [
+      {
+        "card_member_liability": 2400.0,
+        "charge_id": "CHG-A01",
+        "credit_amount": 0.0,
+        "disputed_amount": 2400.0,
+        "verdict": "rejected"
+      }
+    ],
+    "improvement_targets": [],
+    "verdict": "rejected"
+  },
+  "intake": "I returned the sofa within 30 days like Hearth & Grain's website says, and they refused to refund my $2,400.",
+  "misleading_surface": "The website promises 30-day returns and another customer's identical sofa was refunded.",
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-91001'})-[:DISPUTES]->(:Charge)-[:FOR_ORDER]->(o:`Order`)-[:HAS_LINE]->(l:LineItem)-[:OF_PRODUCT]->(p:Product), (o)-[:ACCEPTED]->(:PolicyDocument)-[:HAS_CLAUSE]->(c:Clause {id: 'CLS-HGF-CO-V4-4.3'}) WHERE p.custom_options CONTAINS 'COM' AND l.option CONTAINS 'COM' RETURN d, o, l, p, c",
+      "name": "COM option is a custom option under the accepted final-sale clause"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "memory_graph",
+      "label": "Graph",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "graph_query",
+        "graph_find"
+      ],
+      "why": "Match the line item's option to the product's custom options and reach the final-sale clause through the terms version the order accepted."
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ],
+      "why": "policy-analysis: the accepted checkout terms, not the website headline, decide the return."
+    },
+    {
+      "capability": "agents",
+      "label": "Agents",
+      "necessity": "supporting",
+      "trajectory_signals": [
+        "triage",
+        "supervisor_turn",
+        "plan_updated"
+      ],
+      "why": "Test and drop the website-promise hypothesis and the refunded look-alike."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-91001",
+    "CHG-A01",
+    "ORD-A01",
+    "LIN-A01",
+    "PRD-ALDER",
+    "POL-HGF-CO-V4",
+    "CLS-HGF-CO-V4-4.3",
+    "RTN-A01",
+    "MSB-A01",
+    "CLS-AMX-MR-4.2"
+  ],
+  "title": "Final Sale Means Final"
+}

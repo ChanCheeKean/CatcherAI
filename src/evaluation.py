@@ -146,8 +146,12 @@ def passed(result: dict) -> bool:
     )
 
 
+class AttemptTimeout(BaseException):
+    """Not an Exception, so the model client's and tools' broad handlers cannot swallow it."""
+
+
 def _raise_timeout(*_: object) -> None:
-    raise TimeoutError("attempt timed out")
+    raise AttemptTimeout("attempt timed out")
 
 
 def _attempt(truth: dict, attempt: int, batch: str, paths: RuntimePaths) -> dict:
@@ -163,9 +167,9 @@ def _attempt(truth: dict, attempt: int, batch: str, paths: RuntimePaths) -> dict
     signal.alarm(ATTEMPT_TIMEOUT_SECONDS)
     try:
         report = run_case(truth["case_id"], paths=paths, run_id=run_id)
-    except Exception as error:  # a failed run is a scored failure, not an eval crash
+    except (Exception, AttemptTimeout) as error:  # a failed run is scored, not an eval crash
         detail = f"{type(error).__name__}: {error}"
-        if isinstance(error, TimeoutError):
+        if isinstance(error, AttemptTimeout):
             detail += "\n" + traceback.format_exc()
         return {**base, "error": detail, "passed": False}
     finally:

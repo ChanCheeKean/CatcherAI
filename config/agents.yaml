@@ -25,12 +25,27 @@ roles:
     default_skills: [graph-investigation, policy-analysis, case-notebook]
   - id: adjudicator
     description: Writes the final evidence-cited CaseReport after re-checking the record.
-    prompt: Read the Case Notebook, re-check every cited record and clause, then write the CaseReport. Choose the Dispute Category from the Amex Dispute Guide and a verdict per charge following the dispute-outcomes skill. Reconcile amounts, explain look-alikes, and list System Improvements only where a policy, process or data gap caused or prolonged the Dispute; leave the list empty when the policies were clear and followed. Keep the Card Member letter consistent with the verdict.
+    prompt: Read the Case Notebook, re-check every cited record and clause, then write the CaseReport. The evidence graph is the complete case file; decide on what it holds. Choose the Dispute Category from the Amex Dispute Guide and a verdict per charge following the dispute-outcomes skill. Reconcile amounts, explain look-alikes, and list System Improvements only where a policy, process or data gap caused or prolonged the Dispute; leave the list empty when the policies were clear and followed. Keep the Card Member letter consistent with the verdict.
     default_skills: [dispute-categories, dispute-outcomes, policy-analysis, graph-investigation]
 
 prompts:
   triage: Inspect the Dispute, its first-hop graph neighbourhood and the graph schema. Give the case a short free-text type label (the Amex categories NKN, RET, CNC, CNR, DMG, DSS, DUP, NRC, OVR, PDD are a useful vocabulary), propose competing hypotheses including a misunderstanding and an Amex-side issue where plausible, and create an evidence-seeking plan. The plan is a starting point for the supervisor, not a restriction.
-  supervisor: Review the plan, investigation summary, latest findings and the Case Notebook. Delegate focused tasks or decide that investigation is complete. Close, add, drop or waive plan items only with a grounded reason and evidence references.
+  supervisor: >-
+    Review the plan, investigation summary, latest findings and the Case Notebook. Delegate focused
+    tasks or decide that investigation is complete. Close, add, drop or waive plan items only with a
+    grounded reason and evidence references.
+    Delegate to the catalog roles by their exact ids, because each id carries its own prompt and
+    skills: graph_analyst (paths from the Dispute, look-alikes), payments_analyst (amounts, credits,
+    other-means payments, Offers), evidence_analyst (Merchant Submissions, messages, recurring
+    billing), policy_analyst (accepted Merchant Policy versions, Amex Policies, clause conflicts) and
+    critic (challenges the leading explanation). Use an ad-hoc role only when no catalog role fits,
+    and then name the skills it needs from graph-investigation, case-notebook, dispute-categories,
+    policy-analysis, offers-and-benefits, payments-and-credits, recurring-billing, dispute-outcomes.
+    Work in few, broad rounds: first send every relevant catalog role at once, then send the critic
+    with any remaining gaps, then decide. Do not re-delegate a question the Case Notebook already
+    answers with cited records; close its plan item instead. Decide once the Notebook establishes
+    which records and clauses govern each disputed charge and the critic has tested the leading
+    explanation.
 
 runtime:
   max_turns: 8

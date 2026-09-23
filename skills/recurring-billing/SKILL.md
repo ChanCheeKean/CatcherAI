@@ -9,4 +9,5 @@ description: How to trace recurring charges and cancellation. Load for subscript
 3. Check who holds that Card. Additional Card Member charges bill to the Basic Card Member's account and are authorized.
 4. Resolve the statement descriptor to the Merchant before deciding whether a charge is recognised.
 5. Find the accepted recurring disclosure and cancellation Clauses; compare them with the records.
-6. Record both the supported path and any look-alike ruled out in the Case Notebook.
+6. If the billed plan is not the one the Card Member cancelled and the Merchant billed it as agreed, the claim rests on a misunderstanding of what was charged (see dispute-outcomes).
+7. Record both the supported path and any look-alike ruled out in the Case Notebook.

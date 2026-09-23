@@ -17,39 +17,49 @@ def test_showcase_round_trip_restores_static_graph_and_events(tmp_path):
     graph.write(generated / "graph")
     source_graph = generated / "evidence.lbug"
     load(generated / "graph", source_graph).close()
-    (generated / "case_catalog.json").write_text("[]")
+    (generated / "case_catalog.json").write_text(json.dumps([{"case_id": "DSP-TEST-1"}]))
     sqlite3.connect(generated / "knowledge.sqlite").close()
     (generated / "ground_truth").mkdir()
     (generated / "ground_truth" / "sample.json").write_text("{}")
     (generated / "eval" / "batch").mkdir(parents=True)
-    (generated / "eval" / "batch" / "summary.json").write_text(json.dumps({"cases": []}))
+    passed = {"case_id": "DSP-TEST-1", "run_id": "run-test", "passed": True}
+    (generated / "eval" / "batch" / "summary.json").write_text(
+        json.dumps(
+            {"cases": [{"code": "T", "pass_at_1": True, "pass_at_k": True, "runs": [passed]}]}
+        )
+    )
     source = RuntimePaths(
         source_graph=source_graph, trajectory_db=tmp_path / "source-events.sqlite"
     )
-    emitter = EventEmitter(
-        source.trajectory_db,
-        run_id="run-test",
-        case_id="DSP-TEST-1",
-        runtime=RuntimeSnapshot(
-            config_hash="test", agent_runtime="test", provider="test", model="test"
-        ),
-    )
-    emitter.emit(
-        EventDraft(
-            actor=Actor(kind=ActorKind.AGENT, name="adjudicator"),
-            type="notebook_write",
-            summary="Finding recorded",
-            payload={"entry": {"node_ids": ["CMB-TEST-1"]}},
+    for run_id, case_id in (
+        ("run-test", "DSP-TEST-1"),
+        ("run-newer-failed", "DSP-TEST-1"),
+        ("run-retired-case", "DSP-OLD-1"),
+    ):
+        emitter = EventEmitter(
+            source.trajectory_db,
+            run_id=run_id,
+            case_id=case_id,
+            runtime=RuntimeSnapshot(
+                config_hash="test", agent_runtime="test", provider="test", model="test"
+            ),
         )
-    )
-    emitter.emit(
-        EventDraft(
-            actor=Actor(kind=ActorKind.AGENT, name="adjudicator"),
-            type="decision",
-            summary="Decision made",
-            payload={"report": {"verdict": "rejected"}},
+        emitter.emit(
+            EventDraft(
+                actor=Actor(kind=ActorKind.AGENT, name="adjudicator"),
+                type="notebook_write",
+                summary="Finding recorded",
+                payload={"entry": {"node_ids": ["CMB-TEST-1"]}},
+            )
         )
-    )
+        emitter.emit(
+            EventDraft(
+                actor=Actor(kind=ActorKind.AGENT, name="adjudicator"),
+                type="decision",
+                summary="Decision made",
+                payload={"report": {"verdict": "rejected"}},
+            )
+        )
 
     bundle = tmp_path / "showcase"
     assert export(source, bundle) == {"DSP-TEST-1": "run-test"}

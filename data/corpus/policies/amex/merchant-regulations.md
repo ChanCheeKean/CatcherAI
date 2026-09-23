@@ -14,7 +14,7 @@ Paraphrased for this demo from the public Amex merchant guides; not Amex's verba
 A Merchant must disclose the full terms of its sale, return, exchange and cancellation policies at the point of sale, on receipts and on its website. A policy the Merchant cannot show was disclosed carries no weight in a Dispute.
 
 ## 4.2 Acceptance before purchase
-Before the purchase is completed, the Merchant must have the Card Member accept its terms and policies, and must keep a record of how that acceptance was given (for example a checkbox at checkout, a signature or a booking confirmation).
+Before the purchase is completed, the Merchant must have the Card Member accept its terms and policies, and must keep a record of how that acceptance was given (for example a checkbox at checkout, a signature or a booking confirmation). That record shows the accepted version was disclosed at the point of sale.
 
 ## 4.3 Credits to the original Card
 Any refund or credit must go to the Card used for the original charge, in full or as the disclosed policy provides. A Merchant may not substitute store credit when the Card is available.

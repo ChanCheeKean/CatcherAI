@@ -1,0 +1,91 @@
+{
+  "case_id": "DSP-2026-91005",
+  "claim": "Billed again after cancelling",
+  "code": "E",
+  "decoy_patterns": [
+    {
+      "cypher": "MATCH (cr:Charge {id: 'CHG-E01R'})-[:REFUNDS]->(c:Charge)-[:FOR_SUBSCRIPTION]->(s:Subscription {id: 'SUB-E01'}) RETURN cr, c, s",
+      "name": "the cancelled plan's last charge was already refunded"
+    }
+  ],
+  "expected": {
+    "category": "CNR",
+    "charges": [
+      {
+        "card_member_liability": 22.99,
+        "charge_id": "CHG-E02",
+        "credit_amount": 0.0,
+        "disputed_amount": 22.99,
+        "verdict": "not_a_dispute"
+      },
+      {
+        "card_member_liability": 22.99,
+        "charge_id": "CHG-E03",
+        "credit_amount": 0.0,
+        "disputed_amount": 22.99,
+        "verdict": "not_a_dispute"
+      },
+      {
+        "card_member_liability": 22.99,
+        "charge_id": "CHG-E04",
+        "credit_amount": 0.0,
+        "disputed_amount": 22.99,
+        "verdict": "not_a_dispute"
+      }
+    ],
+    "improvement_targets": [],
+    "verdict": "not_a_dispute"
+  },
+  "intake": "I cancelled StreamCo in May and got a confirmation email, but SC*DIGITAL SVCS keeps charging me $22.99 every month.",
+  "misleading_surface": "A genuine cancellation confirmation, and the statement name does not say StreamCo.",
+  "proof_patterns": [
+    {
+      "cypher": "MATCH (d:Dispute {id: 'DSP-2026-91005'})-[:DISPUTES]->(c:Charge)-[:FOR_SUBSCRIPTION]->(s:Subscription)-[:SUBSCRIBED_WITH]->(card:Card)-[:CARRIED_BY]->(add:CardMember), (card)-[:ISSUED_ON]->(a:CardAccount)<-[h:HOLDS]-(add), (d)-[:HAS_EVIDENCE]->(:Communication)-[:ASSERTS]->(cancelled:Subscription) WHERE h.role = 'additional' AND s.id <> cancelled.id RETURN d, c, s, card, add, cancelled",
+      "name": "disputed charges bill a different plan on the Additional Card; the cancellation was for the Card Member's own plan"
+    }
+  ],
+  "required_capabilities": [
+    {
+      "capability": "memory_graph",
+      "label": "Graph",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "graph_query",
+        "graph_find"
+      ],
+      "why": "Follow the disputed charges to their subscription, its Card and the Additional Card Member who holds it."
+    },
+    {
+      "capability": "router_triage",
+      "label": "Router / triage",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "triage {case_type, hypotheses, plan}"
+      ],
+      "why": "Read past the cancellation claim to a misunderstanding of what was charged."
+    },
+    {
+      "capability": "skills",
+      "label": "Skills",
+      "necessity": "primary",
+      "trajectory_signals": [
+        "skill_loaded {skill}"
+      ],
+      "why": "recurring-billing and dispute-outcomes: separate plans and Additional Card charges are not a Merchant error."
+    }
+  ],
+  "solution_node_ids": [
+    "DSP-2026-91005",
+    "CHG-E02",
+    "SUB-E02",
+    "CRD-E02",
+    "CMB-E02",
+    "ACC-E01",
+    "SUB-E01",
+    "COM-E01",
+    "DSC-STC",
+    "CLS-STC-SUB-V3-5",
+    "CLS-AMX-CMA-5.1"
+  ],
+  "title": "Cancelled the Wrong Plan"
+}

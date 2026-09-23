@@ -8,5 +8,5 @@ description: How to reconcile disputed amounts and payments. Load for amount que
 2. Establish the amount agreed and due, then match each charge, credit and payment to its purchase, invoice or installment.
 3. Do not pair amounts merely because they match; a payment to an affiliate may settle a separate bill.
 4. Use `python` to calculate the net amount paid and any excess over the amount due.
-5. For each charge, credit amount plus Card Member liability must equal disputed amount.
+5. For each charge, credit amount plus Card Member liability must equal the disputed amount: the part of the charge the Card Member contests, not the whole charge. Amounts they do not contest appear in neither.
 6. Record the reconciliation in the Case Notebook with every decisive id.

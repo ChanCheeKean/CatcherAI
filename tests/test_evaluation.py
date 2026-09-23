@@ -1,7 +1,9 @@
+import time
 from decimal import Decimal
 from types import SimpleNamespace
 
-from evaluation import _trajectory_ids, passed, score
+import evaluation
+from evaluation import _attempt, _trajectory_ids, passed, score
 from schemas import (
     CaseReport,
     ChargeDecision,
@@ -84,3 +86,18 @@ def test_notebook_events_contribute_ids():
         SimpleNamespace(type="notebook_write", payload={"node_ids": ["CHG-1"], "edge_ids": ["E-1"]})
     ]
     assert _trajectory_ids(events) == ({"CHG-1"}, {"CHG-1", "E-1"})
+
+
+def test_timeout_is_not_swallowed_by_broad_handlers(monkeypatch):
+    def swallowing_run(*_, **__):
+        while True:
+            try:
+                time.sleep(0.05)
+            except Exception:  # noqa: BLE001 - like a model client's retry loop
+                pass
+
+    monkeypatch.setattr(evaluation, "run_case", swallowing_run)
+    monkeypatch.setattr(evaluation, "ATTEMPT_TIMEOUT_SECONDS", 1)
+    result = _attempt({"code": "A", "case_id": "DSP-1"}, 1, "t", None)
+    assert result["passed"] is False
+    assert result["error"].startswith("AttemptTimeout")

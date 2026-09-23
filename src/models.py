@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, TypeVar
 
-from langchain.agents.structured_output import ProviderStrategy
+from langchain.agents.structured_output import ProviderStrategy, StructuredOutputValidationError
 from langchain.chat_models import init_chat_model
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import HumanMessage
@@ -143,7 +143,7 @@ def invoke_structured(
         try:
             raw = _invoke_once(agent_or_model, schema, current_messages)
             return _coerce_output(raw, schema)
-        except ValidationError as error:
+        except (ValidationError, StructuredOutputValidationError) as error:
             if attempt == 1:
                 raise
             current_messages = [

@@ -1,0 +1,37 @@
+[
+  {
+    "amount": 2400.0,
+    "case_id": "DSP-2026-91001",
+    "claim": "Refund refused after return",
+    "summary": "I returned the sofa within 30 days like Hearth & Grain's website says, and they refused to refund my $2,400.",
+    "title": "Final Sale Means Final"
+  },
+  {
+    "amount": 300.0,
+    "case_id": "DSP-2026-91002",
+    "claim": "Charged more than the booked rate",
+    "summary": "Harbor Point charged me $1,300 for a two-night stay I booked at the $1,000 Platinum Stays rate.",
+    "title": "Platinum Rate, Gold Card"
+  },
+  {
+    "amount": 100.0,
+    "case_id": "DSP-2026-91003",
+    "claim": "Promised discount not applied",
+    "summary": "I spent $540 at Northwind with the $100-off Amex Offer and never got the $100. They overcharged me.",
+    "title": "The Offer on the Other Card"
+  },
+  {
+    "amount": 5000.0,
+    "case_id": "DSP-2026-91004",
+    "claim": "Paid the same bill twice",
+    "summary": "I paid Willow Barn by bank transfer, $1,500 and then $4,500. The $5,000 card charge is a second payment for the same wedding.",
+    "title": "Paid by Transfer"
+  },
+  {
+    "amount": 68.97,
+    "case_id": "DSP-2026-91005",
+    "claim": "Billed again after cancelling",
+    "summary": "I cancelled StreamCo in May and got a confirmation email, but SC*DIGITAL SVCS keeps charging me $22.99 every month.",
+    "title": "Cancelled the Wrong Plan"
+  }
+]
