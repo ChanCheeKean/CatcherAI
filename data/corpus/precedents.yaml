@@ -1,1 +1,60 @@
-[]
+- title: "RET, rejected: disclosed final-sale clearance item"
+  body: >-
+    A Card Member returned a floor-model lamp bought from a lighting store's clearance section and
+    disputed the refused refund, citing the store's general 30-day return promise. The receipt and
+    the checkout page both said clearance items are final sale, and the order record showed the
+    Card Member ticked acceptance of those terms. The disclosure and acceptance rules
+    (CLS-AMX-MR-4.1, CLS-AMX-MR-4.2) were met and the item fell under the exception, so the
+    Merchant's position was upheld: rejected, no credit. Lesson: read the version of the terms the
+    Card Member accepted for that order, not the Merchant's headline return promise.
+- title: "OVR, accepted: restocking fee not shown at checkout"
+  body: >-
+    A Card Member returned a bicycle and received a credit 15% short. The Merchant cited a
+    restocking fee on its website terms page, but neither the checkout flow the Card Member
+    accepted nor the receipt mentioned it. A term that was not disclosed at the point of sale and
+    accepted before purchase cannot support the deduction (CLS-AMX-MR-4.1, CLS-AMX-MR-4.2):
+    accepted, the Merchant credits the fee. System improvement: the Merchant should show all fees
+    on the checkout page it records acceptance of.
+- title: "OVR, rejected: hotel re-rate where the booking used a non-eligible Card"
+  body: >-
+    A Card Member booked a participating hotel through the benefit program but guaranteed the
+    reservation with a Green Card, not an eligible Platinum Card, and was charged the Best
+    Available Rate. The program's rate-honour clause (CLS-AMX-PS-PART-3.2) covers reservations made
+    or guaranteed with an eligible Card, and this one was not, so the program rate was never
+    confirmed. The hotel charged the rate on its confirmation: rejected, no credit.
+- title: "OVR, goodwill_credit: Offer enrolled on another of the Card Member's own Cards"
+  body: >-
+    A Card Member added a spend-$200-get-$40 Amex Offer for a garden centre to their Gold Card and
+    paid with their own Green Card. The Merchant charged its normal price and funds no part of the
+    Offer (CLS-AMX-OFFER-3), and Offers apply only to the enrolled Card (CLS-AMX-OFFER-1), so there
+    was no Merchant error. The purchase otherwise met the Offer terms, both Cards belonged to the
+    same Card Member, and their resolved Disputes showed no earlier Offer goodwill, so Amex funded
+    one goodwill credit of $40 under CLS-AMX-DG-G-2. Check identity by account, not by name.
+- title: "OVR, accepted: merchant-funded promo code not applied"
+  body: >-
+    A Card Member entered a retailer's own 20%-off promo code at checkout; the order confirmation
+    showed the discounted total, but the charge was for the full price. The discount was funded by
+    the Merchant, not by Amex, and the confirmed amount was what the Card Member agreed to pay:
+    accepted, the Merchant credits the difference. Contrast with a missing Amex Offer credit, which
+    is never a Merchant error.
+- title: "PDD, partially_accepted: overpayment across card and cheque"
+  body: >-
+    A Card Member paid a contractor's $3,000 invoice with a $1,000 cheque for the first instalment
+    and a $2,400 Card charge for the rest, then claimed the whole Card charge was a double payment.
+    Matching each payment to what it settled showed the Card charge covered a $2,000 balance, so
+    $400 had been collected twice (CLS-AMX-MR-4.7). A separate cheque the Card Member also cited
+    paid a different supplier's invoice. partially_accepted: the Merchant credits $400.
+- title: "CNR, not_a_dispute: subscription billed to an Additional Card"
+  body: >-
+    A Card Member cancelled a music service and kept seeing monthly charges. The cancellation
+    covered their own plan, which stopped; the continuing charges were a second plan an Additional
+    Card Member on the same account had started with their own Card. Each plan is a separate
+    recurring arrangement (CLS-AMX-MR-4.5), and the Basic Card Member is responsible for
+    Additional Card charges (CLS-AMX-CMA-5.1). No Merchant error: not_a_dispute, resolved by
+    explaining which plan and which Card were billed.
+- title: "NKN, fraud_referral: Card Member denied making the charge"
+  body: >-
+    A Card Member filed No Knowledge on an electronics charge. After itemization showed a delivery
+    to an address they did not know and no Additional Card on the account, they stated they never
+    made or authorised the purchase. A denial of taking part is fraud, not a Dispute
+    (CLS-AMX-DG-F-1): fraud_referral, and nothing else about the charge was decided.

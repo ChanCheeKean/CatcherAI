@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-23
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S1 complete**
-Next stage: **S2 — Policy corpus, clause search, memory in knowledge**
+Current phase: **S2 complete**
+Next stage: **S3 — Background world**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -110,7 +110,7 @@ Details for each stage are in the plan section of the same name.
 |---|---|---|---|
 | **S0** Teardown of the Visa world | Simple | Delete Visa/LFB/Reg E/Reg Z corpus, the 10 cases, the showcase data, retired skills and screenshots; empty the case kit. | ☑ |
 | **S1** Ontology as data + static graph store | Medium | `ontology.yaml` + loader; builder validates against it; `GraphStore` read-only by default, schema with descriptions, `node`, `find`; all write paths and `copy_store` removed. | ☑ |
-| **S2** Policy corpus, clause search, memory in knowledge | Complex | 6 Amex + 8 Merchant policy markdown docs grounded in the research; `policies.py` projects them into graph nodes and clause-level search; retrieval without `as_of`; Memory Notes in SQLite; Amex precedents. | ☐ |
+| **S2** Policy corpus, clause search, memory in knowledge | Complex | 6 Amex + 8 Merchant policy markdown docs grounded in the research; `policies.py` projects them into graph nodes and clause-level search; retrieval without `as_of`; Memory Notes in SQLite; Amex precedents. | ☑ |
 | **S3** Background world | Medium | Deterministic dispute-only world (~150 Card Members, ~30 Merchants with template policies, ~3k charges, Offers, program, subscriptions, invoices, ~60 past Disputes). | ☐ |
 | **S4** Submission contract, case kit, cases A and B | Complex | `MerchantSubmission` contract + `insert_submission`; case kit for Amex; case A "Final Sale Means Final", case B "Platinum Rate, Gold Card". | ☐ |
 | **S5** Cases C, D, E + end-to-end generator | Complex | Case C "The Offer on the Other Card", case D "Paid by Transfer", case E "Cancelled the Wrong Plan"; `gen.py` ingests saved submissions; every ontology label/edge used. | ☐ |
@@ -184,3 +184,41 @@ Details for each stage are in the plan section of the same name.
   legacy paths and redundant abstractions, then reran the checks.
 - No design decision changed. Remaining old tool, API and frontend graph-copy references are
   assigned to their later stages.
+
+### S2 — 2026-09-23
+- Wrote 14 policy documents: `data/corpus/policies/amex/` (Merchant Regulations, Card Member
+  Agreement, Offer terms, Platinum benefit terms, Platinum Stays participation terms, Dispute
+  Guide) and `data/corpus/policies/merchant/` (HGF checkout v4 and returns page v4, HPH
+  reservation v2 and folio v1, NWO sale v1, WBV contract v2, WBC catering v1, STC subscription
+  v3). They hold 53 clauses. Amex texts are paraphrased (Platinum Stays and the goodwill clauses
+  are fictional). Each Amex file opens with a one-line disclaimer before its first clause, and
+  the parser drops that line. PLAT-BEN 2.1 does not say which Card must pay (the case-B gap).
+- Added `data/generator/policies.py` (`Clause`, `PolicyDoc`, `parse`, `load_policies`,
+  `add_to_graph`). `knowledge.py` now indexes one search document per clause (the doc id is the
+  clause id) plus precedents. It has no validity dates.
+- `src/memory/retrieval.py`: removed `as_of`/`valid_from`/`valid_to`. The documents table columns
+  are now `doc_id, kind, title, body, status, sources, run_id, confidence`. Added `add_note`
+  (returns `MEM-0001`…) and `set_status`. Search returns active documents only. The kind and
+  status filter runs inside both candidate queries: vec0 metadata columns (checked on sqlite-vec
+  0.1.9) and an FTS join. Retired notes or excluded kinds therefore never crowd out hits.
+- `data/corpus/precedents.yaml`: 8 Amex write-ups. Each is analogous to a showcase case, but none
+  uses a showcase case's facts. `gen.py` loads the policies once, projects them into the graph and
+  passes them to `build_knowledge`. The memory capability text in `capabilities.py` no longer
+  says "as-of".
+- Tests: new `tests/test_policies.py`. `tests/test_knowledge.py` was rewritten to cover clause
+  search, the kind filter, the Memory Note lifecycle, and that precedents cite only real clause
+  ids. `uv run pytest`: 36 passed. `ruff check` and `ruff format --check`: passed.
+- `simplify` ran as four review agents (reuse, simplification, efficiency, altitude).
+  - Applied: one set of document defaults inside `_insert`; dropped redundant `Path()` wraps;
+    filtering at candidate time (above).
+  - Skipped: storing policy metadata as a dict, and a list-taking `add_to_graph`. The plan's
+    Task 2.2 interfaces fix both. Also skipped the minor efficiency notes (counting ids,
+    `executemany`), which make no difference at this corpus size.
+- Open issue for S3/S4: `gen.py` currently adds the policies after `build_cases`. ACCEPTED,
+  BOUND_BY and GOVERNS edges from world and case builders need the policy nodes to exist first,
+  and merchant docs need their publisher Merchant first. S3 should add policies inside world
+  building, right after the Merchant nodes. The background template `PolicyDoc`s must go into
+  the same list that is passed to `build_knowledge`.
+- Open issue for S6: `src/tools.py` still calls `retrieval.search(..., as_of=…)` and the old
+  graph-note store methods. It imports cleanly but fails at call time until S6 rewrites it.
+- No design decision changed; the spec was not edited.

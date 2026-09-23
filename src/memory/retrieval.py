@@ -1,15 +1,15 @@
-"""Hybrid FTS5 + sqlite-vec search over policies and precedents, filtered by validity date."""
+"""Hybrid FTS5 + sqlite-vec search over policy clauses, precedents and Memory Notes."""
 
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import re
 import sqlite3
 import struct
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +17,8 @@ import sqlite_vec
 
 EMBEDDING_DIMENSIONS = 96
 TOKEN_RE = re.compile(r"[a-z0-9]+(?:\.[0-9]+)?")
-FIELDS = ("doc_id", "kind", "title", "body", "valid_from", "valid_to", "status")
+FIELDS = ("doc_id", "kind", "title", "body", "status", "sources", "run_id", "confidence")
+DEFAULTS = {"status": "active", "sources": "[]", "run_id": "", "confidence": None}
 
 
 def build(db_path: Path, docs: list[dict[str, Any]]) -> None:
@@ -28,79 +29,100 @@ def build(db_path: Path, docs: list[dict[str, Any]]) -> None:
         db.execute("CREATE VIRTUAL TABLE documents_fts USING fts5(doc_id UNINDEXED, title, body)")
         db.execute(
             f"CREATE VIRTUAL TABLE vec_documents USING vec0("
-            f"doc_id TEXT PRIMARY KEY, embedding float[{EMBEDDING_DIMENSIONS}])"
+            f"doc_id TEXT PRIMARY KEY, kind TEXT, status TEXT, "
+            f"embedding float[{EMBEDDING_DIMENSIONS}])"
         )
         for doc in docs:
-            db.execute(
-                f"INSERT INTO documents VALUES ({','.join('?' * len(FIELDS))})",
-                [doc[f] for f in FIELDS],
-            )
-            db.execute(
-                "INSERT INTO documents_fts VALUES (?, ?, ?)",
-                (doc["doc_id"], doc["title"], doc["body"]),
-            )
-            vector = _serialize(_embed(f"{doc['title']} {doc['body']}"))
-            db.execute("INSERT INTO vec_documents VALUES (?, ?)", (doc["doc_id"], vector))
+            _insert(db, doc)
 
 
 def search(
     db_path: Path,
     query: str,
     *,
-    as_of: date,
-    kinds: tuple[str, ...] = ("policy", "precedent"),
+    kinds: tuple[str, ...] = ("policy", "precedent", "memory_note"),
     limit: int = 8,
 ) -> list[dict[str, Any]]:
-    """Rank documents by reciprocal-rank fusion of vector and keyword hits, valid on `as_of`."""
+    """Rank active documents of `kinds` by reciprocal-rank fusion of vector and keyword hits."""
     terms = dict.fromkeys(TOKEN_RE.findall(query.casefold()))
     match = " OR ".join(f'"{term}"' for term in terms) or '"empty"'
+    in_kinds = f"IN ({','.join('?' * len(kinds))})"
     with _connect(db_path) as db:
         vector_ids = [
             row["doc_id"]
             for row in db.execute(
-                "SELECT doc_id FROM vec_documents "
-                "WHERE embedding MATCH ? AND k = ? ORDER BY distance",
-                (_serialize(_embed(query)), max(limit * 6, 30)),
+                "SELECT doc_id FROM vec_documents WHERE embedding MATCH ? AND k = ? "
+                f"AND status = 'active' AND kind {in_kinds} ORDER BY distance",
+                (_serialize(_embed(query)), max(limit * 6, 30), *kinds),
             )
         ]
         keyword_ids = [
             row["doc_id"]
             for row in db.execute(
-                "SELECT doc_id FROM documents_fts WHERE documents_fts MATCH ? "
+                "SELECT f.doc_id FROM documents_fts f JOIN documents d USING (doc_id) "
+                f"WHERE documents_fts MATCH ? AND d.status = 'active' AND d.kind {in_kinds} "
                 "ORDER BY bm25(documents_fts) LIMIT ?",
-                (match, max(limit * 3, 15)),
+                (match, *kinds, max(limit * 3, 15)),
             )
         ]
         scores: dict[str, float] = {}
         for ranking in (vector_ids, keyword_ids):
             for rank, doc_id in enumerate(ranking, start=1):
                 scores[doc_id] = scores.get(doc_id, 0.0) + 1 / (60 + rank)
-        rows = {
-            row["doc_id"]: dict(row)
-            for row in db.execute(
-                f"SELECT * FROM documents WHERE doc_id IN ({','.join('?' * len(scores))})",
-                list(scores),
-            )
-        }
-    valid = [
-        {**row, "score": round(scores[doc_id], 6)}
-        for doc_id, row in rows.items()
-        if row["kind"] in kinds and _valid_on(row, as_of)
-    ]
-    valid.sort(key=lambda row: (-row["score"], row["doc_id"]))
-    return valid[:limit]
+        rows = db.execute(
+            f"SELECT * FROM documents WHERE doc_id IN ({','.join('?' * len(scores))})",
+            list(scores),
+        ).fetchall()
+    hits = [{**dict(row), "score": round(scores[row["doc_id"]], 6)} for row in rows]
+    hits.sort(key=lambda hit: (-hit["score"], hit["doc_id"]))
+    return hits[:limit]
 
 
-def _valid_on(row: dict[str, Any], as_of: date) -> bool:
-    return _bound(row["valid_from"], date.min) <= as_of <= _bound(row["valid_to"], date.max)
+def add_note(db_path: Path, text: str, sources: list[str], run_id: str, confidence: float) -> str:
+    """Store an active Memory Note and return its new `MEM-…` id."""
+    with _connect(db_path) as db:
+        (count,) = db.execute(
+            "SELECT count(*) FROM documents WHERE kind = 'memory_note'"
+        ).fetchone()
+        doc_id = f"MEM-{count + 1:04d}"
+        _insert(
+            db,
+            {
+                "doc_id": doc_id,
+                "kind": "memory_note",
+                "title": "Memory Note",
+                "body": text,
+                "sources": json.dumps(sources),
+                "run_id": run_id,
+                "confidence": confidence,
+            },
+        )
+    return doc_id
 
 
-def _bound(value: Any, default: date) -> date:
-    """Parse a validity bound; anything not an ISO date (empty, "in force") is an open bound."""
-    try:
-        return date.fromisoformat(str(value).strip()[:10])
-    except ValueError:
-        return default
+def set_status(db_path: Path, doc_id: str, status: str) -> None:
+    """Change a document's status; only `active` documents are returned by search."""
+    with _connect(db_path) as db:
+        if not db.execute(
+            "UPDATE documents SET status = ? WHERE doc_id = ?", (status, doc_id)
+        ).rowcount:
+            raise KeyError(doc_id)
+        db.execute("UPDATE vec_documents SET status = ? WHERE doc_id = ?", (status, doc_id))
+
+
+def _insert(db: sqlite3.Connection, doc: dict[str, Any]) -> None:
+    doc = {**DEFAULTS, **doc}
+    db.execute(
+        f"INSERT INTO documents VALUES ({','.join('?' * len(FIELDS))})", [doc[f] for f in FIELDS]
+    )
+    db.execute(
+        "INSERT INTO documents_fts VALUES (?, ?, ?)", (doc["doc_id"], doc["title"], doc["body"])
+    )
+    vector = _serialize(_embed(f"{doc['title']} {doc['body']}"))
+    db.execute(
+        "INSERT INTO vec_documents VALUES (?, ?, ?, ?)",
+        (doc["doc_id"], doc["kind"], doc["status"], vector),
+    )
 
 
 @contextmanager

@@ -69,7 +69,7 @@ CAPABILITIES = {
     },
     "memory_semantic": {
         "label": "Memory — semantic",
-        "definition": ("As-of hybrid retrieval over policies, precedents and memory-note text."),
+        "definition": "Hybrid retrieval over policy clauses, precedents and Memory Notes.",
         "trajectory_signals": ["tool_call {tool: search_knowledge}"],
     },
     "sandbox": {
