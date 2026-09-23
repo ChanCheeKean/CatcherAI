@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from graph_builder import Graph
 from submissions import insert_submission
-from world import PLATINUM_STAYS, file_dispute, issue_card, open_account, post_charge
+from world import PLATINUM_STAYS, file_dispute, post_charge
 
-from cases import CaseTruth, charge_expected
+from cases import CaseTruth, basic_card, charge_expected
 from extensions.merchant_agent.contract import MerchantSubmission, SubmittedItem
 
 DISPUTE = "DSP-2026-91002"
@@ -16,11 +16,6 @@ INTAKE = (
     "rate."
 )
 _STAY = "2 nights, Platinum Stays rate $500/night"
-
-
-def _account(g: Graph, member: str, n: str, product: str, last4: str) -> str:
-    account = open_account(g, member, f"ACC-B{n}", product)
-    return issue_card(g, f"CRD-B{n}", account, member, product, last4, "basic")
 
 
 def _stay(g: Graph, n: str, booked: str, arrival: str, guarantee: str, paid_with: str, day: str):
@@ -45,10 +40,10 @@ def _stay(g: Graph, n: str, booked: str, arrival: str, guarantee: str, paid_with
 
 def build(g: Graph, _rng) -> CaseTruth:
     g.node("CardMember", "CMB-B01", name="Marcus Bell", member_since="2016-09-12")
-    platinum = _account(g, "CMB-B01", "01", "Platinum", "2002")
-    gold = _account(g, "CMB-B01", "02", "Gold", "2031")
+    platinum = basic_card(g, "CMB-B01", "B01", "Platinum", "2002")
+    gold = basic_card(g, "CMB-B01", "B02", "Gold", "2031")
     order, charge = _stay(g, "01", "2026-06-10", "2026-07-18", platinum, gold, "2026-07-20")
-    file_dispute(g, DISPUTE, "CMB-B01", charge, "2026-08-02", 300.0, INTAKE, "open", "")
+    file_dispute(g, DISPUTE, "CMB-B01", {charge: 300.0}, "2026-08-02", INTAKE, "open", "")
     insert_submission(
         g,
         MerchantSubmission(
@@ -79,7 +74,7 @@ def build(g: Graph, _rng) -> CaseTruth:
     # Decoy: another guest's program booking guaranteed with a Gold Card, rightly charged the
     # Best Available Rate, and the past Dispute over it was rejected.
     g.node("CardMember", "CMB-B02", name="Ana Ruiz", member_since="2020-03-08")
-    decoy_gold = _account(g, "CMB-B02", "03", "Gold", "2044")
+    decoy_gold = basic_card(g, "CMB-B02", "B03", "Gold", "2044")
     decoy_order, decoy_charge = _stay(
         g, "02", "2026-05-04", "2026-06-12", decoy_gold, decoy_gold, "2026-06-14"
     )
@@ -87,9 +82,8 @@ def build(g: Graph, _rng) -> CaseTruth:
         g,
         "DSP-HIST-B02",
         "CMB-B02",
-        decoy_charge,
+        {decoy_charge: 300.0},
         "2026-06-25",
-        300.0,
         "Hotel charged the full rate instead of the Platinum rate.",
         "resolved",
         "rejected",

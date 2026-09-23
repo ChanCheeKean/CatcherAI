@@ -1,9 +1,9 @@
 # DisputeAI — Amex dispute revamp: handoff
 
-Last updated: 2026-09-23
+Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S4 complete**
-Next stage: **S5 — Cases C, D, E + end-to-end generator**
+Current phase: **S5 complete**
+Next stage: **S6 — Case Notebook, tools, read-only runtime**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -113,7 +113,7 @@ Details for each stage are in the plan section of the same name.
 | **S2** Policy corpus, clause search, memory in knowledge | Complex | 6 Amex + 8 Merchant policy markdown docs grounded in the research; `policies.py` projects them into graph nodes and clause-level search; retrieval without `as_of`; Memory Notes in SQLite; Amex precedents. | ☑ |
 | **S3** Background world | Medium | Deterministic dispute-only world (~150 Card Members, ~30 Merchants with template policies, ~3k charges, Offers, program, subscriptions, invoices, ~60 past Disputes). | ☑ |
 | **S4** Submission contract, case kit, cases A and B | Complex | `MerchantSubmission` contract + `insert_submission`; case kit for Amex; case A "Final Sale Means Final", case B "Platinum Rate, Gold Card". | ☑ |
-| **S5** Cases C, D, E + end-to-end generator | Complex | Case C "The Offer on the Other Card", case D "Paid by Transfer", case E "Cancelled the Wrong Plan"; `gen.py` ingests saved submissions; every ontology label/edge used. | ☐ |
+| **S5** Cases C, D, E + end-to-end generator | Complex | Case C "The Offer on the Other Card", case D "Paid by Transfer", case E "Cancelled the Wrong Plan"; `gen.py` ingests saved submissions; every ontology label/edge used. | ☑ |
 | **S6** Case Notebook, tools, read-only runtime | Medium | `notebook.py`; tools `graph_find`, `notebook_write`/`notebook_read`, memory in knowledge; runtime and API read the static graph; notebook in supervisor/adjudicator input. | ☐ |
 | **S7** Report, prompts, skills, evaluation | Complex | Six verdicts, Dispute Category, `ChargeDecision`, `SystemImprovement`; new `agents.yaml`; 9 label-agnostic skills; label-agnostic guard test; eval scoring. | ☐ |
 | **S8** Merchant agent extension (not wired) | Medium | `respond()` Deep Agent over merchant records, `save_submission`, guard test that nothing imports it, README section. | ☐ |
@@ -351,3 +351,45 @@ Details for each stage are in the plan section of the same name.
   `frontend/src/pages/CasesPage.tsx` and `tests/e2e_server.py` still read the catalog's
   `claim_type`. Switch them to `claim`.
 - No design decision changed; the spec was not edited.
+
+### S5 — 2026-09-24
+- **Cases.** Ids, amounts and patterns follow the plan.
+  - `cases/c_offer_card.py` (DSP-2026-91003, OVR, goodwill_credit $100). The Amex Offer OFR-NWO-100
+    is ENROLLED_ON CRD-C01 (Platinum), and the $540 charge is on CRD-C02 (Gold). The Card Member's
+    own history holds DSP-HIST-C01, a rejected restaurant duplicate. **Deviation:** the namesake
+    decoy CMB-C02 also holds a Platinum Card (CRD-C04) with its own Amex Offer OFR-C02 at
+    Linen & Loom. Without it, their past intake ("added the Offer to my Platinum") would contradict
+    the graph.
+  - `cases/d_paid_transfer.py` (DSP-2026-91004, PDD, partially_accepted $500). The $1,500 transfer
+    settles the venue deposit, the $5,000 charge settles the $4,500 balance, and the $4,500
+    transfer settles the affiliated caterer's invoice.
+  - `cases/e_wrong_plan.py` (DSP-2026-91005, CNR, not_a_dispute on three charges). The Family plan
+    is SUBSCRIBED_WITH the Additional Card CRD-E02. The Card Member's own evidence is COM-E01
+    (HAS_EVIDENCE from the Dispute), which ASSERTS the cancelled Individual plan.
+  - `CASE_NEEDS` has C, D and E entries. The `claim` phrases are "Promised discount not applied",
+    "Paid the same bill twice" and "Billed again after cancelling".
+- **Generator.** `gen.build()` runs the world, then the cases, then every saved submission
+  (`load_saved(data/corpus/submissions)`, which is absent today). `main()` and the
+  `tests/test_cases.py` fixture both call it, so the tests check the graph gen.py writes.
+  `uv run python data/generator/gen.py` builds, loads and validates all five cases (136 knowledge
+  documents).
+- **Ontology coverage.** Every label and edge type is used, so nothing was cut from
+  `ontology.yaml`. New tests cover label and edge usage and the verdict and category coverage.
+- **Shared builders** (from `simplify`):
+  - `world.py` gained `add_offer`, `add_subscription`, `bill_subscription`, `add_invoice`,
+    `add_installment` and `pay_other_means`. The background and the cases now use them, and the
+    world's JSONL output is byte-identical to before.
+  - `file_dispute` now takes `{charge: disputed amount}` and sums the Dispute amount. The old
+    single-charge form would have put 68.97 on case E's first DISPUTES edge.
+  - `cases.basic_card` replaces the account-plus-Card helpers in A, B and C and the inline pairs in
+    D and E.
+- **Commands.** `uv run pytest`: 49 passed. `ruff check` and `ruff format --check`: passed.
+  `git diff --check`: passed. No tests were deleted.
+- **`simplify`** ran as four review agents.
+  - Applied: the shared builders above; `g.spec` in the coverage test instead of re-loading the
+    ontology; case C's one-use `_product` helper inlined; case D keeps the returned Payment ids
+    rather than repeating the literals; one pipeline shared by gen.py and the fixture.
+  - Skipped: reading case E's descriptor, plan names and prices from `world._DESCRIPTORS` and
+    `_PLANS`. They are private tables, and A and B also write their fixed ids literally.
+- No design decision changed; the spec was not edited. The S4 open issues (`Order` escaping in
+  `graph_query`, `claim_type` in the API and frontend) still stand for S6, S7, S9 and S10.

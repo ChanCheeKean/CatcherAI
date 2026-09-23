@@ -620,26 +620,106 @@ def file_dispute(
     g: Graph,
     dispute: str,
     member: str,
-    charge: str,
+    disputed: dict[str, float],
     filed: str,
-    amount,
     intake,
     status: str,
     outcome: str,
 ) -> str:
-    """A Dispute filed by `member` challenging `amount` of one charge."""
+    """A Dispute filed by `member` challenging the given amount of each charge."""
     g.node(
         "Dispute",
         dispute,
         filed_at=filed,
-        amount=amount,
+        amount=round(sum(disputed.values()), 2),
         intake=intake,
         status=status,
         outcome=outcome,
     )
     g.edge("FILED_BY", dispute, member)
-    g.edge("DISPUTES", dispute, charge, amount=amount)
+    for charge, amount in disputed.items():
+        g.edge("DISPUTES", dispute, charge, amount=amount)
     return dispute
+
+
+def add_offer(g: Graph, offer: str, merchant: str, title: str, spend, credit, funded_by) -> str:
+    """An Offer at `merchant`; an Amex-funded one is governed by the Amex Offer terms."""
+    g.node(
+        "Offer",
+        offer,
+        title=title,
+        spend_threshold=float(spend),
+        credit_amount=float(credit),
+        funded_by=funded_by,
+    )
+    g.edge("OFFER_AT", offer, merchant)
+    if funded_by == "amex":
+        g.edge("GOVERNS", AMEX_OFFER, offer)
+    return offer
+
+
+def add_subscription(g: Graph, sub: str, merchant, card, terms, plan, amount, status) -> str:
+    """A monthly plan billed to `card` under the terms version accepted at sign-up."""
+    g.node(
+        "Subscription",
+        sub,
+        plan=plan,
+        amount=amount,
+        frequency="monthly",
+        status=status,
+    )
+    g.edge("AT_MERCHANT", sub, merchant)
+    g.edge("SUBSCRIBED_WITH", sub, card)
+    g.edge("ACCEPTED", sub, terms, method="checkbox at sign-up")
+    return sub
+
+
+def bill_subscription(g: Graph, charge: str, sub, card, merchant, day: str, amount) -> str:
+    """One recurring charge for `sub`, shown under the Merchant's statement descriptor."""
+    post_charge(g, charge, card, merchant, day, amount, "recurring")
+    g.edge("FOR_SUBSCRIPTION", charge, sub)
+    g.edge("DESCRIBED_AS", charge, _DESCRIPTORS[merchant][0])
+    return charge
+
+
+def add_invoice(g: Graph, invoice: str, merchant, member, terms, day: str, total, description):
+    """An invoice to `member` under the signed terms version."""
+    g.node(
+        "Invoice",
+        invoice,
+        date=day,
+        total=total,
+        currency="USD",
+        description=description,
+    )
+    g.edge("AT_MERCHANT", invoice, merchant)
+    g.edge("BILLED_TO", invoice, member)
+    g.edge("ACCEPTED", invoice, terms, method="signature")
+    return invoice
+
+
+def add_installment(g: Graph, invoice: str, installment: str, label: str, amount) -> str:
+    g.node("Installment", installment, label=label, amount=amount)
+    g.edge("HAS_INSTALLMENT", invoice, installment)
+    return installment
+
+
+def pay_other_means(
+    g: Graph, payment: str, member, merchant, day: str, method, amount, reference, installment: str
+) -> str:
+    """A non-Card payment by `member` settling one installment."""
+    g.node(
+        "Payment",
+        payment,
+        date=day,
+        method=method,
+        amount=amount,
+        reference=reference,
+    )
+    g.edge("PAID_BY", payment, member)
+    g.edge("AT_MERCHANT", payment, merchant)
+    g.edge("SETTLES", payment, installment)
+    return payment
 
 
 def _credit(g: Graph, rng, new_id, sale: _Sale, amount: float) -> None:
@@ -788,25 +868,18 @@ def _subscriptions(g: Graph, rng, new_id, cards, terms) -> list[_Sale]:
         first = rng.randint(1, 5)
         cancelled = rng.random() < 0.3
         last = rng.randint(first + 1, 7) if cancelled else 8
-        descriptor, shown = _DESCRIPTORS[merchant]
+        shown = _DESCRIPTORS[merchant][1]
         start = date(2026, first, rng.randint(1, 28))
-        subscription, doc = new_id("SUB"), _accepted(terms, merchant, start)
-        g.node(
-            "Subscription",
-            subscription,
-            plan=plan,
-            amount=price,
-            frequency="monthly",
-            status="cancelled" if cancelled else "active",
+        doc = _accepted(terms, merchant, start)
+        status = "cancelled" if cancelled else "active"
+        subscription = add_subscription(
+            g, new_id("SUB"), merchant, card.id, doc, plan, price, status
         )
-        g.edge("AT_MERCHANT", subscription, merchant)
-        g.edge("SUBSCRIBED_WITH", subscription, card.id)
-        g.edge("ACCEPTED", subscription, doc, method="checkbox at sign-up")
         for month in range(first, last + 1):
             day = start.replace(month=month)
-            charge = _charge(g, new_id, card.id, merchant, day, price, "recurring")
-            g.edge("FOR_SUBSCRIPTION", charge, subscription)
-            g.edge("DESCRIBED_AS", charge, descriptor)
+            charge = bill_subscription(
+                g, new_id("CHG"), subscription, card.id, merchant, day.isoformat(), price
+            )
             sales.append(
                 _Sale(
                     charge, card, merchant, day, price, f"the {plan} plan", shown, subscription, doc
@@ -829,23 +902,13 @@ def _invoices(g: Graph, rng, new_id, cards, terms) -> list[_Sale]:
         amounts.append(total - sum(amounts))
         labels = ("Deposit", "Second payment")[: len(shares)] + ("Balance",)
         issued = _YEAR + timedelta(days=rng.randrange(120))
-        invoice, doc = new_id("INV"), _accepted(terms, merchant, issued)
-        g.node(
-            "Invoice",
-            invoice,
-            date=issued.isoformat(),
-            total=total,
-            currency="USD",
-            description=description,
+        doc = _accepted(terms, merchant, issued)
+        invoice = add_invoice(
+            g, new_id("INV"), merchant, card.holder, doc, issued.isoformat(), total, description
         )
-        g.edge("AT_MERCHANT", invoice, merchant)
-        g.edge("BILLED_TO", invoice, card.holder)
-        g.edge("ACCEPTED", invoice, doc, method="signature")
         day = issued
         for label, amount in zip(labels, amounts, strict=True):
-            installment = new_id("INS")
-            g.node("Installment", installment, label=label, amount=amount)
-            g.edge("HAS_INSTALLMENT", invoice, installment)
+            installment = add_installment(g, invoice, new_id("INS"), label, amount)
             day += timedelta(days=rng.randint(20, 60))
             if rng.random() < 0.6:
                 charge = _charge(g, new_id, card.id, merchant, day, amount, "purchase")
@@ -865,19 +928,18 @@ def _invoices(g: Graph, rng, new_id, cards, terms) -> list[_Sale]:
                     )
                 )
             else:
-                payment = new_id("PAY")
                 surname = g.nodes[card.holder]["props"]["name"].split()[-1].upper()
-                g.node(
-                    "Payment",
-                    payment,
-                    date=day.isoformat(),
-                    method=rng.choice(("bank_transfer", "bank_transfer", "cheque")),
-                    amount=amount,
-                    reference=f"{_NAMES[merchant].upper()} {label.upper()} {surname}",
+                pay_other_means(
+                    g,
+                    new_id("PAY"),
+                    card.holder,
+                    merchant,
+                    day.isoformat(),
+                    rng.choice(("bank_transfer", "bank_transfer", "cheque")),
+                    amount,
+                    f"{_NAMES[merchant].upper()} {label.upper()} {surname}",
+                    installment,
                 )
-                g.edge("PAID_BY", payment, card.holder)
-                g.edge("AT_MERCHANT", payment, merchant)
-                g.edge("SETTLES", payment, installment)
     return sales
 
 
@@ -898,18 +960,10 @@ def _offers(g: Graph, rng, new_id, cards) -> None:
             if amex
             else f"{name}: ${credit} off orders of ${spend} or more"
         )
-        offer = new_id("OFR")
-        g.node(
-            "Offer",
-            offer,
-            title=title,
-            spend_threshold=float(spend),
-            credit_amount=float(credit),
-            funded_by="amex" if amex else "merchant",
+        offer = add_offer(
+            g, new_id("OFR"), merchant, title, spend, credit, "amex" if amex else "merchant"
         )
-        g.edge("OFFER_AT", offer, merchant)
         if amex:
-            g.edge("GOVERNS", AMEX_OFFER, offer)
             for card in rng.sample(cards, rng.randint(3, 8)):
                 g.edge("ENROLLED_ON", offer, card.id)
 
@@ -934,9 +988,8 @@ def _past_disputes(g: Graph, rng, new_id, pools: dict[str, list[_Sale]]) -> None
                 g,
                 new_id("DSP"),
                 sale.card.basic,
-                sale.charge,
+                {sale.charge: disputed},
                 filed.isoformat(),
-                disputed,
                 spec["intake"].format(**words),
                 "resolved",
                 verdict,

@@ -127,6 +127,54 @@ CASE_NEEDS = {
         ),
         ("agents", S, "Reject the rejected past Dispute whose booking used a Gold Card."),
     ],
+    "C": [
+        (
+            "memory_graph",
+            P,
+            "Follow the Offer to the Card it was enrolled on, to its Card Member, and to "
+            "the other Card that paid.",
+        ),
+        (
+            "agents",
+            P,
+            "Tell the namesake's earlier Offer goodwill apart from this Card Member's history.",
+        ),
+        (
+            "skills",
+            P,
+            "offers-and-benefits and dispute-outcomes: an Amex Offer is never a Merchant "
+            "overcharge, and goodwill needs a written clause.",
+        ),
+        ("tool_calling", S, "Search the Dispute Guide for the Offer goodwill clause."),
+    ],
+    "D": [
+        ("sandbox", P, "Reconcile 6,000 against the 1,500 transfer and the 5,000 charge."),
+        (
+            "memory_graph",
+            P,
+            "Trace each payment to the installment it settles, its invoice and its Merchant.",
+        ),
+        ("agents", S, "Recognise the second transfer as the affiliated caterer's invoice."),
+    ],
+    "E": [
+        (
+            "memory_graph",
+            P,
+            "Follow the disputed charges to their subscription, its Card and the Additional "
+            "Card Member who holds it.",
+        ),
+        (
+            "router_triage",
+            P,
+            "Read past the cancellation claim to a misunderstanding of what was charged.",
+        ),
+        (
+            "skills",
+            P,
+            "recurring-billing and dispute-outcomes: separate plans and Additional Card "
+            "charges are not a Merchant error.",
+        ),
+    ],
 }
 
 

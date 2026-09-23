@@ -7,6 +7,7 @@ from typing import TypedDict
 
 from capabilities import required_capabilities
 from graph_builder import Graph
+from world import issue_card, open_account
 
 
 class CaseTruth(TypedDict):
@@ -38,11 +39,23 @@ def charge_expected(
     }
 
 
+def basic_card(g: Graph, member: str, suffix: str, product: str, last4: str) -> str:
+    """Open account `ACC-<suffix>` for `member` and issue them its basic Card `CRD-<suffix>`."""
+    account = open_account(g, member, f"ACC-{suffix}", product)
+    return issue_card(g, f"CRD-{suffix}", account, member, product, last4, "basic")
+
+
 def build_cases(g: Graph, rng: random.Random) -> list[CaseTruth]:
     """Add every showcase case to an existing world in stable presentation order."""
-    from . import a_final_sale, b_platinum_rate
+    from . import a_final_sale, b_platinum_rate, c_offer_card, d_paid_transfer, e_wrong_plan
 
-    builders = (a_final_sale.build, b_platinum_rate.build)
+    builders = (
+        a_final_sale.build,
+        b_platinum_rate.build,
+        c_offer_card.build,
+        d_paid_transfer.build,
+        e_wrong_plan.build,
+    )
     cases = []
     for build in builders:
         case = build(g, rng)

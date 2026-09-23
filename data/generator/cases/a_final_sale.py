@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from graph_builder import Graph
 from submissions import insert_submission
-from world import file_dispute, issue_card, open_account, post_charge
+from world import file_dispute, post_charge
 
-from cases import CaseTruth, charge_expected
+from cases import CaseTruth, basic_card, charge_expected
 from extensions.merchant_agent.contract import MerchantSubmission, SubmittedItem, SubmittedMessage
 
 DISPUTE = "DSP-2026-91001"
@@ -19,8 +19,7 @@ INTAKE = (
 
 def _card_member(g: Graph, n: str, name: str, since: str, last4: str) -> str:
     member = g.node("CardMember", f"CMB-A{n}", name=name, member_since=since)
-    account = open_account(g, member, f"ACC-A{n}", "Gold")
-    return issue_card(g, f"CRD-A{n}", account, member, "Gold", last4, "basic")
+    return basic_card(g, member, f"A{n}", "Gold", last4)
 
 
 def _sofa_order(g: Graph, n: str, card: str, option: str, date: str) -> tuple[str, str]:
@@ -71,7 +70,7 @@ def build(g: Graph, _rng) -> CaseTruth:
         note="Delivery of the return refused by the Merchant; sofa sent back to the customer.",
     )
     g.edge("RETURNED_AS", order, "RTN-A01")
-    file_dispute(g, DISPUTE, "CMB-A01", charge, "2026-08-20", 2400.0, INTAKE, "open", "")
+    file_dispute(g, DISPUTE, "CMB-A01", {charge: 2400.0}, "2026-08-20", INTAKE, "open", "")
     insert_submission(
         g,
         MerchantSubmission(
