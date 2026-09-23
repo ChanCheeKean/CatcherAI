@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S5 complete**
-Next stage: **S6 — Case Notebook, tools, read-only runtime**
+Current phase: **S6 complete**
+Next stage: **S7 — Report, prompts, skills, evaluation**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -114,7 +114,7 @@ Details for each stage are in the plan section of the same name.
 | **S3** Background world | Medium | Deterministic dispute-only world (~150 Card Members, ~30 Merchants with template policies, ~3k charges, Offers, program, subscriptions, invoices, ~60 past Disputes). | ☑ |
 | **S4** Submission contract, case kit, cases A and B | Complex | `MerchantSubmission` contract + `insert_submission`; case kit for Amex; case A "Final Sale Means Final", case B "Platinum Rate, Gold Card". | ☑ |
 | **S5** Cases C, D, E + end-to-end generator | Complex | Case C "The Offer on the Other Card", case D "Paid by Transfer", case E "Cancelled the Wrong Plan"; `gen.py` ingests saved submissions; every ontology label/edge used. | ☑ |
-| **S6** Case Notebook, tools, read-only runtime | Medium | `notebook.py`; tools `graph_find`, `notebook_write`/`notebook_read`, memory in knowledge; runtime and API read the static graph; notebook in supervisor/adjudicator input. | ☐ |
+| **S6** Case Notebook, tools, read-only runtime | Medium | `notebook.py`; tools `graph_find`, `notebook_write`/`notebook_read`, memory in knowledge; runtime and API read the static graph; notebook in supervisor/adjudicator input. | ☑ |
 | **S7** Report, prompts, skills, evaluation | Complex | Six verdicts, Dispute Category, `ChargeDecision`, `SystemImprovement`; new `agents.yaml`; 9 label-agnostic skills; label-agnostic guard test; eval scoring. | ☐ |
 | **S8** Merchant agent extension (not wired) | Medium | `respond()` Deep Agent over merchant records, `save_submission`, guard test that nothing imports it, README section. | ☐ |
 | **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☐ |
@@ -393,3 +393,28 @@ Details for each stage are in the plan section of the same name.
     `_PLANS`. They are private tables, and A and B also write their fixed ids literally.
 - No design decision changed; the spec was not edited. The S4 open issues (`Order` escaping in
   `graph_query`, `claim_type` in the API and frontend) still stand for S6, S7, S9 and S10.
+
+### S6 — 2026-09-24
+- Added `src/notebook.py`: per-run SQLite entries with cited graph ids, ordered sequence numbers,
+  filters by kind and author, and serialized writes. `tests/test_notebook.py` covers isolation,
+  ordering, filtering and invalid entries.
+- Rebuilt `src/tools.py` around the nine S6 tools. `graph_find` searches graph text; notebook
+  writes verify every node and edge id and emit a `notebook_write` event; memory writes use the
+  knowledge store. Knowledge search includes active Memory Notes and identifies graph-backed
+  search hits without naming an ontology label. Tool descriptions explain Cypher backticks for
+  labels that are keywords (the S4 `Order` issue). `tests/test_tools.py` covers these paths.
+- `src/runtime_entry.py`, `src/runtime.py` and `src/runtime_support.py` use the static read-only
+  graph and a `notebook_db` path, with notebook entries in supervisor and adjudicator inputs.
+  The adjudicator gets the six read-only tools. `tests/test_runtime.py` restores parallel
+  delegation, notebook visibility, forced termination and structured-boundary coverage.
+- `src/api/routers/graph.py` always opens the shared graph; graph endpoints no longer accept a
+  run id. `src/api/routers/runs.py` no longer looks for graph copies. Updated the CLI's path
+  option and the E2E server fixture from `run_dir` to `notebook_db`. `src/api/context.py` needed
+  no change because it had no run-graph reference.
+- `uv run pytest`: 58 passed. `uv run ruff check src tests data/generator`,
+  `uv run ruff format --check src tests data/generator`, and `git diff --check`: passed.
+  No tests were deleted. The `simplify` skill is not installed; manually reviewed all changed
+  files for dead code, legacy paths and redundant abstraction, then reran checks.
+- No design decision changed; the spec was not edited. The remaining `claim_type` API/frontend
+  references belong to S9/S10. The old `src/schemas.py`, `config/agents.yaml` and skills are
+  replaced in S7, so real-model adjudication is expected to need that stage.

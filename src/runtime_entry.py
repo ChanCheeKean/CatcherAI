@@ -21,7 +21,7 @@ from schemas import CaseReport
 class RuntimePaths:
     source_graph: Path = Path("data/generated/evidence.lbug")
     knowledge_db: Path = Path("data/generated/knowledge.sqlite")
-    run_dir: Path = Path("data/generated/runs")
+    notebook_db: Path = Path("data/generated/notebook.sqlite")
     trajectory_db: Path = Path("trajectory.sqlite")
     checkpoint_db: Path = Path("checkpoints.sqlite")
     agents_config: Path = Path("config/agents.yaml")
@@ -47,7 +47,7 @@ def run_case(
 
     paths = paths or RuntimePaths()
     run_id = run_id or f"run-{uuid.uuid4().hex}"
-    paths.run_dir.mkdir(parents=True, exist_ok=True)
+    paths.notebook_db.parent.mkdir(parents=True, exist_ok=True)
     paths.trajectory_db.parent.mkdir(parents=True, exist_ok=True)
     paths.checkpoint_db.parent.mkdir(parents=True, exist_ok=True)
     store = GraphStore(paths.source_graph)
@@ -70,6 +70,7 @@ def run_case(
         emitter=emitter,
         run_id=run_id,
         knowledge_db=paths.knowledge_db,
+        notebook_db=paths.notebook_db,
         skills_dir=paths.skills_dir.resolve(),
         config=config,
         model=model or chat_model(models, emitter=emitter),

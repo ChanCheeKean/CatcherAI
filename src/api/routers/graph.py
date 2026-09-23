@@ -18,12 +18,12 @@ ROW_CAP = 10_000
 
 
 @contextmanager
-def _store(ctx: ApiContext, run_id: str | None = None) -> Iterator[GraphStore]:
-    """The evidence graph, or one run's private copy (which also holds its agent-written nodes)."""
+def _store(ctx: ApiContext) -> Iterator[GraphStore]:
+    """Open the shared static evidence graph."""
 
-    path = ctx.paths.run_dir / f"{run_id}.lbug" if run_id else ctx.paths.source_graph
+    path = ctx.paths.source_graph
     if not path.exists():
-        raise not_found("graph_not_found", f"no graph for run {run_id}", run_id=run_id)
+        raise not_found("graph_not_found", "evidence graph is missing")
     store = GraphStore(path, read_only=True)
     try:
         yield store
@@ -35,10 +35,9 @@ def _store(ctx: ApiContext, run_id: str | None = None) -> Iterator[GraphStore]:
 def graph_elements(
     ctx: Ctx,
     ids: str = Query(description="Comma-separated node and edge ids"),
-    run_id: str | None = None,
 ) -> GraphElements:
     wanted = sorted({i for i in ids.split(",") if i})
-    with _store(ctx, run_id) as store:
+    with _store(ctx) as store:
         node_rows = store.query(
             "MATCH (n) WHERE n.id IN $ids RETURN n", {"ids": wanted}, row_cap=ROW_CAP
         )["rows"]
@@ -74,9 +73,8 @@ def graph_neighbors(
     ctx: Ctx,
     node_id: str,
     limit: int = Query(200, ge=1, le=1000),
-    run_id: str | None = None,
 ) -> dict:
-    with _store(ctx, run_id) as store:
+    with _store(ctx) as store:
         try:
             return store.neighbors(node_id, limit=limit)
         except ValueError as error:

@@ -147,7 +147,7 @@ def create() -> Any:
     paths = RuntimePaths(
         source_graph=source_graph,
         knowledge_db=knowledge,
-        run_dir=root / "runs",
+        notebook_db=root / "notebook.sqlite",
         trajectory_db=root / "trajectory.sqlite",
         checkpoint_db=root / "checkpoints.sqlite",
         agents_config=Path("config/agents.yaml"),

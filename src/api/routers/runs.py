@@ -36,7 +36,7 @@ def _events(ctx: ApiContext, run_id: str, after_seq: int = 0) -> list[EventEnvel
 
 
 def _latest_completed(ctx: ApiContext) -> dict[str, tuple[str, str]]:
-    """Per case, the newest finished run that reached a decision and still has its graph copy."""
+    """Per case, the newest finished run that reached a decision."""
     if not ctx.paths.trajectory_db.exists():
         return {}
     try:
@@ -48,9 +48,7 @@ def _latest_completed(ctx: ApiContext) -> dict[str, tuple[str, str]]:
     except sqlite3.OperationalError:  # no run has created the event table yet
         return {}
     return {
-        case_id: (run_id, verdict)
-        for case_id, run_id, verdict in rows
-        if not ctx.is_active(run_id) and (ctx.paths.run_dir / f"{run_id}.lbug").exists()
+        case_id: (run_id, verdict) for case_id, run_id, verdict in rows if not ctx.is_active(run_id)
     }
 
 

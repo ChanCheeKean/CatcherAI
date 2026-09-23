@@ -24,8 +24,8 @@ def run(
     knowledge: Annotated[Path, typer.Option(help="Knowledge SQLite database")] = Path(
         "data/generated/knowledge.sqlite"
     ),
-    run_dir: Annotated[Path, typer.Option(help="Directory for isolated run graphs")] = Path(
-        "data/generated/runs"
+    notebook: Annotated[Path, typer.Option(help="Case Notebook SQLite database")] = Path(
+        "data/generated/notebook.sqlite"
     ),
     events: Annotated[Path, typer.Option(help="SQLite trajectory store")] = Path(
         "trajectory.sqlite"
@@ -41,7 +41,7 @@ def run(
         paths=RuntimePaths(
             source_graph=graph,
             knowledge_db=knowledge,
-            run_dir=run_dir,
+            notebook_db=notebook,
             trajectory_db=events,
             checkpoint_db=checkpoints,
         ),

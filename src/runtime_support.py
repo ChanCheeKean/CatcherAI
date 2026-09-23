@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import operator
-from datetime import date
 from typing import Annotated, Any, TypedDict
 
 from schemas import (
@@ -70,11 +69,6 @@ def apply_plan_edits(plan: list[PlanItem], edits: list[PlanEdit]) -> list[PlanIt
                 }
             )
     return [items[item_id] for item_id in order if item_id in items]
-
-
-def as_of(case: dict[str, Any]) -> date:
-    filed = case["dispute"].get("filed_at") or date.today().isoformat()
-    return date.fromisoformat(filed[:10])
 
 
 def open_plan(plan: list[PlanItem]) -> list[str]:

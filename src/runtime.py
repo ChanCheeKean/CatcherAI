@@ -15,6 +15,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
+import notebook
 from config import AgentsConfig
 from domain.events import Actor, ActorKind, EventDraft, event_context
 from graph_store import GraphStore
@@ -24,7 +25,6 @@ from runtime_entry import RuntimePaths, run_case
 from runtime_support import (
     AgentState,
     apply_plan_edits,
-    as_of,
     findings_refs,
     open_plan,
     plan_refs,
@@ -42,7 +42,7 @@ from schemas import (
     Task,
     Triage,
 )
-from tools import Run, make_tools
+from tools import READ_ONLY_TOOLS, Run, make_tools
 
 AgentBuilder = Callable[..., Any]
 __all__ = ["RuntimePaths", "run_case"]
@@ -56,6 +56,7 @@ class _Runtime:
         emitter: EventEmitter,
         run_id: str,
         knowledge_db: Path,
+        notebook_db: Path,
         skills_dir: Path,
         config: AgentsConfig,
         model: Any,
@@ -65,6 +66,7 @@ class _Runtime:
         self.emitter = emitter
         self.run_id = run_id
         self.knowledge_db = knowledge_db
+        self.notebook_db = notebook_db
         self.skills_dir = skills_dir
         self.config = config
         self.model = model
@@ -88,15 +90,8 @@ class _Runtime:
         return builder.compile(checkpointer=checkpointer)
 
     def case_context(self, case_id: str) -> dict[str, Any]:
-        dispute = self.store.query(
-            "MATCH (d:Dispute {id: $id}) RETURN d",
-            {"id": case_id},
-            row_cap=1,
-        )
-        if not dispute["rows"]:
-            raise ValueError(f"no such dispute {case_id}")
         return {
-            "dispute": dispute["rows"][0][0],
+            "dispute": self.store.node(case_id),
             "neighborhood": self.store.neighbors(case_id, limit=50),
             "schema": self.store.schema(),
         }
@@ -313,6 +308,7 @@ class _Runtime:
                 "plan": [p.model_dump(mode="json") for p in state["plan"]],
                 "summary": state["summary"].model_dump(mode="json"),
                 "findings": [f.model_dump(mode="json") for f in state.get("findings", [])],
+                "notebook": notebook.read_entries(self.notebook_db, self.run_id),
                 "termination_note": state.get("termination_reason", "decided"),
             }
             self._node_event("node_entered", actor, visit, turn, adjudication_input)
@@ -416,7 +412,7 @@ class _Runtime:
             self.emitter,
             self.run_id,
             self.knowledge_db,
-            as_of(state["case"]),
+            self.notebook_db,
             actor=role,
             visit=visit,
             turn=state["turn"],
@@ -424,12 +420,7 @@ class _Runtime:
         )
         tools = make_tools(run)
         if read_only:
-            tools = [
-                tool
-                for tool in tools
-                if tool.name
-                in {"graph_schema", "graph_query", "graph_neighbors", "search_knowledge"}
-            ]
+            tools = [tool for tool in tools if tool.name in READ_ONLY_TOOLS]
         try:
             agent = self.agent_builder(
                 model=self.model,
@@ -493,6 +484,7 @@ class _Runtime:
                 f.model_dump(mode="json") for f in state.get("findings", [])[processed:]
             ],
             "feedback": state.get("supervisor_feedback", ""),
+            "notebook": notebook.read_entries(self.notebook_db, self.run_id),
         }
 
     def _role_skills(self, role: str) -> list[str]:
