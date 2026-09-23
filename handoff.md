@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S8 complete**
-Next stage: **S9 — API, showcase, schemas**
+Current phase: **S9 complete**
+Next stage: **S10 — Frontend**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -117,7 +117,7 @@ Details for each stage are in the plan section of the same name.
 | **S6** Case Notebook, tools, read-only runtime | Medium | `notebook.py`; tools `graph_find`, `notebook_write`/`notebook_read`, memory in knowledge; runtime and API read the static graph; notebook in supervisor/adjudicator input. | ☑ |
 | **S7** Report, prompts, skills, evaluation | Complex | Six verdicts, Dispute Category, `ChargeDecision`, `SystemImprovement`; new `agents.yaml`; 9 label-agnostic skills; label-agnostic guard test; eval scoring. | ☑ |
 | **S8** Merchant agent extension (not wired) | Medium | `respond()` Deep Agent over merchant records, `save_submission`, guard test that nothing imports it, README section. | ☑ |
-| **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☐ |
+| **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☑ |
 | **S10** Frontend | Medium | Ontology-driven regions/colours; Notebook tab; Conclusion with category, six verdicts, System Improvements. | ☐ |
 | **S11** Real-LLM eval + tuning | Complex | pass@1 5/5 on A–E by improving skills, policy wording, ontology descriptions and prompts only. | ☐ |
 | **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☐ |
@@ -454,3 +454,21 @@ Details for each stage are in the plan section of the same name.
   file for dead code, legacy paths and redundant abstraction, then reran checks.
 - No design decision changed; the spec was not edited. The Merchant agent remains intentionally
   unwired, and its real-model behavior is untested until a live run is requested.
+
+### S9 — 2026-09-24
+- Added `GET /graph/ontology` in `src/api/routers/graph.py`, returning groups plus label and edge
+  descriptions from the static graph ontology. Added typed response models in `src/api/models.py`
+  and changed `CaseSummary.claim_type` to `claim` to match the generated catalog.
+- Added `tests/test_api.py` for ontology, static graph node lookup and the answer-free case catalog.
+  Added `tests/test_showcase.py` for export/install round-trip: graph, events, and idempotent event
+  import. `src/showcase.py` and `src/cli.py` already used the static graph and exported per-run
+  events only after S1/S6, so no source changes were needed there.
+- Regenerated `schemas/openapi.json`, removing stale graph `run_id` query parameters and old report
+  fields. Ran `uv run inspect export-event-schema --output schemas/trajectory-event.schema.json`;
+  the file was unchanged because `EventEnvelope.type` is a free string, with no event-type list.
+- `uv run pytest -q`: 67 passed. `uv run ruff check src tests data/generator`,
+  `uv run ruff format --check src tests data/generator`, and `git diff --check`: passed. No tests
+  were deleted. The `simplify` skill is not installed; manually reviewed all changed files for
+  dead code, legacy paths and redundant abstraction, then reran checks.
+- No design decision changed; the spec was not edited. Frontend and E2E fixture references to
+  `claim_type` remain for S10.

@@ -12,7 +12,7 @@ from schemas import CaseReport
 class CaseSummary(BaseModel):
     case_id: str
     title: str
-    claim_type: str
+    claim: str
     amount: float
     summary: str
     latest_run_id: str | None = None
@@ -49,6 +49,26 @@ class GraphElements(BaseModel):
     nodes: list[GraphNode]
     edges: list[GraphEdge]
     missing: list[str]
+
+
+class OntologyGroup(BaseModel):
+    title: str
+    description: str
+
+
+class OntologyLabel(BaseModel):
+    group: str
+    description: str
+
+
+class OntologyEdge(BaseModel):
+    description: str
+
+
+class GraphOntology(BaseModel):
+    groups: dict[str, OntologyGroup]
+    labels: dict[str, OntologyLabel]
+    edges: dict[str, OntologyEdge]
 
 
 class Neighbor(BaseModel):

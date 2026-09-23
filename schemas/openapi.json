@@ -213,22 +213,6 @@
               "title": "Ids"
             },
             "description": "Comma-separated node and edge ids"
-          },
-          {
-            "name": "run_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Run Id"
-            }
           }
         ],
         "responses": {
@@ -248,6 +232,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/graph/ontology": {
+      "get": {
+        "tags": [
+          "graph"
+        ],
+        "summary": "Graph Ontology",
+        "operationId": "graph_ontology_graph_ontology_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphOntology"
                 }
               }
             }
@@ -282,22 +287,6 @@
               "minimum": 1,
               "default": 200,
               "title": "Limit"
-            }
-          },
-          {
-            "name": "run_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Run Id"
             }
           }
         ],
@@ -350,36 +339,6 @@
   },
   "components": {
     "schemas": {
-      "AccountAction": {
-        "properties": {
-          "action": {
-            "type": "string",
-            "title": "Action"
-          },
-          "target_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Target Id"
-          },
-          "reason": {
-            "type": "string",
-            "title": "Reason"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "action",
-          "reason"
-        ],
-        "title": "AccountAction"
-      },
       "CaseReport": {
         "properties": {
           "case_id": {
@@ -389,9 +348,8 @@
           "verdict": {
             "$ref": "#/components/schemas/Verdict"
           },
-          "claim_family": {
-            "type": "string",
-            "title": "Claim Family"
+          "category": {
+            "$ref": "#/components/schemas/DisputeCategory"
           },
           "headline": {
             "type": "string",
@@ -405,12 +363,12 @@
             "type": "string",
             "title": "Detailed Reasoning"
           },
-          "transactions": {
+          "charges": {
             "items": {
-              "$ref": "#/components/schemas/TransactionDecision"
+              "$ref": "#/components/schemas/ChargeDecision"
             },
             "type": "array",
-            "title": "Transactions"
+            "title": "Charges"
           },
           "hypotheses": {
             "items": {
@@ -426,13 +384,6 @@
             "type": "array",
             "title": "Decoys Ruled Out"
           },
-          "missing_evidence": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Missing Evidence"
-          },
           "policy_basis": {
             "items": {
               "$ref": "#/components/schemas/Citation"
@@ -440,12 +391,12 @@
             "type": "array",
             "title": "Policy Basis"
           },
-          "account_actions": {
+          "system_improvements": {
             "items": {
-              "$ref": "#/components/schemas/AccountAction"
+              "$ref": "#/components/schemas/SystemImprovement"
             },
             "type": "array",
-            "title": "Account Actions"
+            "title": "System Improvements"
           },
           "confidence": {
             "type": "number",
@@ -457,9 +408,9 @@
             "type": "string",
             "title": "Flip Fact"
           },
-          "cardholder_letter": {
+          "card_member_letter": {
             "type": "string",
-            "title": "Cardholder Letter"
+            "title": "Card Member Letter"
           }
         },
         "additionalProperties": false,
@@ -467,19 +418,18 @@
         "required": [
           "case_id",
           "verdict",
-          "claim_family",
+          "category",
           "headline",
           "executive_summary",
           "detailed_reasoning",
-          "transactions",
+          "charges",
           "hypotheses",
           "decoys_ruled_out",
-          "missing_evidence",
           "policy_basis",
-          "account_actions",
+          "system_improvements",
           "confidence",
           "flip_fact",
-          "cardholder_letter"
+          "card_member_letter"
         ],
         "title": "CaseReport"
       },
@@ -493,9 +443,9 @@
             "type": "string",
             "title": "Title"
           },
-          "claim_type": {
+          "claim": {
             "type": "string",
-            "title": "Claim Type"
+            "title": "Claim"
           },
           "amount": {
             "type": "number",
@@ -532,11 +482,64 @@
         "required": [
           "case_id",
           "title",
-          "claim_type",
+          "claim",
           "amount",
           "summary"
         ],
         "title": "CaseSummary"
+      },
+      "ChargeDecision": {
+        "properties": {
+          "charge_id": {
+            "type": "string",
+            "title": "Charge Id"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/Verdict"
+          },
+          "category": {
+            "$ref": "#/components/schemas/DisputeCategory"
+          },
+          "disputed_amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Disputed Amount"
+          },
+          "credit_amount": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Credit Amount"
+          },
+          "card_member_liability": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Card Member Liability"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceLink"
+            },
+            "type": "array",
+            "title": "Evidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "charge_id",
+          "verdict",
+          "category",
+          "disputed_amount",
+          "credit_amount",
+          "card_member_liability",
+          "rationale",
+          "evidence"
+        ],
+        "title": "ChargeDecision"
       },
       "Citation": {
         "properties": {
@@ -556,6 +559,22 @@
           "why"
         ],
         "title": "Citation"
+      },
+      "DisputeCategory": {
+        "type": "string",
+        "enum": [
+          "NKN",
+          "RET",
+          "CNC",
+          "CNR",
+          "DMG",
+          "DSS",
+          "DUP",
+          "NRC",
+          "OVR",
+          "PDD"
+        ],
+        "title": "DisputeCategory"
       },
       "EvalCase": {
         "properties": {
@@ -792,6 +811,38 @@
         ],
         "title": "GraphNode"
       },
+      "GraphOntology": {
+        "properties": {
+          "groups": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OntologyGroup"
+            },
+            "type": "object",
+            "title": "Groups"
+          },
+          "labels": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OntologyLabel"
+            },
+            "type": "object",
+            "title": "Labels"
+          },
+          "edges": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OntologyEdge"
+            },
+            "type": "object",
+            "title": "Edges"
+          }
+        },
+        "type": "object",
+        "required": [
+          "groups",
+          "labels",
+          "edges"
+        ],
+        "title": "GraphOntology"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -912,6 +963,55 @@
         ],
         "title": "Neighbors"
       },
+      "OntologyEdge": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "title": "OntologyEdge"
+      },
+      "OntologyGroup": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "description"
+        ],
+        "title": "OntologyGroup"
+      },
+      "OntologyLabel": {
+        "properties": {
+          "group": {
+            "type": "string",
+            "title": "Group"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "group",
+          "description"
+        ],
+        "title": "OntologyLabel"
+      },
       "RunStatus": {
         "properties": {
           "run_id": {
@@ -974,54 +1074,26 @@
         ],
         "title": "StartRun"
       },
-      "TransactionDecision": {
+      "SystemImprovement": {
         "properties": {
-          "txn_id": {
-            "type": "string",
-            "title": "Txn Id"
-          },
-          "verdict": {
-            "$ref": "#/components/schemas/Verdict"
-          },
-          "disputed_amount": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Disputed Amount"
-          },
-          "credit_amount": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Credit Amount"
-          },
-          "cardholder_liability": {
-            "type": "number",
-            "minimum": 0.0,
-            "title": "Cardholder Liability"
-          },
-          "network_action": {
+          "target": {
             "type": "string",
             "enum": [
-              "file_dispute",
-              "no_dispute",
-              "pre_arbitration",
-              "none"
+              "amex_policy",
+              "merchant_policy",
+              "process",
+              "product",
+              "data"
             ],
-            "title": "Network Action"
+            "title": "Target"
           },
-          "reason_code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason Code"
-          },
-          "rationale": {
+          "issue": {
             "type": "string",
-            "title": "Rationale"
+            "title": "Issue"
+          },
+          "suggestion": {
+            "type": "string",
+            "title": "Suggestion"
           },
           "evidence": {
             "items": {
@@ -1034,16 +1106,12 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "txn_id",
-          "verdict",
-          "disputed_amount",
-          "credit_amount",
-          "cardholder_liability",
-          "network_action",
-          "rationale",
+          "target",
+          "issue",
+          "suggestion",
           "evidence"
         ],
-        "title": "TransactionDecision"
+        "title": "SystemImprovement"
       },
       "ValidationError": {
         "properties": {
@@ -1091,7 +1159,9 @@
           "accepted",
           "partially_accepted",
           "rejected",
-          "not_a_dispute"
+          "goodwill_credit",
+          "not_a_dispute",
+          "fraud_referral"
         ],
         "title": "Verdict"
       }

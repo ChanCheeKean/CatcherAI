@@ -10,7 +10,15 @@ from fastapi import APIRouter, Query
 
 from api.context import ApiContext, Ctx
 from api.errors import not_found
-from api.models import EvalCase, EvalLatest, GraphEdge, GraphElements, GraphNode, Neighbors
+from api.models import (
+    EvalCase,
+    EvalLatest,
+    GraphEdge,
+    GraphElements,
+    GraphNode,
+    GraphOntology,
+    Neighbors,
+)
 from graph_store import GraphStore
 
 router = APIRouter(tags=["graph"])
@@ -66,6 +74,22 @@ def graph_elements(
     ]
     found = {n.id for n in nodes} | {e.id for e in edges}
     return GraphElements(nodes=nodes, edges=edges, missing=[i for i in wanted if i not in found])
+
+
+@router.get("/graph/ontology", response_model=GraphOntology)
+def graph_ontology(ctx: Ctx) -> dict:
+    with _store(ctx) as store:
+        ontology = store.ontology
+    return {
+        "groups": ontology["groups"],
+        "labels": {
+            label: {"group": spec["group"], "description": spec["description"]}
+            for label, spec in ontology["nodes"].items()
+        },
+        "edges": {
+            edge: {"description": spec["description"]} for edge, spec in ontology["edges"].items()
+        },
+    }
 
 
 @router.get("/graph/neighbors/{node_id}", response_model=Neighbors)
