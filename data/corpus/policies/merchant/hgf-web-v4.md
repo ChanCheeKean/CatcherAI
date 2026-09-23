@@ -12,4 +12,4 @@ publisher: MER-HGF
 Most items can be returned within 30 days of delivery.
 
 ## 2 Exceptions
-Some items are excluded from returns; see Checkout Terms §4.3.
+Custom orders are final sale; see Checkout Terms §4.3.
