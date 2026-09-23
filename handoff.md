@@ -190,7 +190,7 @@ Details for each stage are in the plan section of the same name.
   Agreement, Offer terms, Platinum benefit terms, Platinum Stays participation terms, Dispute
   Guide) and `data/corpus/policies/merchant/` (HGF checkout v4 and returns page v4, HPH
   reservation v2 and folio v1, NWO sale v1, WBV contract v2, WBC catering v1, STC subscription
-  v3). They hold 53 clauses. Amex texts are paraphrased (Platinum Stays and the goodwill clauses
+  v3). They hold 50 clauses. Amex texts are paraphrased (Platinum Stays and the goodwill clauses
   are fictional). Each Amex file opens with a one-line disclaimer before its first clause, and
   the parser drops that line. PLAT-BEN 2.1 does not say which Card must pay (the case-B gap).
 - Added `data/generator/policies.py` (`Clause`, `PolicyDoc`, `parse`, `load_policies`,
