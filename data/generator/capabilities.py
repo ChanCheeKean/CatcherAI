@@ -1,4 +1,4 @@
-"""Architecture capability coverage for the graph-discovery case set."""
+"""Architecture capability coverage for the Amex showcase cases."""
 
 from __future__ import annotations
 
@@ -61,11 +61,9 @@ CAPABILITIES = {
         "trajectory_signals": ["checkpoint persisted", "event replay", "decision persisted"],
     },
     "memory_graph": {
-        "label": "Memory — graph",
-        "definition": (
-            "Temporal multi-hop evidence retrieval and provenance-bearing inferred graph writes."
-        ),
-        "trajectory_signals": ["graph_query", "graph_write"],
+        "label": "Graph",
+        "definition": "Multi-hop retrieval over the static evidence graph and its policy clauses.",
+        "trajectory_signals": ["graph_query", "graph_find"],
     },
     "memory_semantic": {
         "label": "Memory — semantic",
@@ -80,22 +78,56 @@ CAPABILITIES = {
     "read_paths": {
         "label": "Agent read paths",
         "definition": (
-            "Selective graph and knowledge reads that verify temporal scope and stale notes."
+            "Selective graph and knowledge reads that find the policy version that applies and "
+            "skip stale notes."
         ),
         "trajectory_signals": ["tool_result {node_ids, edge_ids}", "search_knowledge"],
     },
     "write_paths": {
         "label": "Agent write paths",
         "definition": (
-            "Provenance-backed findings and memory write, supersede, retract or merge operations."
+            "Case Notebook entries citing graph ids, and memory write, supersede, retract or "
+            "merge operations."
         ),
-        "trajectory_signals": ["graph_write", "memory_write"],
+        "trajectory_signals": ["notebook_write", "memory_write"],
     },
 }
 
 P, S = "primary", "supporting"
 
-CASE_NEEDS = {}
+CASE_NEEDS = {
+    "A": [
+        (
+            "memory_graph",
+            P,
+            "Match the line item's option to the product's custom options and "
+            "reach the final-sale clause through the terms version the order accepted.",
+        ),
+        (
+            "skills",
+            P,
+            "policy-analysis: the accepted checkout terms, not the website headline, "
+            "decide the return.",
+        ),
+        ("agents", S, "Test and drop the website-promise hypothesis and the refunded look-alike."),
+    ],
+    "B": [
+        (
+            "memory_graph",
+            P,
+            "Compare the Card that guaranteed the booking with the Card charged, "
+            "through the program the hotel participates in.",
+        ),
+        ("subagents", P, "Read three policy documents in parallel with the payments work."),
+        (
+            "skills",
+            P,
+            "policy-analysis and offers-and-benefits: a Merchant condition that "
+            "contradicts program terms it agreed to is read against the Merchant.",
+        ),
+        ("agents", S, "Reject the rejected past Dispute whose booking used a Gold Card."),
+    ],
+}
 
 
 def required_capabilities(code: str) -> list[dict]:

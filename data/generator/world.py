@@ -13,6 +13,9 @@ from typing import NamedTuple
 
 from graph_builder import Graph
 from policies import Clause, PolicyDoc, add_to_graph, load_policies
+from submissions import insert_submission
+
+from extensions.merchant_agent.contract import MerchantSubmission, SubmittedItem
 
 AMEX_MR = "POL-AMX-MR"
 AMEX_CMA = "POL-AMX-CMA"
@@ -547,12 +550,7 @@ def _card_members(g: Graph, rng, new_id) -> list[_Card]:
         pair = rng.random() < 1 / 3
         products = rng.choice(_PRODUCT_PAIRS) if pair else rng.choices(_PRODUCTS, (2, 4, 2, 3))
         for product in products:
-            account = new_id("ACC")
-            g.node("CardAccount", account, product=product, status="open")
-            g.edge("HOLDS", member, account, role="basic")
-            g.edge("BOUND_BY", account, AMEX_CMA)
-            if product == "Platinum":
-                g.edge("BOUND_BY", account, AMEX_PLAT_BEN)
+            account = open_account(g, member, new_id("ACC"), product)
             cards.append(_issue(g, rng, new_id, account, member, member, product))
     for basic in rng.sample(cards, 15):
         surname = g.nodes[basic.holder]["props"]["name"].split()[-1]
@@ -571,19 +569,28 @@ def _person(g: Graph, rng, new_id, name: str) -> str:
 
 def _issue(g: Graph, rng, new_id, account, holder, basic, product) -> _Card:
     """A Card on `account` carried by `holder`; `basic` is the account's Basic Card Member."""
-    card = new_id("CRD")
     role = "basic" if holder == basic else "additional"
-    g.node(
-        "Card",
-        card,
-        last4=f"{rng.randrange(10000):04d}",
-        product=product,
-        role=role,
-        status="active",
-    )
+    last4 = f"{rng.randrange(10000):04d}"
+    card = issue_card(g, new_id("CRD"), account, holder, product, last4, role)
+    return _Card(card, account, product, holder, basic)
+
+
+def open_account(g: Graph, member: str, account: str, product: str) -> str:
+    """An open account held by its Basic Card Member, bound by the Card Member Agreement and,
+    for Platinum, the Platinum benefit terms."""
+    g.node("CardAccount", account, product=product, status="open")
+    g.edge("HOLDS", member, account, role="basic")
+    g.edge("BOUND_BY", account, AMEX_CMA)
+    if product == "Platinum":
+        g.edge("BOUND_BY", account, AMEX_PLAT_BEN)
+    return account
+
+
+def issue_card(g: Graph, card: str, account: str, holder: str, product, last4, role) -> str:
+    g.node("Card", card, last4=last4, product=product, role=role, status="active")
     g.edge("ISSUED_ON", card, account)
     g.edge("CARRIED_BY", card, holder)
-    return _Card(card, account, product, holder, basic)
+    return card
 
 
 def _day(rng) -> date:
@@ -591,11 +598,14 @@ def _day(rng) -> date:
 
 
 def _charge(g: Graph, new_id, card: str, merchant: str, day: date, amount: float, kind: str) -> str:
-    charge = new_id("CHG")
+    return post_charge(g, new_id("CHG"), card, merchant, day.isoformat(), amount, kind)
+
+
+def post_charge(g: Graph, charge: str, card: str, merchant: str, day: str, amount, kind) -> str:
     g.node(
         "Charge",
         charge,
-        date=day.isoformat(),
+        date=day,
         amount=round(amount, 2),
         currency="USD",
         kind=kind,
@@ -604,6 +614,32 @@ def _charge(g: Graph, new_id, card: str, merchant: str, day: date, amount: float
     g.edge("CHARGED_TO", charge, card)
     g.edge("AT_MERCHANT", charge, merchant)
     return charge
+
+
+def file_dispute(
+    g: Graph,
+    dispute: str,
+    member: str,
+    charge: str,
+    filed: str,
+    amount,
+    intake,
+    status: str,
+    outcome: str,
+) -> str:
+    """A Dispute filed by `member` challenging `amount` of one charge."""
+    g.node(
+        "Dispute",
+        dispute,
+        filed_at=filed,
+        amount=amount,
+        intake=intake,
+        status=status,
+        outcome=outcome,
+    )
+    g.edge("FILED_BY", dispute, member)
+    g.edge("DISPUTES", dispute, charge, amount=amount)
+    return dispute
 
 
 def _credit(g: Graph, rng, new_id, sale: _Sale, amount: float) -> None:
@@ -893,35 +929,31 @@ def _past_disputes(g: Graph, rng, new_id, pools: dict[str, list[_Sale]]) -> None
             verdict, statement = rng.choice(spec["outcomes"])
             disputed = round(sale.amount * spec.get("share", 1.0), 2)
             words = {"subject": sale.subject, "shown": sale.shown, "amount": f"{disputed:,.2f}"}
-            dispute = new_id("DSP")
             filed = sale.day + timedelta(days=rng.randint(5, 40))
-            g.node(
-                "Dispute",
-                dispute,
-                filed_at=filed.isoformat(),
-                amount=disputed,
-                intake=spec["intake"].format(**words),
-                status="resolved",
-                outcome=verdict,
+            dispute = file_dispute(
+                g,
+                new_id("DSP"),
+                sale.card.basic,
+                sale.charge,
+                filed.isoformat(),
+                disputed,
+                spec["intake"].format(**words),
+                "resolved",
+                verdict,
             )
-            g.edge("FILED_BY", dispute, sale.card.basic)
-            g.edge("DISPUTES", dispute, sale.charge, amount=disputed)
             if verdict in ("accepted", "partially_accepted"):
                 share = 1 if verdict == "accepted" else 0.5
                 _credit(g, rng, new_id, sale, round(disputed * share, 2))
             if statement:
                 kind, text = spec["evidence"]
-                _submission(g, new_id, dispute, sale, statement, kind, text.format(**words))
-
-
-def _submission(g: Graph, new_id, dispute, sale: _Sale, statement, kind, text) -> None:
-    """The node shape insert_submission writes: evidence ids derive from the submission id."""
-    submission = new_id("MSB")
-    item = f"EVI-{submission.removeprefix('MSB-')}-1"
-    g.node("MerchantSubmission", submission, statement=statement)
-    g.edge("HAS_SUBMISSION", dispute, submission)
-    g.node("EvidenceItem", item, kind=kind, source="merchant", text=text)
-    g.edge("HAS_EVIDENCE", submission, item)
-    g.edge("ASSERTS", item, sale.record)
-    if sale.terms:
-        g.edge("CITES", submission, sale.terms)
+                item = SubmittedItem(kind=kind, text=text.format(**words), asserts=[sale.record])
+                submission = MerchantSubmission(
+                    submission_id=new_id("MSB"),
+                    dispute_id=dispute,
+                    merchant_id=sale.merchant,
+                    statement=statement,
+                    items=[item],
+                    messages=[],
+                    cited_ids=[sale.terms] if sale.terms else [],
+                )
+                insert_submission(g, submission)

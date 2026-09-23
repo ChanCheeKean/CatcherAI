@@ -745,6 +745,11 @@ def test_every_merchant_bound_by_amex_regulations():
 >
 > Where the node and edge lists below create any of these, drop those lines. The world also generates ordinary background orders, subscriptions, invoices and past Disputes at these Merchants, so proof and decoy patterns must stay anchored on case ids, as they already are.
 
+> **Changed in Stage 4 (applies to Stage 5 case builders).**
+> - Ladybug's parser rejects `(o:Order)` because ORDER is a keyword. Write the label as ``(o:`Order`)`` in every proof and decoy pattern; the plan's own Cypher below is unescaped.
+> - Build Card accounts, Cards, charges and Disputes with `world.open_account`, `world.issue_card`, `world.post_charge` and `world.file_dispute` (fixed ids, string dates). Do not re-type those node shapes.
+> - `CaseTruth` has a `claim` key: the neutral catalog phrase (e.g. "Refund refused after return"), never the category or verdict.
+
 ### Task 4.1: Submission contract and `insert_submission`
 
 **Files:** Create `src/extensions/__init__.py`, `src/extensions/merchant_agent/__init__.py`, `src/extensions/merchant_agent/contract.py`, `data/generator/submissions.py`; Test `tests/test_submissions.py`. Modify `world.py` to use `insert_submission` for past Disputes.

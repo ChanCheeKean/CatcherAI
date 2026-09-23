@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-23
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S3 complete**
-Next stage: **S4 — Submission contract, case kit, cases A and B**
+Current phase: **S4 complete**
+Next stage: **S5 — Cases C, D, E + end-to-end generator**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -112,7 +112,7 @@ Details for each stage are in the plan section of the same name.
 | **S1** Ontology as data + static graph store | Medium | `ontology.yaml` + loader; builder validates against it; `GraphStore` read-only by default, schema with descriptions, `node`, `find`; all write paths and `copy_store` removed. | ☑ |
 | **S2** Policy corpus, clause search, memory in knowledge | Complex | 6 Amex + 8 Merchant policy markdown docs grounded in the research; `policies.py` projects them into graph nodes and clause-level search; retrieval without `as_of`; Memory Notes in SQLite; Amex precedents. | ☑ |
 | **S3** Background world | Medium | Deterministic dispute-only world (~150 Card Members, ~30 Merchants with template policies, ~3k charges, Offers, program, subscriptions, invoices, ~60 past Disputes). | ☑ |
-| **S4** Submission contract, case kit, cases A and B | Complex | `MerchantSubmission` contract + `insert_submission`; case kit for Amex; case A "Final Sale Means Final", case B "Platinum Rate, Gold Card". | ☐ |
+| **S4** Submission contract, case kit, cases A and B | Complex | `MerchantSubmission` contract + `insert_submission`; case kit for Amex; case A "Final Sale Means Final", case B "Platinum Rate, Gold Card". | ☑ |
 | **S5** Cases C, D, E + end-to-end generator | Complex | Case C "The Offer on the Other Card", case D "Paid by Transfer", case E "Cancelled the Wrong Plan"; `gen.py` ingests saved submissions; every ontology label/edge used. | ☐ |
 | **S6** Case Notebook, tools, read-only runtime | Medium | `notebook.py`; tools `graph_find`, `notebook_write`/`notebook_read`, memory in knowledge; runtime and API read the static graph; notebook in supervisor/adjudicator input. | ☐ |
 | **S7** Report, prompts, skills, evaluation | Complex | Six verdicts, Dispute Category, `ChargeDecision`, `SystemImprovement`; new `agents.yaml`; 9 label-agnostic skills; label-agnostic guard test; eval scoring. | ☐ |
@@ -288,3 +288,66 @@ Details for each stage are in the plan section of the same name.
       documents customers accept (HGF and HPH each publish two), which front matter does not say.
 - No design decision changed; the spec was not edited. The plan gained the Stage 4 ownership note
   above.
+
+### S4 — 2026-09-23
+- **Submission contract.** Added `src/extensions/merchant_agent/contract.py` (`EvidenceAsk`,
+  `MerchantEvidenceRequest`, `SubmittedItem`, `SubmittedMessage`, `MerchantSubmission`), plus
+  empty package `__init__.py` files. Added `data/generator/submissions.py`:
+  - `insert_submission` writes the MerchantSubmission, `EVI-<suffix>-<n>` items and
+    `COM-<suffix>-<n>` messages with HAS_EVIDENCE and ASSERTS, and CITES.
+  - `load_saved(dir)` returns `[]` when the directory is absent. Nothing calls it yet; `gen.py`
+    starts ingesting saved submissions in S5.
+  - `world._past_disputes` now builds `MerchantSubmission`s and calls `insert_submission`. The old
+    `_submission` helper is gone, and the world's JSONL output is byte-identical to S3.
+- **Case kit.**
+  - `build_cases` runs `a_final_sale`, then `b_platinum_rate`. It imports them inside the function
+    to avoid the import cycle, and it fills in `required_capabilities` for each case.
+  - `CaseTruth` gained a `claim` key (deviation from the plan's key list). The catalog now writes
+    `{case_id, title, claim, amount, summary}`, so `claim_type` is gone.
+  - `validate_cases` checks solution ids with `store.node`, because the old unescaped `MATCH` broke
+    on `Order`. The unused `min_rows` option was dropped.
+  - `capabilities.py`: renamed the Graph and write-path signals, removed the temporal wording, and
+    added `CASE_NEEDS` A and B.
+- **Cases.**
+  - `cases/a_final_sale.py` (DSP-2026-91001, RET, rejected). Case A is the COM sofa under
+    `CLS-HGF-CO-V4-4.3`; the decoy is a refunded Oat-linen sofa.
+  - `cases/b_platinum_rate.py` (DSP-2026-91002, OVR, accepted $300). The booking is guaranteed with
+    CRD-B01 (Platinum) and charged to CRD-B02 (Gold). The decoy is ORD-B02 guaranteed with Gold,
+    resolved by DSP-HIST-B02 (rejected) with submission MSB-HIST-B02 citing PS-PART 3.2.
+  - Both reference the world-owned Merchants and create no Merchants. Their accounts are BOUND_BY
+    the CMA, as in the world.
+- **Shared builders.** `world.py` now exports `open_account`, `issue_card`, `post_charge` and
+  `file_dispute`, which take fixed ids. The world and both cases use them.
+- **Cypher escaping.** Ladybug rejects `(o:Order)` (ORDER is a keyword), so case patterns write
+  ``(o:`Order`)``. The plan now has a "Changed in Stage 4" note before Task 4.1 covering this, the
+  shared builders, and `claim`.
+- **Tests.** New `tests/test_submissions.py` and `tests/test_cases.py`. `uv run pytest`: 47
+  passed. `ruff check` and `ruff format --check`: passed. `uv run python
+  data/generator/gen.py` builds, loads and validates both cases (136 knowledge documents). No
+  tests were deleted.
+- **`simplify`** ran as four review agents.
+  - Efficiency: no findings.
+  - Applied:
+    - Shared world builders instead of three copies of the account, card, charge and dispute
+      shapes.
+    - Explicit `status`/`outcome` parameters instead of `**status`.
+    - Dropped `min_rows`.
+    - Removed test asserts that repeated `_check_case`.
+  - Skipped:
+    - Defaulting `messages`/`cited_ids` on the contract, since S8 will need strict structured
+      output with every field required.
+    - Moving `CaseTruth` into `cases/contract.py` to avoid the lazy import. It is small and matches
+      the old kit.
+    - Extracting order and return builders, since the cases diverge from the world there on
+      purpose.
+    - Renaming the `Order` label (see the open issue below).
+- **Open issue for S6/S7.** The agent's `graph_query` passes raw Cypher, and an LLM will naturally
+  write `(o:Order)`, which fails to parse. Choose one of:
+  - handle it in `GraphStore.query` or the tool (auto-escape ontology labels, or return a hint on
+    parse errors);
+  - document backticks in the tool description or `graph_schema`;
+  - rename the label, which is a spec change (§4.2).
+- **Open issue for S9/S10.** `src/api/models.py`, `frontend/src/api/types.ts`,
+  `frontend/src/pages/CasesPage.tsx` and `tests/e2e_server.py` still read the catalog's
+  `claim_type`. Switch them to `claim`.
+- No design decision changed; the spec was not edited.

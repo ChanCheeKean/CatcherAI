@@ -13,17 +13,11 @@ def validate_cases(store, cases: list[CaseTruth]) -> None:
     """Fail when a solution node, proof path, or required decoy is absent."""
     for case in cases:
         for node_id in case["solution_node_ids"]:
-            label = store.label_of(node_id)
-            rows = store.query(f"MATCH (n:{label} {{id: $id}}) RETURN n.id", {"id": node_id})[
-                "rows"
-            ]
-            if not rows:
-                raise ValueError(f"{case['code']} solution node does not exist: {node_id}")
+            store.node(node_id)  # raises when the node is absent
         for pattern in case["proof_patterns"]:
-            count = len(store.query(pattern["cypher"])["rows"])
-            if count < pattern.get("min_rows", 1):
+            if not store.query(pattern["cypher"])["rows"]:
                 raise ValueError(
-                    f"{case['code']} proof pattern {pattern['name']!r} returned {count} rows"
+                    f"{case['code']} proof pattern {pattern['name']!r} returned no rows"
                 )
         for pattern in case["decoy_patterns"]:
             if not store.query(pattern["cypher"])["rows"]:
@@ -44,7 +38,7 @@ def write_case_outputs(output_dir: Path, cases: list[CaseTruth], graph) -> None:
         {
             "case_id": case["case_id"],
             "title": case["title"],
-            "claim_type": graph.nodes[case["case_id"]]["props"]["claim_type"],
+            "claim": case["claim"],
             "amount": graph.nodes[case["case_id"]]["props"]["amount"],
             "summary": case["intake"],
         }

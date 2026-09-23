@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 from typing import TypedDict
 
+from capabilities import required_capabilities
 from graph_builder import Graph
 
 
@@ -12,6 +13,7 @@ class CaseTruth(TypedDict):
     case_id: str
     code: str
     title: str
+    claim: str  # neutral phrase for the case card; never the category or the verdict
     intake: str
     misleading_surface: str
     expected: dict
@@ -38,10 +40,13 @@ def charge_expected(
 
 def build_cases(g: Graph, rng: random.Random) -> list[CaseTruth]:
     """Add every showcase case to an existing world in stable presentation order."""
-    builders = ()
+    from . import a_final_sale, b_platinum_rate
+
+    builders = (a_final_sale.build, b_platinum_rate.build)
     cases = []
     for build in builders:
         case = build(g, rng)
+        case["required_capabilities"] = required_capabilities(case["code"])
         cases.append(_check_case(case))
     return cases
 
