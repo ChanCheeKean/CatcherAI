@@ -93,7 +93,8 @@ def triage_refs(case: dict[str, Any]) -> list[str]:
 
 
 def report_refs(report: CaseReport) -> list[str]:
-    evidence = [link for txn in report.transactions for link in txn.evidence]
+    evidence = [link for charge in report.charges for link in charge.evidence]
+    evidence += [link for item in report.system_improvements for link in item.evidence]
     evidence.extend(link for hypothesis in report.hypotheses for link in hypothesis.evidence)
     return unique(ref for link in evidence for ref in [*link.node_ids, *link.edge_ids])
 

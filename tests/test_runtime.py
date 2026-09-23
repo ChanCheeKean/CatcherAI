@@ -16,9 +16,11 @@ from replay import load_events
 from runtime import RuntimePaths, run_case
 from schemas import (
     CaseReport,
+    ChargeDecision,
     Citation,
     Decide,
     Delegate,
+    DisputeCategory,
     EvidenceLink,
     Fact,
     Findings,
@@ -28,7 +30,6 @@ from schemas import (
     PlanItem,
     SupervisorTurn,
     Task,
-    TransactionDecision,
     Triage,
     Verdict,
 )
@@ -127,18 +128,18 @@ def report():
     return CaseReport(
         case_id=CASE_ID,
         verdict=Verdict.ACCEPTED,
-        claim_family="amount",
+        category=DisputeCategory.OVR,
         headline="Accepted",
         executive_summary="Charge checked",
         detailed_reasoning="Charge checked",
-        transactions=[
-            TransactionDecision(
-                txn_id=CHARGE_ID,
+        charges=[
+            ChargeDecision(
+                charge_id=CHARGE_ID,
                 verdict=Verdict.ACCEPTED,
+                category=DisputeCategory.OVR,
                 disputed_amount=Decimal("10"),
                 credit_amount=Decimal("10"),
-                cardholder_liability=Decimal("0"),
-                network_action="file_dispute",
+                card_member_liability=Decimal("0"),
                 rationale="Charge checked",
                 evidence=[evidence],
             )
@@ -149,12 +150,11 @@ def report():
             )
         ],
         decoys_ruled_out=[],
-        missing_evidence=[],
         policy_basis=[Citation(document_id="CLS-1", why="Applicable")],
-        account_actions=[],
+        system_improvements=[],
         confidence=0.9,
         flip_fact="Different charge",
-        cardholder_letter="Accepted",
+        card_member_letter="Accepted",
     )
 
 

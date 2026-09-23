@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S6 complete**
-Next stage: **S7 — Report, prompts, skills, evaluation**
+Current phase: **S7 complete**
+Next stage: **S8 — Merchant agent extension (not wired)**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -115,7 +115,7 @@ Details for each stage are in the plan section of the same name.
 | **S4** Submission contract, case kit, cases A and B | Complex | `MerchantSubmission` contract + `insert_submission`; case kit for Amex; case A "Final Sale Means Final", case B "Platinum Rate, Gold Card". | ☑ |
 | **S5** Cases C, D, E + end-to-end generator | Complex | Case C "The Offer on the Other Card", case D "Paid by Transfer", case E "Cancelled the Wrong Plan"; `gen.py` ingests saved submissions; every ontology label/edge used. | ☑ |
 | **S6** Case Notebook, tools, read-only runtime | Medium | `notebook.py`; tools `graph_find`, `notebook_write`/`notebook_read`, memory in knowledge; runtime and API read the static graph; notebook in supervisor/adjudicator input. | ☑ |
-| **S7** Report, prompts, skills, evaluation | Complex | Six verdicts, Dispute Category, `ChargeDecision`, `SystemImprovement`; new `agents.yaml`; 9 label-agnostic skills; label-agnostic guard test; eval scoring. | ☐ |
+| **S7** Report, prompts, skills, evaluation | Complex | Six verdicts, Dispute Category, `ChargeDecision`, `SystemImprovement`; new `agents.yaml`; 9 label-agnostic skills; label-agnostic guard test; eval scoring. | ☑ |
 | **S8** Merchant agent extension (not wired) | Medium | `respond()` Deep Agent over merchant records, `save_submission`, guard test that nothing imports it, README section. | ☐ |
 | **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☐ |
 | **S10** Frontend | Medium | Ontology-driven regions/colours; Notebook tab; Conclusion with category, six verdicts, System Improvements. | ☐ |
@@ -128,6 +128,9 @@ Details for each stage are in the plan section of the same name.
   abbreviations as Amex's own, Platinum benefit details, and Amex goodwill policy. The policy texts
   are **paraphrased and fictionalised where unverified**; front matter keeps the source URL. Do
   not present them as verbatim Amex text.
+- The label-agnostic guard excludes two unavoidable domain contract identifiers: the `ACCEPTED`
+  verdict enum member shares a name with a graph edge, and the required `MerchantSubmission`
+  class shares a name with a graph label. All other schema names remain guarded.
 
 ## 8. Stage log
 
@@ -418,3 +421,18 @@ Details for each stage are in the plan section of the same name.
 - No design decision changed; the spec was not edited. The remaining `claim_type` API/frontend
   references belong to S9/S10. The old `src/schemas.py`, `config/agents.yaml` and skills are
   replaced in S7, so real-model adjudication is expected to need that stage.
+
+### S7 — 2026-09-24
+- Replaced the report domain fields in `src/schemas.py` with six verdicts, ten Dispute Categories,
+  per-charge decisions and evidence-cited System Improvements. Updated `src/runtime_support.py`
+  to collect references from charge and improvement evidence. Updated schema and runtime tests.
+- Replaced `config/agents.yaml` with the seven Amex roles and prompts. Wrote nine label-agnostic
+  skills in `skills/`. Added `tests/test_label_agnostic.py`; its two required contract-name
+  exceptions are recorded in §7.
+- Updated `src/evaluation.py` to score verdict, category, exact charge set and credits, required
+  improvement targets, grounding and notebook trajectory ids. Added `tests/test_evaluation.py`.
+- `uv run pytest -q`: 61 passed. `uv run ruff check src tests data/generator`,
+  `uv run ruff format --check src tests data/generator`, and `git diff --check`: passed.
+  No tests were deleted. The `simplify` skill is not installed; manually reviewed every changed
+  file for dead code, legacy paths and redundant abstraction, then reran checks.
+- No design decision changed; the spec was not edited. Real-LLM case performance remains for S11.

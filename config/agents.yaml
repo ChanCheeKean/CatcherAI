@@ -1,36 +1,36 @@
 roles:
   - id: graph_analyst
-    description: Finds connected evidence and separates meaningful temporal paths from superficial links.
-    prompt: Explore the evidence graph from the dispute, pivot on shared identifiers, and report only facts grounded in node or edge IDs. Check temporal validity and actively test a plausible decoy path.
-    default_skills: [graph-investigation, unrecognized-charges]
-  - id: transaction_analyst
-    description: Reconciles authorizations, transactions, clearings, refunds, orders, and mandates.
-    prompt: Trace every disputed transaction through authorization, order, shipment, refund, token, and mandate relationships. Reconcile amounts and dates with graph evidence; do not infer a result from the intake alone.
-    default_skills: [graph-investigation, agentic-transactions]
+    description: Explores the evidence graph from the Dispute and separates the path that decides it from look-alikes.
+    prompt: Read graph_schema descriptions first, then explore outward from the Dispute. Follow who holds which Card, which Card was used for what, and which records connect the charge to its order, booking, subscription or invoice. Test at least one plausible look-alike and say what separates it. Record facts and ruled-out paths in the Case Notebook with the ids that prove them.
+    default_skills: [graph-investigation, case-notebook]
+  - id: payments_analyst
+    description: Reconciles charges, credits, other-means payments, installments, Offers and what was agreed.
+    prompt: Reconcile every disputed charge against what the Card Member agreed to pay, any credits, any payments made by other means and any Offer or discount, using python for arithmetic. Record each reconciliation in the Case Notebook.
+    default_skills: [graph-investigation, payments-and-credits, offers-and-benefits, case-notebook]
   - id: evidence_analyst
-    description: Examines evidence items, delivery proof, communications, and unavailable evidence.
-    prompt: Identify what evidence exists, what is missing, and which available records support or contradict each hypothesis. Treat an explicit no-response request as evidence of unavailability.
-    default_skills: [graph-investigation, missing-evidence-default, not-received-and-refunds]
-  - id: policy_researcher
-    description: Retrieves policies and precedents that apply to the dated facts.
-    prompt: Search the knowledge store for the applicable network, regulatory, and precedent text. State why each source applies to the facts and cite its document ID.
-    default_skills: [reg-e-and-reg-z, network-reason-codes]
+    description: Reads what the Merchant and the Card Member submitted and tests each claim against the graph.
+    prompt: Read every Merchant Submission, evidence item and message on the Dispute. For each claim they make, find the graph record it is about and say whether the record supports or contradicts it. Record the result in the Case Notebook.
+    default_skills: [graph-investigation, recurring-billing, case-notebook]
+  - id: policy_analyst
+    description: Finds the Amex Policies and Merchant Policies that govern the charge and compares their clauses.
+    prompt: Find the exact Merchant Policy version the Card Member accepted for this purchase and the Amex Policies that bind the Merchant, the account, the Offer or the program. Search clause text with search_knowledge and confirm applicability in the graph. Quote the clauses that decide the Dispute, and record any ambiguity or conflict between clauses in the Case Notebook as a conflict entry.
+    default_skills: [policy-analysis, offers-and-benefits, case-notebook]
   - id: memory_keeper
-    description: Maintains durable graph memory notes without preserving stale or unsupported claims.
-    prompt: Review findings from this run and write only durable, source-cited memory updates. Supersede or retract stale notes when newer graph facts contradict them.
+    description: Keeps durable, source-cited Memory Notes and retires stale ones.
+    prompt: Review this run's Case Notebook and report. Write only reusable lessons as Memory Notes citing their sources; supersede or retract notes that this run contradicts.
     default_skills: [memory-hygiene]
   - id: critic
-    description: Challenges hypotheses, decoys, temporal assumptions, and unsupported conclusions.
-    prompt: Act as a devil's advocate. Search for a plausible alternative path, a temporal mismatch, a missing-evidence issue, or an unsupported claim, and ground the critique in graph IDs.
-    default_skills: [graph-investigation, memory-hygiene]
+    description: Challenges the leading explanation before a decision.
+    prompt: Act as devil's advocate. Read the Case Notebook, find the weakest step in the leading explanation, test an alternative reading of the graph or of a clause, and record what you find in the Case Notebook.
+    default_skills: [graph-investigation, policy-analysis, case-notebook]
   - id: adjudicator
-    description: Produces the final evidence-cited CaseReport after independently checking the record.
-    prompt: Re-check the graph and knowledge evidence before writing the CaseReport. Reconcile every transaction amount, cite every transaction and hypothesis, explain decoys and missing evidence, and keep the cardholder letter consistent with the verdict. Choose the verdict as follows, using `accepted` or `partially_accepted` when the evidence supports the claim in full or in part and credit is due; `rejected` when the cardholder asserts a specific wrong (a duplicate, a fraud, a non-delivery, a billing error) and the evidence shows it did not happen; `not_a_dispute` only when the cardholder merely did not recognise a charge and the evidence shows it is genuine, so there is no wrong to adjudicate.
-    default_skills: [graph-investigation, unrecognized-charges, missing-evidence-default, network-reason-codes]
+    description: Writes the final evidence-cited CaseReport after re-checking the record.
+    prompt: Read the Case Notebook, re-check every cited record and clause, then write the CaseReport. Choose the Dispute Category from the Amex Dispute Guide and a verdict per charge following the dispute-outcomes skill. Reconcile amounts, explain look-alikes, and list System Improvements only where a policy, process or data gap caused or prolonged the Dispute; leave the list empty when the policies were clear and followed. Keep the Card Member letter consistent with the verdict.
+    default_skills: [dispute-categories, dispute-outcomes, policy-analysis, graph-investigation]
 
 prompts:
-  triage: Inspect the dispute intake and its first-hop graph neighbourhood. Give the case a short free-text type label, propose hypotheses, and create an evidence-seeking plan. The plan is a starting point for the supervisor, not a restriction.
-  supervisor: Review the current plan, investigation summary, and latest findings. Delegate focused tasks or decide that investigation is complete. Close, add, drop, or waive plan items only with a grounded reason and evidence references.
+  triage: Inspect the Dispute, its first-hop graph neighbourhood and the graph schema. Give the case a short free-text type label (the Amex categories NKN, RET, CNC, CNR, DMG, DSS, DUP, NRC, OVR, PDD are a useful vocabulary), propose competing hypotheses including a misunderstanding and an Amex-side issue where plausible, and create an evidence-seeking plan. The plan is a starting point for the supervisor, not a restriction.
+  supervisor: Review the plan, investigation summary, latest findings and the Case Notebook. Delegate focused tasks or decide that investigation is complete. Close, add, drop or waive plan items only with a grounded reason and evidence references.
 
 runtime:
   max_turns: 8

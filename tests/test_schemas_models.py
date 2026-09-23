@@ -11,13 +11,14 @@ from domain.events import RuntimeSnapshot
 from models import ModelCallCallbackHandler, chat_model, invoke_structured
 from observability.emitter import EventEmitter
 from schemas import (
-    AccountAction,
     CaseReport,
+    ChargeDecision,
     Citation,
+    DisputeCategory,
     EvidenceLink,
     HypothesisAssessment,
+    SystemImprovement,
     Task,
-    TransactionDecision,
     Triage,
     Verdict,
 )
@@ -26,7 +27,7 @@ from schemas import (
 def _evidence(claim: str = "source") -> EvidenceLink:
     return EvidenceLink(
         claim=claim,
-        node_ids=["TXN-1"],
+        node_ids=["CHG-1"],
         edge_ids=["E-1"],
         source_excerpt=None,
     )
@@ -36,40 +37,36 @@ def _report(**overrides: object) -> CaseReport:
     values: dict[str, object] = {
         "case_id": "DSP-1",
         "verdict": Verdict.ACCEPTED,
-        "claim_family": "unauthorized",
+        "category": DisputeCategory.OVR,
         "headline": "The claim is accepted.",
         "executive_summary": "The graph supports the claim.",
-        "detailed_reasoning": "The transaction and its evidence were checked.",
-        "transactions": [
-            TransactionDecision(
-                txn_id="TXN-1",
+        "detailed_reasoning": "The charge and its evidence were checked.",
+        "charges": [
+            ChargeDecision(
+                charge_id="CHG-1",
                 verdict=Verdict.ACCEPTED,
+                category=DisputeCategory.OVR,
                 disputed_amount=Decimal("10.00"),
                 credit_amount=Decimal("10.00"),
-                cardholder_liability=Decimal("0"),
-                network_action="file_dispute",
-                reason_code="10.4",
+                card_member_liability=Decimal("0"),
                 rationale="The evidence supports the claim.",
                 evidence=[_evidence()],
             )
         ],
         "hypotheses": [
             HypothesisAssessment(
-                hypothesis="The transaction was unauthorized.",
+                hypothesis="The charge amount was wrong.",
                 status="accepted",
                 why="The graph evidence supports it.",
                 evidence=[_evidence("authorization")],
             )
         ],
         "decoys_ruled_out": [],
-        "missing_evidence": [],
-        "policy_basis": [Citation(doc_id="POL-1", why="It applies to the claim.")],
-        "account_actions": [
-            AccountAction(action="reissue_card", account_id="ACC-1", rationale="Protect access.")
-        ],
+        "policy_basis": [Citation(document_id="CLS-1", why="It applies to the Dispute.")],
+        "system_improvements": [],
         "confidence": 0.9,
-        "flip_fact": "A verified cardholder authorization.",
-        "cardholder_letter": "We accepted your claim.",
+        "flip_fact": "A different agreed amount.",
+        "card_member_letter": "We accepted your Dispute.",
     }
     values.update(overrides)
     return CaseReport.model_validate(values)
@@ -80,19 +77,19 @@ def test_schema_validators_cover_ad_hoc_tasks_and_case_reports() -> None:
         Task(role="fresh_specialist", objective="Investigate")
 
     report = _report()
-    assert report.policy_basis[0].document_id == "POL-1"
-    assert report.account_actions[0].target_id == "ACC-1"
+    assert report.policy_basis[0].document_id == "CLS-1"
+    assert report.system_improvements == []
 
-    with pytest.raises(ValidationError, match="amounts do not reconcile"):
+    with pytest.raises(ValidationError, match="must equal disputed_amount"):
         _report(
-            transactions=[
-                TransactionDecision(
-                    txn_id="TXN-1",
+            charges=[
+                ChargeDecision(
+                    charge_id="CHG-1",
                     verdict=Verdict.ACCEPTED,
+                    category=DisputeCategory.OVR,
                     disputed_amount=Decimal("10.00"),
                     credit_amount=Decimal("9.00"),
-                    cardholder_liability=Decimal("0"),
-                    network_action="file_dispute",
+                    card_member_liability=Decimal("0"),
                     rationale="The evidence supports the claim.",
                     evidence=[_evidence()],
                 )
@@ -101,17 +98,41 @@ def test_schema_validators_cover_ad_hoc_tasks_and_case_reports() -> None:
 
     with pytest.raises(ValidationError, match="requires evidence"):
         _report(
-            transactions=[
-                TransactionDecision(
-                    txn_id="TXN-1",
+            charges=[
+                ChargeDecision(
+                    charge_id="CHG-1",
                     verdict=Verdict.ACCEPTED,
+                    category=DisputeCategory.OVR,
                     disputed_amount=Decimal("10.00"),
                     credit_amount=Decimal("10.00"),
-                    cardholder_liability=Decimal("0"),
-                    network_action="file_dispute",
+                    card_member_liability=Decimal("0"),
                     rationale="The evidence supports the claim.",
                     evidence=[],
                 )
+            ]
+        )
+
+    for verdict, credit in ((Verdict.REJECTED, "10"), (Verdict.GOODWILL_CREDIT, "0")):
+        with pytest.raises(ValidationError):
+            _report(
+                charges=[
+                    ChargeDecision(
+                        charge_id="CHG-1",
+                        verdict=verdict,
+                        category=DisputeCategory.OVR,
+                        disputed_amount=Decimal("10"),
+                        credit_amount=Decimal(credit),
+                        card_member_liability=Decimal("10") - Decimal(credit),
+                        rationale="Checked",
+                        evidence=[_evidence()],
+                    )
+                ]
+            )
+
+    with pytest.raises(ValidationError, match="requires evidence"):
+        _report(
+            system_improvements=[
+                SystemImprovement(target="process", issue="Gap", suggestion="Clarify", evidence=[])
             ]
         )
 
@@ -121,9 +142,9 @@ def test_agents_config_loads() -> None:
 
     assert {role.id for role in config.roles} == {
         "graph_analyst",
-        "transaction_analyst",
+        "payments_analyst",
         "evidence_analyst",
-        "policy_researcher",
+        "policy_analyst",
         "memory_keeper",
         "critic",
         "adjudicator",

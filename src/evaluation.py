@@ -33,25 +33,23 @@ def load_truth(case_ids: list[str] | None = None) -> list[dict]:
     return [t for t in truths if t["case_id"] in wanted or t["code"] in wanted]
 
 
-def _tokens(text: str) -> set[str]:
-    return set(re.findall(r"[a-z0-9]+", text.lower()))
-
-
 def _cited_ids(report: CaseReport) -> set[str]:
-    links = [link for t in report.transactions for link in t.evidence]
+    links = [link for t in report.charges for link in t.evidence]
     links += [link for h in report.hypotheses for link in h.evidence]
+    links += [link for i in report.system_improvements for link in i.evidence]
     ids = {i for link in links for i in (*link.node_ids, *link.edge_ids)}
-    return ids | {t.txn_id for t in report.transactions}
+    return ids | {t.charge_id for t in report.charges}
 
 
 def _trajectory_ids(events: list[EventEnvelope]) -> tuple[set[str], set[str]]:
-    """Node ids the agents touched, and all node/edge ids seen (including ones agents wrote)."""
+    """Node ids the agents touched, and all node/edge ids seen."""
     nodes: set[str] = set()
     every: set[str] = set()
     for event in events:
-        if event.type == "tool_result":
-            nodes |= set(event.payload.get("node_ids", []))
-            every |= nodes | set(event.payload.get("edge_ids", []))
+        if event.type in {"tool_result", "notebook_write"}:
+            found_nodes = set(event.payload.get("node_ids", []))
+            nodes |= found_nodes
+            every |= found_nodes | set(event.payload.get("edge_ids", []))
     return nodes, every
 
 
@@ -88,33 +86,44 @@ def _signals(truth: dict, events: list[EventEnvelope]) -> dict[str, bool]:
     return out
 
 
+def _alternatives(target: str) -> set[str]:
+    return {"process", "merchant_policy"} if target == "process" else {target}
+
+
 def score(truth: dict, report: CaseReport, events: list[EventEnvelope], store: GraphStore) -> dict:
     """Pure scoring of one report and its trajectory; nothing here influences the agent."""
-    expected = {t["txn_id"]: t for t in truth["expected"]["transactions"]}
-    actual = {t.txn_id: t for t in report.transactions}
-    txns = {
-        txn_id: {
-            "verdict": txn_id in actual and actual[txn_id].verdict.value == want["verdict"],
-            "credit": txn_id in actual
-            and abs(float(actual[txn_id].credit_amount) - want["credit_amount"])
+    expected = {t["charge_id"]: t for t in truth["expected"]["charges"]}
+    actual = {t.charge_id: t for t in report.charges}
+    charges = {
+        charge_id: {
+            "verdict": charge_id in actual and actual[charge_id].verdict.value == want["verdict"],
+            "credit": charge_id in actual
+            and abs(float(actual[charge_id].credit_amount) - want["credit_amount"])
             <= AMOUNT_TOLERANCE,
         }
-        for txn_id, want in expected.items()
+        for charge_id, want in expected.items()
     }
     solution = set(truth["solution_node_ids"])
     touched, seen = _trajectory_ids(events)
     cited = _cited_ids(report)
     report_text = report.model_dump_json()
     decoys = _decoy_ids(store, truth)
-    action_text = [_tokens(f"{a.action} {a.reason}") for a in report.account_actions]
-    wanted_actions = truth["expected"]["account_actions"]
-    matched_actions = [w for w in wanted_actions if any(_tokens(w) <= t for t in action_text)]
+    required = truth["expected"]["improvement_targets"]
+    reported = [item.target for item in report.system_improvements]
     signals = _signals(truth, events)
     return {
         "verdict_ok": report.verdict.value == truth["expected"]["verdict"],
-        "transactions": txns,
-        "amounts_ok": all(v["verdict"] and v["credit"] for v in txns.values()),
-        "account_actions": {"expected": wanted_actions, "matched": matched_actions},
+        "category_ok": report.category.value == truth["expected"]["category"],
+        "charges": charges,
+        "amounts_ok": set(actual) == set(expected)
+        and all(v["verdict"] and v["credit"] for v in charges.values()),
+        "improvements": {
+            "required": required,
+            "reported": reported,
+            "ok": all(
+                any(target in _alternatives(want) for target in reported) for want in required
+            ),
+        },
         "solution_coverage": len(solution & touched) / len(solution),
         "grounding": {
             "cited": len(cited),
@@ -123,15 +132,18 @@ def score(truth: dict, report: CaseReport, events: list[EventEnvelope], store: G
             "decoys_named": sorted(i for i in decoys if i in report_text),
             "decoy_total": len(decoys),
         },
-        "missing_evidence_handled": (not truth["missing_evidence"])
-        or (report.verdict.value == truth["expected"]["verdict"] and bool(report.missing_evidence)),
         "capability_signals": signals,
         "confidence": report.confidence,
     }
 
 
 def passed(result: dict) -> bool:
-    return result["verdict_ok"] and result["amounts_ok"]
+    return (
+        result["verdict_ok"]
+        and result["category_ok"]
+        and result["amounts_ok"]
+        and result["improvements"]["ok"]
+    )
 
 
 def _raise_timeout(*_: object) -> None:
@@ -214,21 +226,22 @@ def write_summary(summary: dict, out_dir: Path = EVAL_DIR) -> Path:
         f"pass@{summary['k']} {summary['pass_at_k']}/{len(summary['cases'])} · "
         f"mean solution coverage {summary['mean_coverage']:.2f}",
         "",
-        "| case | pass | verdict | amounts | coverage | cited | decoys named | missing ev. |",
-        "|---|---|---|---|---|---|---|---|",
+        "| case | pass | verdict | category | amounts | improvements | coverage | cited | decoys |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for case in summary["cases"]:
         for run in case["runs"]:
             if "error" in run:
-                lines.append(f"| {case['code']} | ERROR | {run['error'][:80]} | | | | | |")
+                lines.append(f"| {case['code']} | ERROR | {run['error'][:80]} | | | | | | | |")
                 continue
             g = run["grounding"]
             lines.append(
                 f"| {case['code']} | {'✓' if run['passed'] else '✗'} | "
-                f"{'✓' if run['verdict_ok'] else '✗'} | {'✓' if run['amounts_ok'] else '✗'} | "
+                f"{'✓' if run['verdict_ok'] else '✗'} | {'✓' if run['category_ok'] else '✗'} | "
+                f"{'✓' if run['amounts_ok'] else '✗'} | "
+                f"{'✓' if run['improvements']['ok'] else '✗'} | "
                 f"{run['solution_coverage']:.2f} | {g['solution_cited']:.2f} | "
-                f"{len(g['decoys_named'])}/{g['decoy_total']} | "
-                f"{'✓' if run['missing_evidence_handled'] else '✗'} |"
+                f"{len(g['decoys_named'])}/{g['decoy_total']} |"
             )
     (out / "summary.md").write_text("\n".join(lines) + "\n")
     return out

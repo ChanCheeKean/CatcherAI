@@ -83,9 +83,9 @@ class InvestigationSummary(SchemaModel):
 _CATALOG_ROLES = frozenset(
     {
         "graph_analyst",
-        "transaction_analyst",
+        "payments_analyst",
         "evidence_analyst",
-        "policy_researcher",
+        "policy_analyst",
         "memory_keeper",
         "critic",
         "adjudicator",
@@ -134,7 +134,26 @@ class Verdict(StrEnum):
     ACCEPTED = "accepted"
     PARTIALLY_ACCEPTED = "partially_accepted"
     REJECTED = "rejected"
+    GOODWILL_CREDIT = "goodwill_credit"
     NOT_A_DISPUTE = "not_a_dispute"
+    FRAUD_REFERRAL = "fraud_referral"
+
+
+class DisputeCategory(StrEnum):
+    NKN = "NKN"
+    RET = "RET"
+    CNC = "CNC"
+    CNR = "CNR"
+    DMG = "DMG"
+    DSS = "DSS"
+    DUP = "DUP"
+    NRC = "NRC"
+    OVR = "OVR"
+    PDD = "PDD"
+
+
+_NO_CREDIT = {Verdict.REJECTED, Verdict.NOT_A_DISPUTE, Verdict.FRAUD_REFERRAL}
+_CREDIT = {Verdict.ACCEPTED, Verdict.PARTIALLY_ACCEPTED, Verdict.GOODWILL_CREDIT}
 
 
 class EvidenceLink(SchemaModel):
@@ -144,14 +163,13 @@ class EvidenceLink(SchemaModel):
     source_excerpt: str | None
 
 
-class TransactionDecision(SchemaModel):
-    txn_id: str
+class ChargeDecision(SchemaModel):
+    charge_id: str
     verdict: Verdict
+    category: DisputeCategory
     disputed_amount: Money
     credit_amount: Money
-    cardholder_liability: Money
-    network_action: Literal["file_dispute", "no_dispute", "pre_arbitration", "none"]
-    reason_code: str | None = None
+    card_member_liability: Money
     rationale: str
     evidence: list[EvidenceLink]
 
@@ -164,58 +182,48 @@ class HypothesisAssessment(SchemaModel):
 
 
 class Citation(SchemaModel):
-    document_id: str = Field(validation_alias=AliasChoices("document_id", "doc_id"))
+    document_id: str
     why: str
 
-    @property
-    def doc_id(self) -> str:
-        return self.document_id
 
-
-class AccountAction(SchemaModel):
-    action: str
-    target_id: str | None = Field(
-        default=None,
-        validation_alias=AliasChoices("target_id", "account_id", "card_id"),
-    )
-    reason: str = Field(validation_alias=AliasChoices("reason", "rationale"))
-
-    @property
-    def rationale(self) -> str:
-        return self.reason
+class SystemImprovement(SchemaModel):
+    target: Literal["amex_policy", "merchant_policy", "process", "product", "data"]
+    issue: str
+    suggestion: str
+    evidence: list[EvidenceLink]
 
 
 class CaseReport(SchemaModel):
     case_id: str
     verdict: Verdict
-    claim_family: str
+    category: DisputeCategory
     headline: str
     executive_summary: str
     detailed_reasoning: str
-    transactions: list[TransactionDecision]
+    charges: list[ChargeDecision]
     hypotheses: list[HypothesisAssessment]
     decoys_ruled_out: list[str]
-    missing_evidence: list[str]
     policy_basis: list[Citation]
-    account_actions: list[AccountAction]
+    system_improvements: list[SystemImprovement]
     confidence: float = Field(ge=0, le=1)
     flip_fact: str
-    cardholder_letter: str
+    card_member_letter: str
 
     @model_validator(mode="after")
     def validate_evidence_and_amounts(self) -> CaseReport:
-        for transaction in self.transactions:
-            if not transaction.evidence:
-                raise ValueError(f"transaction {transaction.txn_id} requires evidence")
-            if (
-                transaction.credit_amount + transaction.cardholder_liability
-                != transaction.disputed_amount
-            ):
+        for charge in self.charges:
+            if not charge.evidence:
+                raise ValueError(f"charge {charge.charge_id} requires evidence")
+            if charge.credit_amount + charge.card_member_liability != charge.disputed_amount:
                 raise ValueError(
-                    f"transaction {transaction.txn_id} amounts do not reconcile: "
-                    "credit_amount + cardholder_liability must equal disputed_amount"
+                    f"charge {charge.charge_id}: credit_amount + card_member_liability must "
+                    "equal disputed_amount"
                 )
-        for hypothesis in self.hypotheses:
-            if not hypothesis.evidence:
-                raise ValueError(f"hypothesis {hypothesis.hypothesis!r} requires evidence")
+            if charge.verdict in _NO_CREDIT and charge.credit_amount:
+                raise ValueError(f"charge {charge.charge_id}: {charge.verdict} gives no credit")
+            if charge.verdict in _CREDIT and not charge.credit_amount:
+                raise ValueError(f"charge {charge.charge_id}: {charge.verdict} needs a credit")
+        for item in (*self.hypotheses, *self.system_improvements):
+            if not item.evidence:
+                raise ValueError(f"{type(item).__name__} requires evidence")
         return self
