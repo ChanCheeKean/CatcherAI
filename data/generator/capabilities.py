@@ -95,62 +95,7 @@ CAPABILITIES = {
 
 P, S = "primary", "supporting"
 
-CASE_NEEDS = {
-    "C02": [
-        ("router_triage", P, "Recognize descriptor confusion rather than assume fraud."),
-        ("memory_graph", P, "Join the new descriptor to the merchant and prior card history."),
-        ("memory_persistent", P, "Persist the non-dispute report and its evidence trajectory."),
-        ("agents", S, "Test the unfamiliar-merchant hypothesis against graph history."),
-    ],
-    "C04": [
-        ("sandbox", P, "Reconcile two equal clearings to one authorization and order total."),
-        ("harness", P, "Validate the complete proof path and capture it in the trajectory."),
-        ("memory_graph", P, "Connect both clearings to the order and separate shipments."),
-    ],
-    "C08": [
-        ("subagents", P, "Compare victim histories and the terminal window in parallel."),
-        ("memory_graph", P, "Find the common terminal across later fraud disputes."),
-        ("sandbox", S, "Aggregate transactions inside the compromise window."),
-    ],
-    "C10": [
-        ("skills", P, "Apply generic household-authority guidance."),
-        ("memory_graph", P, "Reach the authorized user through device and account edges."),
-        ("agent_graph", S, "Return specialist findings to the supervisor for closure."),
-    ],
-    "C11": [
-        ("agents", P, "Revise the friendly-fraud hypothesis after finding takeover facts."),
-        ("agent_graph", P, "Loop from contradictory findings through a revised plan."),
-        ("write_paths", P, "Retract the stale note and record the supported cluster finding."),
-        ("read_paths", S, "Treat the historical note as a lead and verify it."),
-    ],
-    "C12": [
-        ("subagents", P, "Fan out over linked claimants and merge component findings."),
-        ("memory_graph", P, "Traverse shared phone, device and address components."),
-        ("write_paths", P, "Record a bounded, evidence-backed ring finding."),
-    ],
-    "C12b": [
-        ("tool_calling", P, "Query temporal ownership, delivery and evidence-request facts."),
-        ("skills", P, "Apply the cardholder-favourable missing-evidence default."),
-        ("read_paths", P, "Use phone validity windows instead of a timeless shared-ID match."),
-    ],
-    "C13": [
-        ("router_triage", P, "Classify an agentic transaction as a novel investigation."),
-        ("memory_semantic", P, "Retrieve mandate and agentic-transaction guidance."),
-        ("sandbox", P, "Calculate the amount outside the mandate ceiling."),
-        ("tool_calling", S, "Inspect token, provider, mandate and order facts."),
-    ],
-    "C18": [
-        ("loop_termination", P, "Stop after matching the credit and resolving the remainder."),
-        ("sandbox", P, "Reconcile prior credit against the disputed purchase without duplication."),
-        ("memory_graph", S, "Match an unlinked credit through the shared order."),
-    ],
-    "C19": [
-        ("memory_semantic", P, "Retrieve the older merchant reputation note as a lead."),
-        ("read_paths", P, "Prefer newer graph facts that contradict the stale note."),
-        ("agents", P, "Reverse the initial reputation-based hypothesis."),
-        ("write_paths", S, "Supersede the contradicted merchant memory."),
-    ],
-}
+CASE_NEEDS = {}
 
 
 def required_capabilities(code: str) -> list[dict]:

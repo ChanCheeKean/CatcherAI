@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-23
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **planning complete; no implementation yet**
-Next stage: **S0 — Teardown of the Visa world**
+Current phase: **S0 complete**
+Next stage: **S1 — Ontology as data + static graph store**
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -108,7 +108,7 @@ Details for each stage are in the plan section of the same name.
 
 | Stage | Complexity | Goal | Done |
 |---|---|---|---|
-| **S0** Teardown of the Visa world | Simple | Delete Visa/LFB/Reg E/Reg Z corpus, the 10 cases, the showcase data, retired skills and screenshots; empty the case kit. | ☐ |
+| **S0** Teardown of the Visa world | Simple | Delete Visa/LFB/Reg E/Reg Z corpus, the 10 cases, the showcase data, retired skills and screenshots; empty the case kit. | ☑ |
 | **S1** Ontology as data + static graph store | Medium | `ontology.yaml` + loader; builder validates against it; `GraphStore` read-only by default, schema with descriptions, `node`, `find`; all write paths and `copy_store` removed. | ☐ |
 | **S2** Policy corpus, clause search, memory in knowledge | Complex | 6 Amex + 8 Merchant policy markdown docs grounded in the research; `policies.py` projects them into graph nodes and clause-level search; retrieval without `as_of`; Memory Notes in SQLite; Amex precedents. | ☐ |
 | **S3** Background world | Medium | Deterministic dispute-only world (~150 Card Members, ~30 Merchants with template policies, ~3k charges, Offers, program, subscriptions, invoices, ~60 past Disputes). | ☐ |
@@ -139,3 +139,26 @@ Details for each stage are in the plan section of the same name.
   - The hotel-deposit time-zone sketch was dropped (D12: no time component).
   - The wrong-card Offer sketch became case C.
   - The NKN subscription sketch became case E's descriptor and Additional Card twist, filed as CNR.
+
+### S0 — 2026-09-23
+- Removed the Visa/LFB/Reg E/Reg Z policy corpus and author script, all ten old case builders,
+  committed showcase data, eight retired skills, and two screenshots. Emptied
+  `data/generator/cases/__init__.py`'s builder tuple, updated its truth contract and charge helper,
+  reset `CASE_NEEDS` in `data/generator/capabilities.py`, and set
+  `data/corpus/precedents.yaml` to `[]`.
+- Deleted `tests/test_cases.py` and `tests/test_showcase.py` with their subjects. Also deleted
+  `tests/test_knowledge.py` (its policy, precedent, and retired-skill assertions depend on the
+  removed corpus) and `tests/test_tools.py` (its Visa/Reg E, fraud-label, and graph-write behavior
+  is replaced in S6). No tests were skipped or replaced with compatibility shims.
+- `uv run pytest -x -q`: 49 passed. `uv run ruff check src tests data/generator`:
+  passed. `uv run ruff format --check src tests data/generator`: passed.
+  `git diff --check`: passed. The `simplify` skill was not installed, so the changed files
+  received a manual dead-code and legacy-path review.
+- The prescribed `git pull` could not run because this new local branch has no upstream; origin
+  has no `amex-dispute-revamp` branch yet. The stage push will create it.
+- Remaining legacy-term scan hits are confined to files scheduled for later stages:
+  `data/generator/world.py` (S3), `src/schemas.py` and `config/agents.yaml` (S7),
+  `skills/graph-investigation/SKILL.md` (S7), and
+  `tests/test_schemas_models.py` / `tests/test_runtime.py` (S7/S6).
+- No design decision changed; the spec was not edited. The app remains intentionally
+  unrunnable end to end until later stages restore the generated world and runtime.
