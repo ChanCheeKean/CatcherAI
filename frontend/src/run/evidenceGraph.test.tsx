@@ -4,12 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { GraphEdge, GraphNode } from '../api/types'
 import { citedBy, touchedBy } from './evidence'
 import { columnsFor, layoutGraph } from './evidenceLayout'
-import { evidence, event, report } from './fixtures'
+import { evidence, event, panels, report } from './fixtures'
 import { deriveFlow } from './flow'
 import { GraphItemPanel } from './GraphItemPanel'
 import { caption, fromNeighbor, graphModel, nameOf, regionColor } from './graphModel'
-import { RunPanelsContext, type RunPanels } from './RunContext'
-import { emptyRun, reduceEvent } from './store'
+import { RunPanelsContext } from './RunContext'
 
 const ontology = {
   groups: { parties: { title: 'Parties', description: '' }, commerce: { title: 'Commerce', description: '' }, terms: { title: 'Terms', description: '' }, case: { title: 'Case', description: '' } },
@@ -156,14 +155,9 @@ describe('GraphItemPanel', () => {
         { turn: 3, refs: ['CHG-1'] },
       ),
     ]
-    const panels: RunPanels = {
-      view: events.reduce(reduceEvent, emptyRun()),
-      flow: deriveFlow(events),
+    const value = panels(events, {
       selection: { kind: 'node', id: 'CHG-1' },
       select,
-      highlight: { nodeIds: new Set(), edgeIds: new Set() },
-      clearHighlight: vi.fn(),
-      cited: { nodeIds: new Set(), edgeIds: new Set() },
       graphModel: model,
       graph: {
         nodes: new Map([address, customer].map((n) => [n.id, n])),
@@ -171,12 +165,10 @@ describe('GraphItemPanel', () => {
         expand: vi.fn(),
         expanded: new Set(),
       },
-      showEvidence: vi.fn(),
       tab: 'graph',
-      setTab: vi.fn(), truth: undefined, overlay: false, setOverlay: vi.fn(), graphScope: null, setGraphScope: vi.fn(),
-    }
+    })
     render(
-      <RunPanelsContext.Provider value={panels}>
+      <RunPanelsContext.Provider value={value}>
         <GraphItemPanel id="CHG-1" />
       </RunPanelsContext.Provider>,
     )

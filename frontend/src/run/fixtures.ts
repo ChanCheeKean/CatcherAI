@@ -1,4 +1,9 @@
+import { vi } from 'vitest'
 import type { CaseReport, TrajectoryEvent } from '../api/types'
+import { deriveFlow } from './flow'
+import { graphModel } from './graphModel'
+import type { RunPanels } from './RunContext'
+import { emptyRun, reduceEvent } from './store'
 
 let seq = 0
 export function event(
@@ -48,4 +53,28 @@ export const report: CaseReport = {
   confidence: 0.9,
   flip_fact: 'The order stated a lower price',
   card_member_letter: 'Dear Card Member, …',
+}
+
+/** Run-page panels folded from `events`, with inert callbacks; `overrides` replaces any of them. */
+export function panels(events: TrajectoryEvent[], overrides: Partial<RunPanels> = {}): RunPanels {
+  return {
+    view: events.reduce(reduceEvent, emptyRun()),
+    flow: deriveFlow(events),
+    selection: null,
+    select: vi.fn(),
+    highlight: { nodeIds: new Set(), edgeIds: new Set() },
+    clearHighlight: vi.fn(),
+    cited: { nodeIds: new Set(), edgeIds: new Set() },
+    graph: { nodes: new Map(), edges: new Map(), expand: vi.fn(), expanded: new Set() },
+    graphModel: graphModel({ groups: { case: { title: 'Case', description: '' } }, labels: {}, edges: {}, node_count: 0, edge_count: 0 }),
+    showEvidence: vi.fn(),
+    tab: 'flow',
+    setTab: vi.fn(),
+    truth: undefined,
+    overlay: false,
+    setOverlay: vi.fn(),
+    graphScope: null,
+    setGraphScope: vi.fn(),
+    ...overrides,
+  }
 }

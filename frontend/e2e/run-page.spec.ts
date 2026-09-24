@@ -36,9 +36,12 @@ test('a case run fills the agent map and the evidence graph, ends in a verdict, 
   await nodes.filter({ hasText: 'Test Card Member' }).click()
   await expect(page.getByRole('complementary', { name: 'Inspector' })).toContainText(/Found by graph_analyst with graph_query/)
 
-  // An evidence chip focuses exactly the cited nodes.
-  await page.getByRole('button', { name: 'The charge and Card Member are linked.' }).first().click()
+  // The report reads beside the graph: a cited claim focuses exactly its nodes and stays on screen, pressed.
+  await page.getByRole('button', { name: 'Back to the report' }).click()
+  const claim = page.getByRole('button', { name: 'The charge and Card Member are linked.' }).first()
+  await claim.click()
   await expect(page.getByRole('button', { name: /Showing cited evidence/ })).toBeVisible()
+  await expect(claim).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('.react-flow__node-entity.react-flow__node').first()).toBeVisible()
   await expect(page.locator('.react-flow__node-entity div.opacity-25').first()).toBeAttached()
 

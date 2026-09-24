@@ -1,11 +1,10 @@
 import { Fragment, useContext } from 'react'
+import { REF_IN_TEXT } from './evidence'
 import { money, words } from './format'
 import { nameOf } from './graphModel'
 import { RunPanelsContext } from './RunContext'
 
 const ID = /^[A-Z]{1,4}-[\w-]+$/
-/** Graph ids inside prose have an uppercase prefix and a digit, so ordinary hyphenated words stay words. */
-const REF_IN_TEXT = /([A-Z]{1,3}-(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]*)/
 
 /** Property keys that hold an amount of money. */
 const MONEY_KEY = /(^|_)(amount|total|price|threshold)$/

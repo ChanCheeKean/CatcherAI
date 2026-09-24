@@ -12,7 +12,7 @@ const TABS: { id: CanvasTab; label: string }[] = [
 export function Canvas() {
   const { tab, setTab, flow, view } = useRunPanels()
   return (
-    <section aria-label="Run canvas" className="flex min-h-0 flex-col border-b lg:border-r lg:border-b-0">
+    <section aria-label="Run canvas" className="flex min-h-[28rem] flex-col border-b lg:min-h-0 lg:border-r lg:border-b-0">
       <div role="tablist" className="flex gap-1 border-b bg-vellum px-3 pt-2">
         {TABS.map(({ id, label }) => (
           <button

@@ -111,7 +111,7 @@ function RunView() {
         </header>
         {stream.finished && <Timeline events={stream.events} onCursor={setCursor} autoplay={autoplay} />}
 
-        <div className="grid min-h-[28rem] flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(26rem,32%)]">
+        <div className="grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(28rem,36%)]">
           <Canvas />
           <Inspector />
         </div>

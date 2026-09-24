@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met); F1 complete**
-Next stage: **F2 — Report beside the graph** (then F3; one session each). S11b (eval tuning) is
+Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met); F1, F2 complete**
+Next stage: **F3 — Agents over time**. S11b (eval tuning) is
 still open and does not depend on the F stages; it should start with the `ontology.yaml`
 description bug in §8 "F1 (part 2)".
 
@@ -125,7 +125,7 @@ Details for each stage are in the plan section of the same name.
 | **S11b** Finish tuning | Complex | Fix the truncated `ontology.yaml` descriptions (§8 "F1 (part 2)"), then re-run eval on the final S11 skills and policy text (the case C fixes are untested live); tune until pass@1 5/5, then pass@3; refresh the showcase. | ☐ |
 | **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☐ |
 | **F1** Demo: replay, funnel, cited graph + polish | Medium | Verify the replay, header funnel and "Cited only" graph already committed (see §8 "F1"), then the polish: graph colours by region, four-item legend, captions instead of raw ids, formatted money, proof on case cards, no truncated agent names. | ☑ |
-| **F2** Demo: report beside the graph | Medium | Claims and their highlighted evidence visible together; Amex-vs-Merchant Clause comparison; decoys ruled out tied to their nodes. | ☐ |
+| **F2** Demo: report beside the graph | Medium | Claims and their highlighted evidence visible together; Amex-vs-Merchant Clause comparison; decoys ruled out tied to their nodes. | ☑ |
 | **F3** Demo: agents over time | Medium | Swimlane timeline of the agent flow (lane per agent, tool-call ticks, Notebook marks, sent-back loops) with tool edges on the map collapsed into per-agent counts; with nothing selected, the inspector narrates the replay. | ☐ |
 
 The F stages come from a frontend review for the demo (the frontend must show how robust the
@@ -755,3 +755,53 @@ per session, in order, under the §5 protocol, and take a screenshot check of th
     Then re-run the eval.
 - **Known, for F2/F3.** At tablet width the run page's canvas is short, because the plan list
   (`LiveStatus`) and the empty inspector take the space. F3 part 2 covers both.
+
+### F2 — 2026-09-24 (report beside the graph)
+- **Layout.** The report moved from the bottom drawer into the inspector. With nothing selected
+  after a verdict, the inspector shows the report, so a claim and its evidence in the graph are on
+  screen together. Selecting a node or agent replaces it, and "← Back to the report" returns.
+  - `Conclusion.tsx` is now only the verdict strip (verdict, category, headline) plus the
+    pre-verdict `LiveStatus`. The drawer's resize handle, snap heights and `localStorage` height
+    are gone.
+  - The inspector column is `minmax(28rem, 36%)`. Below `lg` the canvas keeps a 28rem minimum
+    height itself, so the long report no longer squeezes it to nothing.
+- **Report** (`run/Report.tsx`): written for one column. Charges are cards (disputed, credit and
+  liability as a three-cell row), and the sticky section nav wraps. Every cited claim is a
+  `ClaimButton`: clicking it lights up its evidence, and it stays pressed (`aria-pressed`, yellow)
+  while the graph shows exactly that evidence (`isShown` in `evidence.ts`).
+- **Decoys ruled out.** Each row names graph ids in prose; `idsIn` (in `evidence.ts`, with
+  `REF_IN_TEXT` moved there from `Fields.tsx`) extracts them, and the row lights them up. Rows that
+  name no id stay plain text.
+- **Amex Policy vs Merchant Policy** (`run/clauses.ts` + `ClauseComparison`):
+  - Which Clauses: those that a System Improvement targeting `amex_policy` or `merchant_policy`
+    cites and that the report also lists as policy basis (`comparedClauses`).
+  - Which side: each Clause's owner is the `owner` property of its policy document, fetched with
+    `/graph/neighbors` (no id parsing, no label names). The block shows only when both sides have
+    Clauses: case B shows PS-PART 3.2, 3.4 and PLAT-BEN 2.1 against folio 7 and reservation 1;
+    A, C, D and E show nothing.
+  - The deciding line: the sentence that report text citing the Clause quotes word for word,
+    otherwise the one sharing the most words (`decidingSentence`). It is marked only when the
+    Clause has more than one sentence; folio 7 marks "Folios settled with any other card are
+    re-rated at the Best Available Rate."
+  - Clicking a Clause card lights it up in the graph.
+- **Tests.** `fixtures.ts` gained `panels(events, overrides)`, now used by the Conclusion,
+  Notebook, evidence-graph and new Report tests instead of four copies of the panels literal.
+  `Conclusion.test.tsx` lost the drawer tests (the drawer is gone). New `Report.test.tsx`: a claim
+  lights up and stays on screen, the pressed state, decoy ids, the side-by-side comparison with
+  the mark, no comparison from one side only, and the `clauses` helpers. The e2e spec returns to
+  the report from a node selection and checks the claim is pressed.
+- **Verified.** `npx tsc -b`, `npx oxlint`: clean. `npx vitest run`: 48 passed. `npm run e2e`:
+  1 passed. `npx vite build`: OK. `uv run pytest`: 70 passed; ruff check/format and
+  `git diff --check`: passed. Screenshots of B (claim pressed with the graph focused; the
+  comparison), A (a decoy row lit up) and B at 390 px.
+- **`simplify`** ran as four review agents.
+  - Applied: the Clause cards and claim rows share `ShowButton` (the reuse and simplification
+    agents found the same thing), and the mobile minimum height lives on the canvas only.
+  - Skipped:
+    - Memoizing `comparedClauses`/`decidingSentence`/`idsIn`. A report has a handful of Clauses
+      and is shown only after the verdict.
+    - Fetching the Clause owners through `graph.expand`, which would mark the documents as
+      expanded context and draw them on the evidence graph.
+    - Picking the document by edge type rather than by its `owner` property, which would name an
+      ontology edge in the frontend.
+- No design decision changed; the spec was not edited. No backend change.
