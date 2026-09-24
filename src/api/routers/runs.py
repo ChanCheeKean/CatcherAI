@@ -7,13 +7,14 @@ import json
 import sqlite3
 import uuid
 from collections.abc import AsyncIterator
+from datetime import datetime
 
 from fastapi import APIRouter, Header
 from sse_starlette import EventSourceResponse
 
 from api.context import ApiContext, Ctx
 from api.errors import not_found
-from api.models import CaseSummary, RunStatus, StartRun
+from api.models import CaseSummary, LatestRun, RunStatus, StartRun
 from domain.events import EventEnvelope
 from replay import load_events
 from schemas import CaseReport
@@ -35,31 +36,67 @@ def _events(ctx: ApiContext, run_id: str, after_seq: int = 0) -> list[EventEnvel
         return []
 
 
-def _latest_completed(ctx: ApiContext) -> dict[str, tuple[str, str]]:
-    """Per case, the newest finished run that reached a decision."""
+def _run_passed(ctx: ApiContext) -> dict[str, bool]:
+    """Whether each evaluated run passed; a later batch overrides an earlier one."""
+    summaries = sorted(ctx.eval_dir.glob("*/summary.json")) if ctx.eval_dir.exists() else []
+    return {
+        run["run_id"]: run["passed"]
+        for path in summaries
+        for case in json.loads(path.read_text())["cases"]
+        for run in case["runs"]
+    }
+
+
+def _run_summary(
+    connection: sqlite3.Connection, run_id: str, verdict: str, passed: bool | None
+) -> LatestRun:
+    agents, started, ended = connection.execute(
+        "SELECT count(DISTINCT actor_name) FILTER (WHERE actor_kind = 'agent'), "
+        "min(ts_wall), max(ts_wall) FROM run_events WHERE run_id = ?",
+        (run_id,),
+    ).fetchone()
+    # "Examined" as the run page counts it (GRAPH_TYPES in frontend/src/run/store.ts).
+    (examined,) = connection.execute(
+        "SELECT count(DISTINCT node.value) "
+        "FROM run_events AS event, json_each(event.payload_json, '$.node_ids') AS node "
+        "WHERE event.run_id = ? AND event.type IN ('tool_result', 'notebook_write')",
+        (run_id,),
+    ).fetchone()
+    elapsed = datetime.fromisoformat(ended) - datetime.fromisoformat(started)
+    return LatestRun(
+        run_id=run_id,
+        verdict=verdict,
+        seconds=elapsed.total_seconds(),
+        agents=agents,
+        nodes_examined=examined,
+        passed=passed,
+    )
+
+
+def _latest_runs(ctx: ApiContext) -> dict[str, LatestRun]:
+    """Per case, the newest finished run that reached a decision, with what it took."""
     if not ctx.paths.trajectory_db.exists():
         return {}
-    try:
-        with sqlite3.connect(ctx.paths.trajectory_db) as connection:
-            rows = connection.execute(
+    passed = _run_passed(ctx)
+    with sqlite3.connect(ctx.paths.trajectory_db) as connection:
+        try:
+            decided = connection.execute(
                 "SELECT case_id, run_id, json_extract(payload_json, '$.report.verdict') "
                 "FROM run_events WHERE type = 'decision' ORDER BY ts_wall"
             ).fetchall()
-    except sqlite3.OperationalError:  # no run has created the event table yet
-        return {}
-    return {
-        case_id: (run_id, verdict) for case_id, run_id, verdict in rows if not ctx.is_active(run_id)
-    }
+        except sqlite3.OperationalError:  # no run has created the event table yet
+            return {}
+        latest = {case: (run, verdict) for case, run, verdict in decided if not ctx.is_active(run)}
+        return {
+            case: _run_summary(connection, run, verdict, passed.get(run))
+            for case, (run, verdict) in latest.items()
+        }
 
 
 @router.get("/cases", response_model=list[CaseSummary])
 def list_cases(ctx: Ctx) -> list[dict]:
-    latest = _latest_completed(ctx)
-    cases = []
-    for case in _cases(ctx):
-        run_id, verdict = latest.get(case["case_id"], (None, None))
-        cases.append({**case, "latest_run_id": run_id, "latest_verdict": verdict})
-    return cases
+    latest = _latest_runs(ctx)
+    return [{**case, "latest": latest.get(case["case_id"])} for case in _cases(ctx)]
 
 
 @router.post("/runs", response_model=RunStatus, status_code=202)

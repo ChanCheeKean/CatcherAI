@@ -7,10 +7,10 @@ const shapes = {
   flag: <path d="M5 17V3M5 4h10l-2 3.5 2 3.5H5" />,
 }
 
-export function Icon({ label, size = 18 }: { label: string; size?: number }) {
+export function Icon({ label }: { label: string }) {
   const { graphModel } = useRunPanels()
   return (
-    <svg viewBox="0 0 20 20" width={size} height={size} fill="none" stroke="currentColor"
+    <svg viewBox="0 0 20 20" width={18} height={18} fill="none" stroke="currentColor"
       strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       {shapes[graphModel.labelStyle(label).icon]}
     </svg>

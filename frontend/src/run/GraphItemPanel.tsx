@@ -74,8 +74,10 @@ function NodeHeader({ node }: { node: GraphNode }) {
           <Icon label={node.label} />
         </span>
         <div className="min-w-0">
-          <h2 className="truncate font-semibold">{node.label}</h2>
-          <p className="id-chip text-graphite">{node.id}</p>
+          <h2 className="font-semibold">{caption(node)}</h2>
+          <p className="text-xs text-graphite">
+            {node.label} <span className="id-chip">{node.id}</span>
+          </p>
         </div>
       </div>
       <div className="my-3">

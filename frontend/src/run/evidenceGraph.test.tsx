@@ -7,7 +7,7 @@ import { columnsFor, layoutGraph } from './evidenceLayout'
 import { evidence, event, report } from './fixtures'
 import { deriveFlow } from './flow'
 import { GraphItemPanel } from './GraphItemPanel'
-import { fromNeighbor, graphModel } from './graphModel'
+import { caption, fromNeighbor, graphModel, nameOf, regionColor } from './graphModel'
 import { RunPanelsContext, type RunPanels } from './RunContext'
 import { emptyRun, reduceEvent } from './store'
 
@@ -61,6 +61,36 @@ describe('graph model', () => {
     expect(model.labelStyle('CardMember')).toMatchObject({ region: 'parties', icon: 'person' })
     expect(model.labelStyle('Clause')).toMatchObject({ region: 'terms', icon: 'scroll' })
     expect(model.labelStyle('Unknown').region).toBe('case')
+  })
+
+  it('colours each region with its own hue and its labels with tints of it', () => {
+    const hue = (color: string) => Number(color.match(/hsl\((\d+)/)![1])
+    const hues = model.regions.map(({ id }) => hue(regionColor(id)))
+    expect(new Set(hues).size).toBe(4)
+    expect(hue(model.labelStyle('Charge').color)).toBe(hue(regionColor('commerce')))
+  })
+
+  it('captions nodes from their properties and falls back to the id', () => {
+    const node = (properties: Record<string, unknown>) => ({ id: 'X-1', label: 'Thing', properties })
+    expect(caption(node({ last4: '1004', product: 'Gold' }))).toBe('Gold ··1004')
+    expect(caption(node({ number: '4.3', heading: 'Custom orders', text: 'COM pieces are final sale.' }))).toBe('4.3 Custom orders')
+    expect(caption(node({ channel: 'email', sender: 'StreamCo', text: 'Cancelled.' }))).toBe('email from StreamCo')
+    expect(caption(node({ label: 'Deposit', amount: 1500 }))).toBe('Deposit $1,500.00')
+    expect(caption(node({ title: 'Checkout Terms', version: '4' }))).toBe('Checkout Terms v4')
+    expect(caption(node({ amount: -2400, kind: 'credit' }))).toBe('-$2,400.00 credit')
+    expect(caption(node({ amount: 1500, method: 'bank_transfer' }))).toBe('$1,500.00 bank transfer')
+    expect(caption(node({ text: 'SC*DIGITAL SVCS' }))).toBe('SC*DIGITAL SVCS')
+    expect(caption(node({ amount: 2400, status: 'open' }))).toBe('X-1')
+  })
+
+  it('names loaded nodes and edges for chips, with type and id on hover', () => {
+    const graph = {
+      nodes: new Map([['CHG-1', { id: 'CHG-1', label: 'Charge', properties: { amount: 5, kind: 'purchase' } }]]),
+      edges: new Map([['E-1', { id: 'E-1', type: 'FOR_ORDER', src: 'CHG-1', dst: 'ORD-1', properties: {} }]]),
+    }
+    expect(nameOf(graph, 'CHG-1')).toEqual({ text: '$5.00 purchase', title: 'Charge CHG-1' })
+    expect(nameOf(graph, 'E-1')).toEqual({ text: 'for order', title: '$5.00 purchase FOR_ORDER ORD-1 (E-1)' })
+    expect(nameOf(graph, 'ORD-9')).toEqual({ text: 'ORD-9', title: 'ORD-9' })
   })
 
   it('turns a neighbour hit into the node and edge shapes of the lookup endpoint', () => {
@@ -150,7 +180,7 @@ describe('GraphItemPanel', () => {
         <GraphItemPanel id="CHG-1" />
       </RunPanelsContext.Provider>,
     )
-    expect(screen.getByText('Test charge')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Test charge' })).toBeInTheDocument()
     expect(screen.getByText(/Found by graph_analyst with graph_query in turn 3/)).toBeInTheDocument()
     expect(screen.getByText('CHARGED_TO')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'CardMember Ada Vega' }))

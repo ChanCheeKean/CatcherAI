@@ -12,9 +12,18 @@ export interface CaseSummary {
   claim: string
   amount: number
   summary: string
-  /** Newest finished run of this case, when there is one: opening the case shows it without running. */
-  latest_run_id: string | null
-  latest_verdict: Verdict | null
+  /** Newest decided run of this case, when there is one: opening the case replays it. */
+  latest: LatestRun | null
+}
+
+export interface LatestRun {
+  run_id: string
+  verdict: Verdict
+  seconds: number
+  agents: number
+  nodes_examined: number
+  /** Whether the evaluation passed this run; null when no evaluation scored it. */
+  passed: boolean | null
 }
 
 export interface EvidenceLink {

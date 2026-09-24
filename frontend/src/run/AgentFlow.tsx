@@ -76,7 +76,11 @@ function AgentNode({ data }: NodeProps<FlowNodeType>) {
         <span className="truncate text-sm font-semibold" title={flow.id}>
           {words(flow.id)}
         </span>
-        <span className="ml-auto text-xs text-graphite tabular-nums">×{flow.visits}</span>
+        {flow.visits > 1 && (
+          <span className="ml-auto text-xs text-graphite tabular-nums" title={`Ran ${flow.visits} times`}>
+            ×{flow.visits}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-1.5 text-xs text-graphite">
         {flow.adHoc && <span className="rounded-sm border border-graphite px-1 whitespace-nowrap">ad hoc</span>}

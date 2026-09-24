@@ -231,7 +231,7 @@ function ReportBody({ report, onShow }: { report: CaseReport; onShow: Reveal }) 
           {report.charges.map((t) => (
             <li key={t.charge_id} className="max-w-3xl">
               <p className="text-sm leading-relaxed">
-                <Ref id={t.charge_id} /> <Prose>{t.rationale}</Prose>
+                <Ref id={t.charge_id} asId /> <Prose>{t.rationale}</Prose>
               </p>
               <EvidenceRows links={t.evidence} onShow={onShow} />
             </li>

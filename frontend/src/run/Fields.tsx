@@ -1,21 +1,44 @@
-import { Fragment } from 'react'
-import { words } from './format'
+import { Fragment, useContext } from 'react'
+import { money, words } from './format'
+import { nameOf } from './graphModel'
+import { RunPanelsContext } from './RunContext'
 
 const ID = /^[A-Z]{1,4}-[\w-]+$/
 /** Graph ids inside prose have an uppercase prefix and a digit, so ordinary hyphenated words stay words. */
 const REF_IN_TEXT = /([A-Z]{1,3}-(?=[A-Za-z0-9-]*\d)[A-Za-z0-9][A-Za-z0-9-]*)/
 
-/** A graph id as a small monospace chip. */
-export function Ref({ id }: { id: string }) {
-  return <span className="ref">{id}</span>
+/** Property keys that hold an amount of money. */
+const MONEY_KEY = /(^|_)(amount|total|price|threshold)$/
+
+/**
+ * A graph id as a small chip. It shows the item's caption once the run has loaded it, with the
+ * type and id on hover; `asId` keeps the id visible (inside prose, where the sentence names it).
+ * With `onClick` the chip is a button.
+ */
+export function Ref({ id, asId = false, onClick }: { id: string; asId?: boolean; onClick?: () => void }) {
+  const graph = useContext(RunPanelsContext)?.graph
+  const name = graph ? nameOf(graph, id) : { text: id, title: id }
+  const named = !asId && name.text !== id
+  const title = asId && name.text !== id ? `${name.text}: ${name.title}` : name.title
+  const className = named ? 'ref named' : 'ref'
+  const text = named ? name.text : id
+  if (!onClick) return <span className={className} title={title}>{text}</span>
+  return (
+    <button type="button" onClick={onClick} title={title} className={`${className} cursor-pointer hover:underline`}>
+      {text}
+    </button>
+  )
 }
+
+const isMoney = (key: string, value: unknown) =>
+  MONEY_KEY.test(key) && (typeof value === 'number' || (typeof value === 'string' && value !== '' && !isNaN(Number(value))))
 
 /** Prose with every graph id it mentions turned into a chip, so ids stand out from the sentence. */
 export function Prose({ children }: { children: string }) {
   return (
     <>
       {children.split(REF_IN_TEXT).map((part, index) =>
-        index % 2 ? <Ref key={index} id={part} /> : <Fragment key={index}>{part}</Fragment>,
+        index % 2 ? <Ref key={index} id={part} asId /> : <Fragment key={index}>{part}</Fragment>,
       )}
     </>
   )
@@ -76,7 +99,11 @@ export function Fields({ value }: { value: unknown }) {
         <Fragment key={key}>
           <dt className="pt-px text-xs font-medium text-graphite">{words(key)}</dt>
           <dd className="min-w-0 break-words">
-            <Fields value={v} />
+            {isMoney(key, v) ? (
+              <span className="tabular-nums">{money(v as number | string)}</span>
+            ) : (
+              <Fields value={v} />
+            )}
           </dd>
         </Fragment>
       ))}

@@ -1,5 +1,6 @@
 import { useRunPanels } from './RunContext'
 import { words } from './format'
+import { Ref } from './Fields'
 
 export function Notebook() {
   const { view, showEvidence } = useRunPanels()
@@ -19,8 +20,7 @@ export function Notebook() {
                 <p className="mt-2 leading-relaxed">{entry.text}</p>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {[...entry.node_ids, ...entry.edge_ids].map((id) => (
-                    <button key={id} type="button" onClick={() => showEvidence({ node_ids: entry.node_ids.includes(id) ? [id] : [], edge_ids: entry.edge_ids.includes(id) ? [id] : [] })}
-                      className="ref cursor-pointer hover:underline">{id}</button>
+                    <Ref key={id} id={id} onClick={() => showEvidence({ node_ids: entry.node_ids.includes(id) ? [id] : [], edge_ids: entry.edge_ids.includes(id) ? [id] : [] })} />
                   ))}
                 </div>
               </div>

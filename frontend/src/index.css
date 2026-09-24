@@ -121,6 +121,16 @@ body {
   vertical-align: baseline;
 }
 
+/* A graph item by its caption: the same chip in the text face, cut short (the full name is on hover). */
+.ref.named {
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+}
+
 /* Items of one list: an even rhythm with a hairline between them, no boxes inside boxes. */
 .stack > * + * {
   margin-top: 0.6rem;

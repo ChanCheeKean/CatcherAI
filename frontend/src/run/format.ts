@@ -29,4 +29,5 @@ export const categoryLabel: Record<DisputeCategory, string> = {
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 export const money = (value: Money) => usd.format(Number(value))
 
-export const words = (snake: string) => snake.replaceAll('_', ' ')
+/** snake_case or CamelCase as separate words. */
+export const words = (name: string) => name.replaceAll('_', ' ').replace(/([a-z])([A-Z])/g, '$1 $2')

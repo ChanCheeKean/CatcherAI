@@ -1,8 +1,9 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
-import type { CaseSummary } from '../api/types'
+import type { CaseSummary, LatestRun } from '../api/types'
 import { money, verdictLabel, verdictTone } from '../run/format'
+import { clock } from '../run/replay'
 
 export function CasesPage() {
   const navigate = useNavigate()
@@ -13,7 +14,7 @@ export function CasesPage() {
   })
   /** A case that has already been investigated replays its last run; a fresh one starts an investigation. */
   function openCase(item: CaseSummary) {
-    if (item.latest_run_id) navigate(`/cases/${item.case_id}/runs/${item.latest_run_id}?replay`)
+    if (item.latest) navigate(`/cases/${item.case_id}/runs/${item.latest.run_id}?replay`)
     else start.mutate(item.case_id)
   }
 
@@ -63,7 +64,7 @@ interface CaseCardProps {
 }
 
 function CaseCard({ item, busy, onOpen, onRerun }: CaseCardProps) {
-  const verdict = item.latest_verdict
+  const { latest } = item
   return (
     <div className="flex h-full flex-col rounded-sm border border-rule bg-vellum transition-colors hover:border-ink">
       <button
@@ -76,11 +77,12 @@ function CaseCard({ item, busy, onOpen, onRerun }: CaseCardProps) {
         <span className="mt-1 text-sm text-graphite">{item.claim}</span>
         <span className="mt-3 flex-1 text-[0.95rem] leading-relaxed">{item.summary}</span>
       </button>
+      {latest && <RunProof latest={latest} />}
       <div className="flex items-baseline justify-between gap-3 border-t px-5 py-3 text-sm">
         <span className="tabular-nums font-semibold">{money(item.amount)}</span>
-        {item.latest_run_id ? (
+        {latest ? (
           <span className="flex items-baseline gap-3">
-            {verdict && <span className={`font-medium ${verdictTone[verdict].text}`}>{verdictLabel[verdict]}</span>}
+            <span className={`font-medium ${verdictTone[latest.verdict].text}`}>{verdictLabel[latest.verdict]}</span>
             <button
               type="button"
               disabled={busy}
@@ -95,5 +97,23 @@ function CaseCard({ item, busy, onOpen, onRerun }: CaseCardProps) {
         )}
       </div>
     </div>
+  )
+}
+
+/** What the last investigation took, and whether the evaluation passed it. */
+function RunProof({ latest }: { latest: LatestRun }) {
+  const figure = 'font-semibold text-ink tabular-nums'
+  return (
+    <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t px-5 py-2.5 text-xs text-graphite">
+      <span>
+        <span className={figure}>{latest.nodes_examined.toLocaleString()}</span> nodes examined ·{' '}
+        <span className={figure}>{latest.agents}</span> agents · <span className={figure}>{clock(latest.seconds * 1000)}</span> run
+      </span>
+      {latest.passed !== null && (
+        <span className={`font-medium ${latest.passed ? 'text-accepted' : 'text-rejected'}`}>
+          {latest.passed ? '✓ Passed evaluation' : '✗ Failed evaluation'}
+        </span>
+      )}
+    </p>
   )
 }

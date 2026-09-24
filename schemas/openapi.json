@@ -455,27 +455,15 @@
             "type": "string",
             "title": "Summary"
           },
-          "latest_run_id": {
+          "latest": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/LatestRun"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Latest Run Id"
-          },
-          "latest_verdict": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Latest Verdict"
+            ]
           }
         },
         "type": "object",
@@ -901,6 +889,51 @@
           "evidence"
         ],
         "title": "HypothesisAssessment"
+      },
+      "LatestRun": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict"
+          },
+          "seconds": {
+            "type": "number",
+            "title": "Seconds"
+          },
+          "agents": {
+            "type": "integer",
+            "title": "Agents"
+          },
+          "nodes_examined": {
+            "type": "integer",
+            "title": "Nodes Examined"
+          },
+          "passed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "verdict",
+          "seconds",
+          "agents",
+          "nodes_examined"
+        ],
+        "title": "LatestRun",
+        "description": "The newest decided run of a case: opening the case replays it."
       },
       "Neighbor": {
         "properties": {

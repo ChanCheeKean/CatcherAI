@@ -58,7 +58,9 @@ def graph_elements(
         GraphNode(
             id=row["id"],
             label=row["_label"],
-            properties={k: v for k, v in row.items() if k not in {"id", "_label"}},
+            properties={
+                k: v for k, v in row.items() if k not in {"id", "_label"} and v is not None
+            },
         )
         for (row,) in node_rows
     ]

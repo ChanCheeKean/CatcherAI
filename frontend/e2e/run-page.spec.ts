@@ -23,7 +23,10 @@ test('a case run fills the agent map and the evidence graph, ends in a verdict, 
 
   await page.getByRole('tab', { name: 'Notebook' }).click()
   await expect(page.getByText('The Card Member holds this account.')).toBeVisible()
-  await page.getByRole('button', { name: 'CMB-TEST-1' }).click()
+  // Finding chips name the item by its caption, with the id on hover.
+  const chip = page.getByRole('button', { name: 'Test Card Member' })
+  await expect(chip).toHaveAttribute('title', /CMB-TEST-1/)
+  await chip.click()
   await expect(page.getByRole('tab', { name: 'Evidence graph' })).toHaveAttribute('aria-selected', 'true')
 
   // The conclusion shows the verdict.

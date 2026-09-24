@@ -21,7 +21,7 @@ import type { GraphEdge, GraphNode } from '../api/types'
 import { bandBounds, columnsFor, layoutGraph, NODE_RADIUS, type Point } from './evidenceLayout'
 import { touchedBy } from './evidence'
 import { Icon } from './GraphIcon'
-import { caption } from './graphModel'
+import { caption, regionColor } from './graphModel'
 import { type GraphScope, useRunPanels } from './RunContext'
 import { useMeasuredNodes } from './useMeasuredNodes'
 
@@ -44,7 +44,7 @@ interface GraphNodeData extends Record<string, unknown> {
   fresh: boolean
 }
 type EvidenceNode = Node<GraphNodeData, 'entity'>
-type BandNode = Node<{ title: string; count: number }, 'band'>
+type BandNode = Node<{ region: string; title: string; count: number }, 'band'>
 
 interface GraphEdgeData extends Record<string, unknown> {
   edge: GraphEdge
@@ -72,11 +72,12 @@ function EntityNode({ data }: NodeProps<EvidenceNode>) {
   const { graphModel } = useRunPanels()
   const { color } = graphModel.labelStyle(node.label)
   const outline = outlineFor(data)
+  const name = caption(node)
   return (
     <div
       className={`flex flex-col items-center transition-opacity ${dim ? 'opacity-25' : context ? 'opacity-60' : ''}`}
-      style={{ width: NODE_RADIUS * 2 + 40 }}
-      title={`${node.label} ${node.id}`}
+      style={{ width: NODE_RADIUS * 2 + 56 }}
+      title={`${node.label} ${node.id}: ${name}`}
     >
       <Handle id="c-in" type="target" position={Position.Top} style={hidden} />
       <Handle id="c-out" type="source" position={Position.Top} style={hidden} />
@@ -90,16 +91,22 @@ function EntityNode({ data }: NodeProps<EvidenceNode>) {
       >
         <Icon label={node.label} />
       </div>
-      <span className="id-chip mt-1 max-w-full truncate rounded-sm bg-vellum/85 px-1 text-ink">{caption(node)}</span>
+      <span className="mt-1 line-clamp-2 max-w-full rounded-sm bg-vellum/85 px-1 text-center text-[11px] leading-tight break-words text-ink">
+        {name}
+      </span>
     </div>
   )
 }
 
+/** Band titles sit just above the band and keep a readable size on screen however far the graph is zoomed out. */
 function BandView({ data }: NodeProps<BandNode>) {
+  const zoom = useStore((state) => state.transform[2])
   return (
-    <div className="size-full rounded-sm border bg-vellum/60 px-3 py-2 text-sm font-semibold text-graphite">
-      {data.title}
-      <span className="ml-2 font-normal tabular-nums">{data.count}</span>
+    <div className="relative size-full rounded-sm border bg-vellum/60">
+      <p style={{ fontSize: 14 / zoom }} className="absolute bottom-full left-0 pb-[0.3em] leading-tight font-semibold whitespace-nowrap">
+        <span style={{ color: regionColor(data.region) }}>{data.title}</span>
+        <span className="ml-[0.5em] font-normal text-graphite tabular-nums">{data.count}</span>
+      </p>
     </div>
   )
 }
@@ -211,18 +218,19 @@ function GraphCanvas() {
     setSettled({ shape, scope, positions: placed })
   }
 
-  const { nodes: built, edges } = useMemo(() => {
+  const { nodes: built, edges, shownRegions } = useMemo(() => {
     const solution = new Set(overlay ? (truth?.solution_node_ids ?? []) : [])
     const decoy = new Set(overlay ? (truth?.decoy_node_ids ?? []) : [])
     const columns = columnsFor(graphModel.regions, shape.nodes.map((n) => ({ region: graphModel.labelStyle(n.label).region })))
-    const bands: BandNode[] = graphModel.regions.filter(({ id }) => columns[id]).map(({ id, title }) => {
+    const shownRegions = graphModel.regions.filter(({ id }) => columns[id])
+    const bands: BandNode[] = shownRegions.map(({ id, title }) => {
       const inside = shape.nodes.filter((n) => graphModel.labelStyle(n.label).region === id)
       const bounds = bandBounds(columns[id]!, inside.map((n) => placed.get(n.id)!))
       return {
         id: `band-${id}`,
         type: 'band',
         position: { x: bounds.x, y: bounds.y },
-        data: { title, count: inside.length },
+        data: { region: id, title, count: inside.length },
         style: { width: bounds.width, height: bounds.height },
         draggable: false,
         selectable: false,
@@ -235,7 +243,7 @@ function GraphCanvas() {
       return {
         id: node.id,
         type: 'entity',
-        position: { x: at.x - NODE_RADIUS - 20, y: at.y - NODE_RADIUS },
+        position: { x: at.x - NODE_RADIUS - 28, y: at.y - NODE_RADIUS },
         data: {
           node,
           context: !view.touched.has(node.id),
@@ -281,7 +289,7 @@ function GraphCanvas() {
         },
       }
     })
-    return { nodes: [...bands, ...entities], edges: links }
+    return { nodes: [...bands, ...entities], edges: links, shownRegions }
   }, [shape, placed, focus, selectedId, cited, truth, overlay, running, view.touched, highlight, graphModel])
   const { nodes, onNodesChange } = useMeasuredNodes(built)
 
@@ -359,27 +367,22 @@ function GraphCanvas() {
         )}
       </Panel>
       <Panel position="bottom-left" className="max-w-[26rem] rounded-sm border bg-vellum px-2 py-1.5 text-xs text-graphite">
-        <Legend labels={[...new Set(shape.nodes.map((n) => n.label))].sort()} />
-        <p className="mt-1">Faded: context. Double-click a node to expand it.</p>
+        <Legend regions={shownRegions} />
+        <p className="mt-1">Hover a node for its type and id. Faded: context. Double-click to expand.</p>
         {overlay && <p>Green ring: solution. Red dashed ring: decoy.</p>}
       </Panel>
     </ReactFlow>
   )
 }
 
-function Legend({ labels }: { labels: string[] }) {
-  const { graphModel } = useRunPanels()
+/** One entry per region: each region has its own hue, and the labels inside it are tints of that hue. */
+function Legend({ regions }: { regions: { id: string; title: string }[] }) {
   return (
     <ul className="flex flex-wrap gap-x-3 gap-y-0.5">
-      {labels.map((label) => (
-        <li key={label} className="flex items-center gap-1">
-          <span
-            className="flex size-4 items-center justify-center rounded-full text-white"
-            style={{ background: graphModel.labelStyle(label).color }}
-          >
-            <Icon label={label} size={11} />
-          </span>
-          {label}
+      {regions.map(({ id, title }) => (
+        <li key={id} className="flex items-center gap-1">
+          <span className="size-3 rounded-full" style={{ background: regionColor(id) }} />
+          {title}
         </li>
       ))}
     </ul>

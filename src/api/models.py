@@ -9,14 +9,24 @@ from pydantic import BaseModel
 from schemas import CaseReport
 
 
+class LatestRun(BaseModel):
+    """The newest decided run of a case: opening the case replays it."""
+
+    run_id: str
+    verdict: str
+    seconds: float
+    agents: int
+    nodes_examined: int
+    passed: bool | None = None  # null when no evaluation batch scored this run
+
+
 class CaseSummary(BaseModel):
     case_id: str
     title: str
     claim: str
     amount: float
     summary: str
-    latest_run_id: str | None = None
-    latest_verdict: str | None = None
+    latest: LatestRun | None = None
 
 
 class StartRun(BaseModel):

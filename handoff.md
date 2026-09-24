@@ -2,11 +2,10 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met); F1 partly done
-(replay, funnel, cited graph committed; checks and polish left)**
-Next stage: **F1 — Finish replay, funnel and cited graph, add the visual polish, commit** (then
-F2, then F3; one session each). S11b (eval tuning) is still open and does not depend on the F
-stages.
+Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met); F1 complete**
+Next stage: **F2 — Report beside the graph** (then F3; one session each). S11b (eval tuning) is
+still open and does not depend on the F stages; it should start with the `ontology.yaml`
+description bug in §8 "F1 (part 2)".
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -123,9 +122,9 @@ Details for each stage are in the plan section of the same name.
 | **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☑ |
 | **S10** Frontend | Medium | Ontology-driven regions/colours; Notebook tab; Conclusion with category, six verdicts, System Improvements. | ☑ |
 | **S11** Real-LLM eval + tuning | Complex | pass@1 5/5 on A–E by improving skills, policy wording, ontology descriptions and prompts only. | ☑ (3/5; remainder in S11b) |
-| **S11b** Finish tuning | Complex | Re-run eval on the final S11 skills and policy text (the case C fixes are untested live); tune until pass@1 5/5, then pass@3; refresh the showcase. | ☐ |
+| **S11b** Finish tuning | Complex | Fix the truncated `ontology.yaml` descriptions (§8 "F1 (part 2)"), then re-run eval on the final S11 skills and policy text (the case C fixes are untested live); tune until pass@1 5/5, then pass@3; refresh the showcase. | ☐ |
 | **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☐ |
-| **F1** Demo: replay, funnel, cited graph + polish | Medium | Verify the replay, header funnel and "Cited only" graph already committed (see §8 "F1"), then the polish: graph colours by region, four-item legend, captions instead of raw ids, formatted money, proof on case cards, no truncated agent names. | ☐ |
+| **F1** Demo: replay, funnel, cited graph + polish | Medium | Verify the replay, header funnel and "Cited only" graph already committed (see §8 "F1"), then the polish: graph colours by region, four-item legend, captions instead of raw ids, formatted money, proof on case cards, no truncated agent names. | ☑ |
 | **F2** Demo: report beside the graph | Medium | Claims and their highlighted evidence visible together; Amex-vs-Merchant Clause comparison; decoys ruled out tied to their nodes. | ☐ |
 | **F3** Demo: agents over time | Medium | Swimlane timeline of the agent flow (lane per agent, tool-call ticks, Notebook marks, sent-back loops) with tool edges on the map collapsed into per-agent counts; with nothing selected, the inspector narrates the replay. | ☐ |
 
@@ -675,3 +674,84 @@ per session, in order, under the §5 protocol, and take a screenshot check of th
     - Case cards: add nodes examined, agents, run time and eval pass.
     - Fix truncated names ("consolidate memo…") and tiny band titles.
     - The React Flow attribution (`proOptions.hideAttribution`): check its licence note first.
+
+### F1 — 2026-09-24 (part 2: checks and polish)
+- **Checks.** Took screenshots of every case's replay at 1440 px, from mid-run to the verdict:
+  - A–E all replay; the flow fills in, the funnel climbs, and the graph narrows to "Cited only".
+  - D hides the Decoys row. C's case card shows "Failed evaluation".
+  - Header, funnel and timeline wrap without overflow at 820 px and 390 px.
+  - The cases page reads well at 1440 px and 390 px.
+- **Polish.**
+  - **Graph colours.** `graphModel.ts` gives each region one clearly different hue (Parties blue,
+    Commerce amber, Terms green, Case crimson), with darker-to-lighter tints per label. The legend
+    has one entry per region shown. `regionColor` also colours the band titles.
+  - **Captions.**
+    - `caption()` derives a name from whichever properties a node has, never from its label: a
+      Card as "Gold ··2031", a clause as "4.3 Custom orders", a message as "email from
+      StreamCo", "Deposit $1,500.00", "$2,400.00 purchase", "Checkout Terms v4". It falls back to
+      the text, then the id.
+    - `nameOf()` names nodes and edges for chips (edges by their type in words), with the label
+      and id on hover.
+    - `Ref` shows the caption; `asId` keeps the id where prose names it (in Prose and the charge
+      rationale). With `onClick` it is a button, which is how Notebook chips use it.
+    - The inspector heading is the caption, with the label and id below it.
+    - Graph nodes show a two-line caption.
+  - **Money.** `Fields` formats values under `amount`/`total`/`price`/`threshold` keys with
+    `money()`.
+  - **Case cards.**
+    - `/cases` returns `latest: {run_id, verdict, seconds, agents, nodes_examined, passed}`,
+      replacing `latest_run_id`/`latest_verdict`.
+    - `nodes_examined` counts the same events as the run page's "examined" (`GRAPH_TYPES`).
+    - `passed` comes from the newest eval batch that scored the run.
+    - Cards show "449 nodes examined · 9 agents · 5:37 run" and "✓ Passed evaluation".
+  - **Truncation.**
+    - Agent nodes show `×N` only when N > 1, so "consolidate memory" fits.
+    - Evidence-graph band titles sit above their band at a constant on-screen size (14 px ÷ zoom),
+      so they stay readable on "Everything touched".
+  - **Attribution.** The React Flow attribution stays. Its docs (context7, reactflow.dev
+    pro-options) say projects without a Pro subscription are expected to keep it, even though
+    MIT does not require it.
+  - **Bug fix.** `/graph/nodes` dropped nothing, so every node carried null columns from other
+    labels and the inspector counted 44 properties. It now drops null properties.
+- **Files.**
+  - Backend: `src/api/routers/runs.py`, `src/api/routers/graph.py`, `src/api/models.py`,
+    `tests/test_api.py`, `schemas/openapi.json` (regenerated: `CaseSummary.latest`,
+    `LatestRun`).
+  - Frontend: `graphModel.ts`, `EvidenceGraph.tsx`, `Fields.tsx`, `Notebook.tsx`,
+    `GraphItemPanel.tsx`, `AgentFlow.tsx`, `Conclusion.tsx`, `GraphIcon.tsx`, `format.ts`
+    (`words` also splits CamelCase), `CasesPage.tsx`, `api/types.ts`, `index.css`
+    (`.ref.named`).
+  - Tests: `evidenceGraph.test.tsx` (hues, captions, `nameOf`), `Fields.test.tsx` (money), and
+    `e2e/run-page.spec.ts`, which clicks the Notebook chip by its caption and checks the id is
+    in its title.
+- **Verified.**
+  - `uv run pytest`: 70 passed. `ruff check` and `ruff format --check`: passed.
+    `git diff --check`: passed.
+  - `npx tsc -b` and `npx oxlint`: clean. `npx vitest run`: 44 passed. `npm run e2e`: 1 passed.
+    `npx vite build`: OK.
+- **`simplify`** ran as four review agents.
+  - Applied:
+    - Notebook chips reuse `Ref` (with `onClick`) instead of a copy.
+    - `isMoney` helper.
+    - The legend takes the regions the bands already computed.
+    - `caption` is computed once per node render.
+    - Removed the dead `Icon` `size` prop.
+    - The label-to-words regex moved into `words`.
+    - Null properties are dropped at the API instead of filtered in the panel.
+    - The SQL comment names `GRAPH_TYPES`.
+  - Skipped:
+    - Caption templates, currency units or region colours declared in `ontology.yaml`. This is a
+      better long-term home, but it changes the agent-facing schema; consider it with S11b.
+    - One shared reader for `eval/*/summary.json`. The API, `showcase.py` and the new
+      `_run_passed` each read the file; `evaluation.py` imports the runtime, so the helper needs a
+      new light module. This is outside F1.
+    - Caching `/cases` stats. Response time went from 10 ms to 56 ms locally, which is fine.
+- **Open issue for S11b: `ontology.yaml` descriptions are truncated.**
+  - 19 descriptions are unquoted inside YAML flow mappings, so their commas split them. For
+    example, the Parties group reads "Card Members" and CardAccount.product reads "Card Product of
+    the account", with the rest parsed as extra keys set to null.
+  - Agents see these through `graph_schema`, and the S11 eval ran on them.
+  - Fix: quote the descriptions, and have `ontology.py` reject unknown keys so it cannot recur.
+    Then re-run the eval.
+- **Known, for F2/F3.** At tablet width the run page's canvas is short, because the plan list
+  (`LiveStatus`) and the empty inspector take the space. F3 part 2 covers both.
