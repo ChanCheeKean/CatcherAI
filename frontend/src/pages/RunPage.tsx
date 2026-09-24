@@ -62,6 +62,10 @@ function RunView() {
     onSuccess: (run) => navigate(`/cases/${run.case_id}/runs/${run.run_id}`),
   })
   const flow = useMemo(() => deriveFlow(view.events), [view.events])
+  const runLength = useMemo(
+    () => (stream.events.length ? Date.parse(stream.events.at(-1)!.ts_wall) - Date.parse(stream.events[0].ts_wall) : 0),
+    [stream.events],
+  )
   const cited = useMemo(() => citedBy(view.report), [view.report])
   // Fetch what the whole run touches up front, so a replay never waits on the graph.
   const runIds = useMemo(() => graphIds(stream.events), [stream.events])
@@ -75,9 +79,9 @@ function RunView() {
   const panels = useMemo(
     () =>
       model && {
-        view, flow, selection, select, highlight, clearHighlight, cited, graph, graphModel: model, showEvidence, tab, setTab, truth, overlay, setOverlay, graphScope, setGraphScope,
+        view, flow, runLength, selection, select, highlight, clearHighlight, cited, graph, graphModel: model, showEvidence, tab, setTab, truth, overlay, setOverlay, graphScope, setGraphScope,
       },
-    [view, flow, selection, highlight, clearHighlight, cited, graph, model, showEvidence, tab, truth, overlay, graphScope],
+    [view, flow, runLength, selection, highlight, clearHighlight, cited, graph, model, showEvidence, tab, truth, overlay, graphScope],
   )
 
   return (

@@ -2,8 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met); F1, F2 complete**
-Next stage: **F3 — Agents over time**. S11b (eval tuning) is
+Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met); F1–F3 complete**
+Next stage: **S11b — Finish tuning** (then S12). S11b (eval tuning) is
 still open and does not depend on the F stages; it should start with the `ontology.yaml`
 description bug in §8 "F1 (part 2)".
 
@@ -126,7 +126,7 @@ Details for each stage are in the plan section of the same name.
 | **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☐ |
 | **F1** Demo: replay, funnel, cited graph + polish | Medium | Verify the replay, header funnel and "Cited only" graph already committed (see §8 "F1"), then the polish: graph colours by region, four-item legend, captions instead of raw ids, formatted money, proof on case cards, no truncated agent names. | ☑ |
 | **F2** Demo: report beside the graph | Medium | Claims and their highlighted evidence visible together; Amex-vs-Merchant Clause comparison; decoys ruled out tied to their nodes. | ☑ |
-| **F3** Demo: agents over time | Medium | Swimlane timeline of the agent flow (lane per agent, tool-call ticks, Notebook marks, sent-back loops) with tool edges on the map collapsed into per-agent counts; with nothing selected, the inspector narrates the replay. | ☐ |
+| **F3** Demo: agents over time | Medium | Swimlane timeline of the agent flow (lane per agent, tool-call ticks, Notebook marks, sent-back loops) with tool edges on the map collapsed into per-agent counts; with nothing selected, the inspector narrates the replay. | ☑ |
 
 The F stages come from a frontend review for the demo (the frontend must show how robust the
 agents and the graph are). They have no plan section; their scope is in §8 "F1". Run one F stage
@@ -804,4 +804,58 @@ per session, in order, under the §5 protocol, and take a screenshot check of th
       expanded context and draw them on the evidence graph.
     - Picking the document by edge type rather than by its `owner` property, which would name an
       ontology edge in the frontend.
+- No design decision changed; the spec was not edited. No backend change.
+
+### F3 — 2026-09-24 (agents over time)
+- **Agent map.** Tool edges are gone: every worker had connected to every tool in one dense bundle.
+  `deriveFlow` now counts each agent's tool calls (`FlowNode.tools`), and an agent shows
+  "46 tools" under its name. Tool nodes keep their `×N` and still open their calls in the
+  inspector. The "ad hoc" flag, badge and dashed border are gone too: since S11 the supervisor
+  always gives instructions, so every worker was flagged. The `crowded` edge quietening went with
+  the tool edges, since the map now has only a handful of edges. The caption points at the
+  Timeline.
+- **Timeline tab** (`run/lanes.ts` derives, `run/Swimlanes.tsx` draws):
+  - One lane per agent, in order of first appearance, and a bar per visit (an open visit pulses).
+    A tick marks each tool call (`ToolCall.at` is new) and a diamond each Case Notebook entry, in
+    its kind's colour (`noteTone` in `format.ts`).
+  - A dashed "↻ sent back" rule marks each moment the supervisor's Decide was sent back.
+    `isSentBack` in `replay.ts` is shared with the replay milestones. No showcase run has a
+    sent-back loop; the unit tests cover it.
+  - A playhead marks the latest event. The axis is the whole run's length (`runLength` in
+    `RunPanels`), so a replay fills in without rescaling.
+  - Lanes and bars select the agent. A diamond lights up its entry's evidence.
+  - Overlapping bars show parallel work. Case E shows two worker rounds with the critic between
+    them.
+- **Inspector narration** (`run/Narration.tsx`). With nothing selected and no verdict, the
+  inspector shows:
+  - the status line, which was `LiveStatus` (now removed) and also carries a failure;
+  - who is working now;
+  - the supervisor's latest reasoning;
+  - the newest Case Notebook finding (node chips light up its evidence);
+  - the open plan items (`PlanChecklist`).
+
+  It follows the replay cursor. The bottom bar is now only the verdict strip, so the plan list
+  no longer squeezes the canvas at tablet width. With a selection, "← Back to the run" (or "to
+  the report") clears it.
+- **Tests.** `lanes.test.ts`, `Swimlanes.test.tsx` and `Narration.test.tsx` are new.
+  `flow.test.ts`: tool counts, and no tool edges. `Conclusion.test.tsx`: nothing before the
+  verdict. E2E: a Timeline lane, and narration after scrubbing back to the start.
+- **Verified.** `npx tsc -b`, `npx oxlint`: clean. `npx vitest run`: 51 passed. `npm run e2e`:
+  1 passed. `npx vite build`: OK. `uv run pytest`: 70 passed; ruff and `git diff --check`: passed.
+  Screenshots of B and E at 1440 px (map, Timeline mid-replay and decided, narration) and B at
+  820 px.
+- **`simplify`** ran as four review agents.
+  - Applied:
+    - `FlowNode.tools` is counted in `deriveFlow` rather than in the view.
+    - Removed `crowded` and the inert `instructions` test parameter.
+    - `isSentBack` is shared.
+    - `PlanChecklist` is reused.
+    - Each lane carries its own notes, so render does no per-lane filtering.
+    - `runLength` is memoized.
+    - `noteTone` moved into `format.ts`.
+  - Skipped:
+    - Parsing `ts_wall` once per event in the reducer. `lanes` rescans once per replay step,
+      which is the same order as `deriveFlow`.
+    - Capsule chrome for the narration sections, which should read at a glance and not collapse.
+    - A shared run-duration helper (two lines at two call sites).
 - No design decision changed; the spec was not edited. No backend change.

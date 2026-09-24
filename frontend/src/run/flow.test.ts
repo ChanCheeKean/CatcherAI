@@ -10,8 +10,8 @@ const exit = (actor: string, visit: number, turn: number, parent: string | null 
   event('node_exited', actor, { output: { by: actor } }, at(visit, turn, parent))
 const edge = (source: string, target: string, visit: number, turn: number, reason: string, parent: string | null = null) =>
   event('edge_taken', source, { source, target, reason }, at(visit, turn, parent))
-const delegate = (role: string, turn: number, parent: string, instructions: string | null = null) =>
-  event('delegation_started', role, { task: { role, objective: `Look into ${role}`, instructions } }, at(1, turn, parent))
+const delegate = (role: string, turn: number, parent: string) =>
+  event('delegation_started', role, { task: { role, objective: `Look into ${role}` } }, at(1, turn, parent))
 const toolCall = (caller: string, tool: string, callId: string, v: number, turn: number, parent: string | null, ids: string[]) => [
   event('tool_call', tool, { caller, tool, call_id: callId, args: { q: 1 } }, { ...at(v, turn, parent), actor: { kind: 'tool', name: tool } }),
   event(
@@ -24,7 +24,7 @@ const toolCall = (caller: string, tool: string, callId: string, v: number, turn:
 
 const plan = [{ id: 'P1', question: 'Who?', status: 'open', evidence_refs: [], waiver_reason: null }]
 
-/** triage, a rejected Decide, two parallel workers (one invented), then decision and memory. */
+/** triage, a rejected Decide, two parallel workers, then decision and memory. */
 function stream(): TrajectoryEvent[] {
   return [
     enter('triage', 1, 0),
@@ -36,7 +36,7 @@ function stream(): TrajectoryEvent[] {
     edge('supervisor', 'supervisor', 1, 1, 'Decide rejected'),
     enter('supervisor', 2, 2),
     delegate('graph_analyst', 2, 'dlg-a'),
-    delegate('ring_mapper', 2, 'dlg-b', 'Map the ring'),
+    delegate('ring_mapper', 2, 'dlg-b'),
     edge('supervisor', 'graph_analyst', 2, 2, 'decided by supervisor', 'dlg-a'),
     edge('supervisor', 'ring_mapper', 2, 2, 'decided by supervisor', 'dlg-b'),
     exit('supervisor', 2, 2),
@@ -85,11 +85,11 @@ describe('deriveFlow', () => {
     ])
   })
 
-  it('counts visits and tags roles the supervisor invented', () => {
+  it('counts visits and tool calls', () => {
     expect(byId(flow, 'supervisor').visits).toBe(3)
-    expect(byId(flow, 'graph_analyst').adHoc).toBe(false)
-    expect(byId(flow, 'ring_mapper').adHoc).toBe(true)
     expect(byId(flow, 'graph_query').visits).toBe(3)
+    expect(byId(flow, 'graph_analyst').tools).toBe(2)
+    expect(byId(flow, 'consolidate_memory').tools).toBe(1)
   })
 
   it('draws loops as return and self edges, and the final hand-off as a decision edge', () => {
@@ -97,7 +97,8 @@ describe('deriveFlow', () => {
     expect(kinds['supervisor>supervisor']).toEqual(['self', 1])
     expect(kinds['graph_analyst>supervisor']).toEqual(['return', 1])
     expect(kinds['supervisor>ring_mapper']).toEqual(['forward', 1])
-    expect(kinds['graph_analyst>graph_query']).toEqual(['tool', 2])
+    // Tools are counted on the agents rather than drawn as edges from every worker.
+    expect(flow.edges.some((e) => e.target === 'graph_query')).toBe(false)
     expect(kinds['supervisor>adjudicator']).toEqual(['decision', 1])
     expect(flow.edges.find((e) => e.id === 'supervisor>graph_analyst')?.decidedBy).toBe('supervisor')
     expect(flow.edges.find((e) => e.id === 'supervisor>adjudicator')?.reason).toBe('forced: max_turns')

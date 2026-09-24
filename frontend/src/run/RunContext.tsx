@@ -12,7 +12,7 @@ export interface Highlight {
   edgeIds: Set<string>
 }
 
-export type CanvasTab = 'flow' | 'graph' | 'notebook'
+export type CanvasTab = 'flow' | 'timeline' | 'graph' | 'notebook'
 /** Which nodes the evidence graph draws. */
 export type GraphScope = 'connected' | 'all' | 'cited'
 
@@ -21,6 +21,8 @@ export interface RunPanels {
   view: RunView
   /** The agent map derived from the same events. */
   flow: Flow
+  /** Run time of the whole recorded run in ms, so a replay's time axis does not rescale as it plays. */
+  runLength: number
   selection: Selection
   select: (selection: Selection) => void
   highlight: Highlight

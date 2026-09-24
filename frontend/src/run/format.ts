@@ -1,4 +1,4 @@
-import type { DisputeCategory, Money, Verdict } from '../api/types'
+import type { DisputeCategory, Money, NotebookEntry, Verdict } from '../api/types'
 
 export const verdictLabel: Record<Verdict, string> = {
   accepted: 'Accepted',
@@ -17,6 +17,16 @@ export const verdictTone: Record<Verdict, { text: string; band: string }> = {
   goodwill_credit: { text: 'text-partial', band: 'border-partial' },
   not_a_dispute: { text: 'text-informed', band: 'border-informed' },
   fraud_referral: { text: 'text-informed', band: 'border-informed' },
+}
+
+/** Background colour class per Case Notebook entry kind. */
+export const noteTone: Record<NotebookEntry['kind'], string> = {
+  fact: 'bg-facts',
+  hypothesis: 'bg-hypo',
+  policy_reading: 'bg-plan',
+  conflict: 'bg-rejected',
+  ruled_out: 'bg-graphite',
+  improvement_idea: 'bg-informed',
 }
 
 export const categoryLabel: Record<DisputeCategory, string> = {

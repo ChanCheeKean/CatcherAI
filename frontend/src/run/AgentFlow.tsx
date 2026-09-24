@@ -39,8 +39,6 @@ interface EdgeData extends Record<string, unknown> {
   animated: boolean
   /** Whether the selected node is one of this edge's ends; null when nothing is selected. */
   related: boolean | null
-  /** Many edges on screen: quieten them until a node is selected. */
-  crowded: boolean
 }
 type FlowEdgeType = Edge<EdgeData, 'flow'>
 
@@ -68,8 +66,8 @@ function AgentNode({ data }: NodeProps<FlowNodeType>) {
     <div
       style={{ width: NODE_SIZE.width, height: NODE_SIZE.height }}
       className={`flex cursor-pointer flex-col justify-center rounded-sm border bg-vellum px-3 shadow-[0_1px_0_var(--color-rule)] ${
-        flow.adHoc ? 'border-dashed border-graphite' : ''
-      } ${selected ? 'outline-2 outline-ink' : ''} ${active ? 'pulse' : ''}`}
+        selected ? 'outline-2 outline-ink' : ''
+      } ${active ? 'pulse' : ''}`}
     >
       <AgentAnchors />
       <div className="flex items-baseline gap-2">
@@ -83,7 +81,11 @@ function AgentNode({ data }: NodeProps<FlowNodeType>) {
         )}
       </div>
       <div className="flex items-center gap-1.5 text-xs text-graphite">
-        {flow.adHoc && <span className="rounded-sm border border-graphite px-1 whitespace-nowrap">ad hoc</span>}
+        {flow.tools > 0 && (
+          <span className="rounded-sm border px-1 whitespace-nowrap tabular-nums" title={`${flow.tools} tool calls`}>
+            {flow.tools} tools
+          </span>
+        )}
         {loops > 0 && <span title="Decide was rejected while plan items were open">↻ {loops} rejected</span>}
         <span className="truncate" title={subtitle}>
           {subtitle}
@@ -102,8 +104,6 @@ function ToolNode({ data }: NodeProps<FlowNodeType>) {
         selected ? 'outline-2 outline-ink' : ''
       } ${active ? 'pulse' : ''}`}
     >
-      <Handle id="l" type="target" position={Position.Left} style={invisible} />
-      <Handle id="rt" type="target" position={Position.Right} style={invisible} />
       <span className="id-chip truncate">{flow.id}</span>
       <span className="ml-auto text-xs text-graphite tabular-nums">×{flow.visits}</span>
     </div>
@@ -134,7 +134,7 @@ function rounded(points: [number, number][], radius: number): string {
 
 function FlowEdgeView(props: EdgeProps<FlowEdgeType>) {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data } = props
-  const { flow, routeY, animated, related, crowded } = data!
+  const { flow, routeY, animated, related } = data!
   let path: string
   let labelX: number
   let labelY: number
@@ -171,11 +171,11 @@ function FlowEdgeView(props: EdgeProps<FlowEdgeType>) {
           stroke: 'var(--color-graphite)',
           strokeWidth: 1 + Math.min(flow.count, 6) * 0.25,
           strokeDasharray: dashed ? '5 4' : animated ? '6 4' : undefined,
-          opacity: related === null ? (crowded ? 0.5 : 1) : related ? 1 : 0.12,
+          opacity: related === null || related ? 1 : 0.12,
         }}
         className={animated ? 'flow-edge-live' : undefined}
       />
-      {text && (related || !crowded) && (
+      {text && related !== false && (
         <EdgeLabelRenderer>
           <span
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
@@ -202,10 +202,6 @@ function anchors(edge: FlowEdge, flow: Flow): { sourceHandle: string; targetHand
       return { sourceHandle: 'sl-out', targetHandle: 'sl-in' }
     case 'decision':
       return { sourceHandle: 'bo', targetHandle: 'l' }
-    case 'tool':
-      // Decision-stage agents sit right of the tools, so they reach them from the left.
-      if (regionIndex(edge.source) > regionIndex(edge.target)) return { sourceHandle: 'lo', targetHandle: 'rt' }
-      return { sourceHandle: 'r', targetHandle: 'l' }
     default:
       if (regionIndex(edge.source) === regionIndex(edge.target)) return { sourceHandle: 'bo', targetHandle: 'ti' }
       return { sourceHandle: 'r', targetHandle: 'l' }
@@ -255,7 +251,6 @@ function FlowCanvas({ flow, running }: { flow: Flow; running: boolean }) {
       },
       draggable: false,
     }))
-    const crowded = flow.edges.length > 16
     const flowEdges: FlowEdgeType[] = flow.edges.map((edge) => ({
       id: edge.id,
       type: 'flow',
@@ -267,7 +262,6 @@ function FlowCanvas({ flow, running }: { flow: Flow; running: boolean }) {
         routeY: height - 16,
         animated: running && edge.id === flow.lastEdge,
         related: selected === null ? null : edge.source === selected || edge.target === selected,
-        crowded,
       },
       selectable: false,
     }))
@@ -307,7 +301,7 @@ function FlowCanvas({ flow, running }: { flow: Flow; running: boolean }) {
         </defs>
       </svg>
       <Panel position="bottom-left" className="rounded-sm border bg-vellum px-2 py-1 text-xs text-graphite">
-        The supervisor decides each delegation. Dashed arcs return findings to the supervisor.
+        The supervisor decides each delegation. Dashed arcs return findings. Tool calls are counted on each agent; Timeline shows when.
       </Panel>
     </ReactFlow>
   )

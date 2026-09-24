@@ -30,6 +30,10 @@ export function eventsBy(times: number[], time: number): number {
   return low
 }
 
+/** The supervisor's Decide was sent back to it because plan items were still open. */
+export const isSentBack = ({ type, payload }: TrajectoryEvent) =>
+  type === 'edge_taken' && payload.source === 'supervisor' && payload.target === 'supervisor'
+
 export type MilestoneKind = 'start' | 'delegation' | 'sent-back' | 'verdict'
 
 export interface Milestone {
@@ -43,10 +47,10 @@ export interface Milestone {
 export function milestones(events: TrajectoryEvent[]): Milestone[] {
   const marks: Milestone[] = []
   events.forEach((event, index) => {
-    const { type, actor, payload } = event
+    const { type, actor } = event
     if (type === 'node_exited' && actor.name === 'triage') marks.push({ kind: 'start', label: 'Triage sets the plan', index })
     else if (type === 'delegation_started') marks.push({ kind: 'delegation', label: `Supervisor delegates to the ${words(actor.name)}`, index })
-    else if (type === 'edge_taken' && payload.source === 'supervisor' && payload.target === 'supervisor')
+    else if (isSentBack(event))
       marks.push({ kind: 'sent-back', label: 'Decision sent back: plan items still open', index })
     else if (type === 'decision') marks.push({ kind: 'verdict', label: 'Verdict', index })
   })

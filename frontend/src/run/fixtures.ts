@@ -60,6 +60,7 @@ export function panels(events: TrajectoryEvent[], overrides: Partial<RunPanels> 
   return {
     view: events.reduce(reduceEvent, emptyRun()),
     flow: deriveFlow(events),
+    runLength: 0,
     selection: null,
     select: vi.fn(),
     highlight: { nodeIds: new Set(), edgeIds: new Set() },

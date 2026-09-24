@@ -13,17 +13,6 @@ function renderWith(events: ReturnType<typeof event>[]) {
 }
 
 describe('Conclusion', () => {
-  it('shows live status and open plan items before the decision', () => {
-    renderWith([
-      event('plan_updated', 'triage', {
-        plan: [{ id: 'P1', question: 'Who used the card?', status: 'open', evidence_refs: [], waiver_reason: null }],
-      }),
-      event('supervisor_turn', 'supervisor', {}, { turn: 3 }),
-    ])
-    expect(screen.getByRole('status')).toHaveTextContent('Supervisor turn 3; 1 of 1 plan items still open')
-    expect(screen.getByText('Who used the card?')).toBeInTheDocument()
-  })
-
   it('shows the verdict, category and headline once decided', () => {
     renderWith([event('decision', 'adjudicator', { report: { ...report, verdict: 'goodwill_credit' } })])
     expect(screen.getByText('Goodwill credit')).toBeInTheDocument()
@@ -31,8 +20,8 @@ describe('Conclusion', () => {
     expect(screen.getByText(report.headline)).toBeInTheDocument()
   })
 
-  it('reports a failed run', () => {
-    renderWith([event('error', 'runtime', { error: 'boom' })])
-    expect(screen.getByRole('status')).toHaveTextContent('The run failed: boom')
+  it('shows nothing before the decision', () => {
+    renderWith([event('supervisor_turn', 'supervisor', {}, { turn: 3 })])
+    expect(screen.queryByRole('region', { name: 'Conclusion' })).not.toBeInTheDocument()
   })
 })

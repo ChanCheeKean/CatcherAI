@@ -1,10 +1,12 @@
 import { AgentFlow } from './AgentFlow'
 import { EvidenceGraph } from './EvidenceGraph'
 import { Notebook } from './Notebook'
+import { Swimlanes } from './Swimlanes'
 import { useRunPanels, type CanvasTab } from './RunContext'
 
 const TABS: { id: CanvasTab; label: string }[] = [
   { id: 'flow', label: 'Agent flow' },
+  { id: 'timeline', label: 'Timeline' },
   { id: 'graph', label: 'Evidence graph' },
   { id: 'notebook', label: 'Notebook' },
 ]
@@ -30,7 +32,10 @@ export function Canvas() {
         ))}
       </div>
       <div role="tabpanel" className="min-h-0 flex-1">
-        {tab === 'flow' ? <AgentFlow flow={flow} running={view.status === 'running'} /> : tab === 'graph' ? <EvidenceGraph /> : <Notebook />}
+        {tab === 'flow' && <AgentFlow flow={flow} running={view.status === 'running'} />}
+        {tab === 'timeline' && <Swimlanes />}
+        {tab === 'graph' && <EvidenceGraph />}
+        {tab === 'notebook' && <Notebook />}
       </div>
     </section>
   )

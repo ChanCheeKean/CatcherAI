@@ -96,13 +96,12 @@ export function ActorPanel({ name, flow }: { name: string; flow: Flow }) {
   const isTool = node?.kind === 'tool'
   const visits = flow.visits.get(name) ?? []
   const calls = flow.toolCalls.get(name) ?? []
-  const adHoc = node?.adHoc ? ', role invented by the supervisor' : ''
 
   return (
     <>
       <h2 className={isTool ? 'id-chip text-sm font-semibold' : 'font-semibold'}>{isTool ? name : words(name)}</h2>
       <p className="mb-3 text-sm text-graphite">
-        {isTool ? `${calls.length} calls` : `${visits.length} ${visits.length === 1 ? 'visit' : 'visits'}${adHoc}`}
+        {isTool ? `${calls.length} calls` : `${visits.length} ${visits.length === 1 ? 'visit' : 'visits'}`}
       </p>
       {visits.length === 0 && calls.length === 0 && <p className="text-sm">Nothing recorded yet.</p>}
       <ol className="space-y-2">

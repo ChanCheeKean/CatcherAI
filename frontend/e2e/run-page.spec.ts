@@ -10,7 +10,11 @@ test('a case run fills the agent map and the evidence graph, ends in a verdict, 
   // The agent map shows the roles that ran.
   await expect(page.getByText('graph analyst')).toBeVisible()
   await expect(page.getByText('evidence analyst')).toBeVisible()
-  await expect(page.getByRole('status')).toHaveText('Decided')
+  await expect(page.getByRole('banner').getByRole('status')).toHaveText('Decided')
+
+  // The timeline puts each agent on its own lane.
+  await page.getByRole('tab', { name: 'Timeline' }).click()
+  await expect(page.getByRole('region', { name: 'Agents over time' }).getByRole('button', { name: 'graph analyst', exact: true })).toBeVisible()
 
   // The evidence graph opens on the evidence the verdict cites, and also holds everything the tools touched.
   await page.getByRole('tab', { name: 'Evidence graph' }).click()
@@ -56,6 +60,9 @@ test('a case run fills the agent map and the evidence graph, ends in a verdict, 
   await page.getByRole('slider', { name: 'Replay position' }).fill('0')
   const runStatus = page.getByRole('banner').getByRole('status')
   await expect(runStatus).toHaveText('Replaying')
+  // With nothing selected and no verdict yet, the inspector narrates the replay.
+  await page.getByRole('button', { name: 'Back to the run' }).click()
+  await expect(page.getByRole('complementary', { name: 'Inspector' }).getByRole('status')).toBeVisible()
   await page.getByRole('button', { name: 'Skip to verdict' }).click()
   await expect(runStatus).toHaveText('Decided')
 })

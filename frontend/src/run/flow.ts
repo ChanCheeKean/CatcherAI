@@ -10,6 +10,8 @@ export const REGIONS: { id: Region; title: string }[] = [
 
 export interface ToolCall {
   seq: number
+  /** Wall-clock time of the call. */
+  at: string
   tool: string
   callId: string
   args: unknown
@@ -44,7 +46,8 @@ export interface FlowNode {
   kind: 'agent' | 'tool'
   region: Region
   visits: number
-  adHoc: boolean
+  /** Tool calls an agent made: tools are counted on their callers rather than drawn as edges. */
+  tools: number
   /** Position within its region; nodes are appended in order of first appearance. */
   order: number
 }
@@ -53,7 +56,7 @@ export interface FlowEdge {
   id: string
   source: string
   target: string
-  kind: 'forward' | 'return' | 'self' | 'tool' | 'decision'
+  kind: 'forward' | 'return' | 'self' | 'decision'
   count: number
   /** The agent whose LLM decision took this edge, when there is one. */
   decidedBy: string | null
@@ -112,7 +115,7 @@ export function deriveFlow(events: TrajectoryEvent[]): Flow {
   const touchNode = (id: string, kind: FlowNode['kind'], region: Region): FlowNode => {
     let node = nodes.get(id)
     if (!node) {
-      node = { id, kind, region, visits: 0, adHoc: false, order: counters[region]++ }
+      node = { id, kind, region, visits: 0, tools: 0, order: counters[region]++ }
       nodes.set(id, node)
     }
     return node
@@ -170,9 +173,7 @@ export function deriveFlow(events: TrajectoryEvent[]): Flow {
       if (name === 'triage' || name === 'supervisor') visit.plan = plan
       activeKeys.delete(visitKey(name, event.visit))
     } else if (event.type === 'delegation_started') {
-      const task = payload.task as { instructions?: string | null }
-      const node = touchNode(name, 'agent', 'investigation')
-      if (task.instructions) node.adHoc = true
+      touchNode(name, 'agent', 'investigation')
     } else if (event.type === 'triage' || event.type === 'plan_updated') {
       plan = payload.plan as PlanItem[]
     } else if (event.type === 'skill_loaded') {
@@ -193,6 +194,7 @@ export function deriveFlow(events: TrajectoryEvent[]): Flow {
       const tool = String(payload.tool)
       const call: ToolCall = {
         seq: event.seq,
+        at: event.ts_wall,
         tool,
         callId: String(payload.call_id),
         args: payload.args,
@@ -203,7 +205,8 @@ export function deriveFlow(events: TrajectoryEvent[]): Flow {
       visitsByKey.get(visitKey(caller, event.visit))?.tools.push(call)
       append(toolCalls, tool, { ...call, caller, visit: event.visit })
       touchNode(tool, 'tool', 'tools').visits += 1
-      touchEdge(caller, tool, 'tool').count += 1
+      const callerNode = nodes.get(caller)
+      if (callerNode) callerNode.tools += 1
     } else if (event.type === 'tool_result') {
       const caller = nodeOfCaller(String(payload.caller), event.parent_id)
       const call = visitsByKey
