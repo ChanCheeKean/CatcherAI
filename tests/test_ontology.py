@@ -34,3 +34,19 @@ def test_loader_rejects_missing_description(tmp_path):
     path.write_text(yaml.safe_dump(raw))
     with pytest.raises(ValueError, match="Card"):
         ontology.load(path)
+
+
+def test_descriptions_are_whole_sentences():
+    spec = ontology.load()
+    assert spec["groups"]["parties"]["description"].endswith("and Merchants.")
+    product = spec["nodes"]["CardAccount"]["props"]["product"]["description"]
+    assert product.endswith("Blue Cash.")
+
+
+def test_loader_rejects_unknown_keys(tmp_path):
+    raw = yaml.safe_load(ontology.PATH.read_text())
+    raw["nodes"]["Card"]["props"]["last4"]["stray"] = None
+    path = tmp_path / "o.yaml"
+    path.write_text(yaml.safe_dump(raw))
+    with pytest.raises(ValueError, match="Card.last4.*stray"):
+        ontology.load(path)

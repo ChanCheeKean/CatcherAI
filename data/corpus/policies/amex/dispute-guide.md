@@ -53,4 +53,4 @@ Amex may fund a goodwill credit only under a written goodwill clause of this gui
 Amex may fund one Offer goodwill credit per Card Member, and only when the Offer was enrolled on another Card held by the same Card Member and the purchase otherwise met the Offer terms. Before granting it, check that Card Member's resolved Disputes for an earlier Offer goodwill.
 
 ## I-1 System improvements
-Record the policy wording, process or data gaps that caused or prolonged the Dispute, each with its evidence. Record none when the policy was clear and was followed.
+Record the policy wording, process or data gaps that caused or prolonged the Dispute, each with its evidence. Record none when the policy was clear and was followed. A Clause that is clear on the disputed point is not a wording gap; when the Card Member acted against it, record the process step that would have caught it. When a Merchant Clause adds a condition to an Amex benefit, Card Member-facing terms are read on their own: if they are silent on that condition, even though Merchant-facing terms settle it, that is a wording gap.

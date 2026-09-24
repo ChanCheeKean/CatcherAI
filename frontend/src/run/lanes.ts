@@ -49,3 +49,11 @@ export function swimlanes(flow: Flow, events: TrajectoryEvent[]): Swimlanes {
     .map((event) => time(event.ts_wall))
   return { lanes, sentBack, now: events.length ? time(events[events.length - 1].ts_wall) : 0 }
 }
+
+const MINUTE = 60_000
+
+/** Axis marks for a run of `length` ms: whole minutes, spaced so no more than eight are drawn. */
+export function axisTicks(length: number): number[] {
+  const step = [1, 2, 5, 10, 15, 30].map((m) => m * MINUTE).find((s) => length / s < 8) ?? 60 * MINUTE
+  return Array.from({ length: Math.floor(length / step) + 1 }, (_, i) => i * step)
+}

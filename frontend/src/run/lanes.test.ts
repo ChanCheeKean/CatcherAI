@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest'
 import { event } from './fixtures'
 import { deriveFlow } from './flow'
-import { swimlanes } from './lanes'
+import { axisTicks, swimlanes } from './lanes'
 
 const t = (seconds: number) => ({ ts_wall: new Date(Date.UTC(2026, 8, 24, 10, 0, seconds)).toISOString() })
 
@@ -24,4 +24,12 @@ it('lays the run out as lanes over time with tool ticks, Notebook marks and sent
   expect(lanes[1].notes).toEqual([{ at: 6000, entry }])
   expect(sentBack).toEqual([2000])
   expect(now).toBe(6000)
+})
+
+it('spaces the time axis so a long run keeps its labels apart', () => {
+  const minute = 60_000
+  expect(axisTicks(5 * minute)).toEqual([0, 1, 2, 3, 4, 5].map((m) => m * minute))
+  const long = axisTicks(39 * minute)
+  expect(long.length).toBeLessThanOrEqual(8)
+  expect(long.slice(0, 3)).toEqual([0, 5 * minute, 10 * minute])
 })

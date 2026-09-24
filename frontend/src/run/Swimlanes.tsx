@@ -2,9 +2,7 @@ import { useMemo } from 'react'
 import { noteTone, words } from './format'
 import { clock } from './replay'
 import { useRunPanels } from './RunContext'
-import { swimlanes } from './lanes'
-
-const MINUTE = 60_000
+import { axisTicks, swimlanes } from './lanes'
 
 /**
  * The agent flow over time: one lane per agent, a bar per visit with a tick per tool call, a
@@ -18,7 +16,7 @@ export function Swimlanes() {
 
   const length = Math.max(runLength, now, 1)
   const x = (ms: number) => `${(ms / length) * 100}%`
-  const minutes = Array.from({ length: Math.floor(length / MINUTE) + 1 }, (_, i) => i * MINUTE)
+  const ticks = axisTicks(length)
   const selected = selection?.kind === 'actor' ? selection.name : null
 
   return (
@@ -39,7 +37,7 @@ export function Swimlanes() {
         </ol>
         <div className="relative min-w-0 flex-1">
           <div aria-hidden className="relative h-6 border-b text-xs text-graphite">
-            {minutes.map((ms) => (
+            {ticks.map((ms) => (
               <span key={ms} className="absolute top-0 -translate-x-1/2 tabular-nums first:translate-x-0" style={{ left: x(ms) }}>
                 {clock(ms)}
               </span>

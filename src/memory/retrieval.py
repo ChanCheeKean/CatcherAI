@@ -81,6 +81,8 @@ def search(
 def add_note(db_path: Path, text: str, sources: list[str], run_id: str, confidence: float) -> str:
     """Store an active Memory Note and return its new `MEM-…` id."""
     with _connect(db_path) as db:
+        # Take the write lock before counting, so parallel runs cannot pick the same id.
+        db.execute("BEGIN IMMEDIATE")
         (count,) = db.execute(
             "SELECT count(*) FROM documents WHERE kind = 'memory_note'"
         ).fetchone()

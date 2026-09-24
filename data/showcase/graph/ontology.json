@@ -18,10 +18,7 @@
    ],
    "props": {
     "method": {
-     "booking confirmation.": null,
-     "description": "How acceptance was recorded",
-     "e.g. checkbox at checkout": null,
-     "signature": null,
+     "description": "How acceptance was recorded, e.g. checkbox at checkout, signature, booking confirmation.",
      "type": "STRING"
     }
    }
@@ -473,16 +470,11 @@
    "title": "Case"
   },
   "commerce": {
-   "charged": null,
-   "description": "What was bought",
-   "paid": null,
-   "returned or subscribed.": null,
+   "description": "What was bought, charged, paid, returned or subscribed.",
    "title": "Commerce"
   },
   "parties": {
-   "and Merchants.": null,
-   "description": "Card Members",
-   "their accounts and Cards": null,
+   "description": "Card Members, their accounts and Cards, and Merchants.",
    "title": "Parties"
   },
   "terms": {
@@ -501,9 +493,8 @@
      "type": "STRING"
     },
     "product": {
-     "description": "Card Product",
-     "type": "STRING",
-     "which decides benefit and Offer eligibility.": null
+     "description": "Card Product, which decides benefit and Offer eligibility.",
+     "type": "STRING"
     },
     "role": {
      "description": "basic or additional.",
@@ -521,11 +512,7 @@
    "prefix": "ACC",
    "props": {
     "product": {
-     "Blue Cash.": null,
-     "Gold": null,
-     "Green": null,
-     "description": "Card Product of the account",
-     "e.g. Platinum": null,
+     "description": "Card Product of the account, e.g. Platinum, Gold, Green, Blue Cash.",
      "type": "STRING"
     },
     "status": {
@@ -544,8 +531,7 @@
      "type": "STRING"
     },
     "name": {
-     "description": "Full name; namesakes exist",
-     "so never match people by name alone.": null,
+     "description": "Full name; namesakes exist, so never match people by name alone.",
      "type": "STRING"
     }
    }
@@ -568,8 +554,7 @@
      "type": "STRING"
     },
     "kind": {
-     "description": "purchase",
-     "recurring or credit.": null,
+     "description": "purchase, recurring or credit.",
      "type": "STRING"
     },
     "status": {
@@ -603,8 +588,7 @@
    "prefix": "COM",
    "props": {
     "channel": {
-     "chat or letter.": null,
-     "description": "email",
+     "description": "email, chat or letter.",
      "type": "STRING"
     },
     "date": {
@@ -665,11 +649,8 @@
    "prefix": "EVI",
    "props": {
     "kind": {
-     "description": "e.g. acceptance_log",
-     "folio": null,
-     "invoice_ledger": null,
-     "type": "STRING",
-     "usage_log.": null
+     "description": "e.g. acceptance_log, folio, invoice_ledger, usage_log.",
+     "type": "STRING"
     },
     "source": {
      "description": "merchant or card_member.",
@@ -691,8 +672,7 @@
      "type": "DOUBLE"
     },
     "label": {
-     "Balance.": null,
-     "description": "e.g. Deposit",
+     "description": "e.g. Deposit, Balance.",
      "type": "STRING"
     }
    }
@@ -730,11 +710,7 @@
      "type": "STRING"
     },
     "option": {
-     "colour": null,
-     "description": "Option chosen",
-     "e.g. fabric": null,
-     "rate plan.": null,
-     "size": null,
+     "description": "Option chosen, e.g. fabric, colour, size, rate plan.",
      "type": "STRING"
     },
     "quantity": {
@@ -753,16 +729,11 @@
    "prefix": "MER",
    "props": {
     "category": {
-     "description": "Line of business",
-     "e.g. furniture": null,
-     "events.": null,
-     "lodging": null,
-     "streaming": null,
+     "description": "Line of business, e.g. furniture, lodging, streaming, events.",
      "type": "STRING"
     },
     "channel": {
-     "description": "online",
-     "in_person or both.": null,
+     "description": "online, in_person or both.",
      "type": "STRING"
     },
     "name": {
@@ -819,14 +790,11 @@
      "type": "STRING"
     },
     "kind": {
-     "description": "retail",
-     "event or service.": null,
-     "lodging": null,
+     "description": "retail, lodging, event or service.",
      "type": "STRING"
     },
     "summary": {
-     "description": "What was ordered or booked",
-     "including rate or options.": null,
+     "description": "What was ordered or booked, including rate or options.",
      "type": "STRING"
     },
     "total": {
@@ -849,8 +817,7 @@
      "type": "STRING"
     },
     "method": {
-     "cheque or cash.": null,
-     "description": "bank_transfer",
+     "description": "bank_transfer, cheque or cash.",
      "type": "STRING"
     },
     "reference": {
@@ -869,11 +836,7 @@
      "type": "STRING"
     },
     "kind": {
-     "description": "e.g. merchant_regulations",
-     "folio_terms": null,
-     "offer_terms": null,
-     "returns": null,
-     "subscription_terms.": null,
+     "description": "e.g. merchant_regulations, offer_terms, returns, folio_terms, subscription_terms.",
      "type": "STRING"
     },
     "owner": {
@@ -942,9 +905,7 @@
      "type": "STRING"
     },
     "status": {
-     "description": "Outcome",
-     "e.g. received and refunded": null,
-     "refused.": null,
+     "description": "Outcome, e.g. received and refunded, refused.",
      "type": "STRING"
     }
    }
@@ -959,8 +920,7 @@
      "type": "DOUBLE"
     },
     "frequency": {
-     "description": "Billing frequency",
-     "e.g. monthly.": null,
+     "description": "Billing frequency, e.g. monthly.",
      "type": "STRING"
     },
     "plan": {

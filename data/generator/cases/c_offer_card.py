@@ -63,7 +63,7 @@ def build(g: Graph, _rng) -> CaseTruth:
             dispute_id=DISPUTE,
             merchant_id="MER-NWO",
             statement="Order charged at our listed prices. Northwind ran no promotion on this "
-            "order; card-issuer offers are administered by the issuer.",
+            "order; Amex Offers are credited by American Express, not by Northwind.",
             items=[
                 SubmittedItem(
                     kind="invoice",

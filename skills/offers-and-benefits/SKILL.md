@@ -10,4 +10,5 @@ description: How to separate Amex-funded benefits from Merchant pricing. Load fo
 4. When an Offer was enrolled on another Card, search the Amex Dispute Guide for goodwill Clauses covering missed Offers. Test each condition: same Card Member, purchase otherwise qualified, and no earlier Offer goodwill in that Card Member's own resolved Disputes (reached through the filing link, never by name alone).
 5. Compare the Card used to book with the Card used to pay; benefit and participation terms may treat them differently.
 6. Verify whether the Merchant agreed to an Amex program and whether a Merchant condition conflicts with that commitment.
-7. Search the applicable Clauses and record your reading with cited ids in the Case Notebook. Goodwill Credit is discretionary and needs a written Clause whose conditions all hold.
+7. Search the applicable Clauses and record your reading with cited ids in the Case Notebook. Goodwill Credit needs a written Clause; when all its stated conditions hold, it applies.
+8. When a Card Member lost an Amex benefit by using a different one of their own Cards, record an `improvement_idea` for the Amex step that would have caught it at enrolment or purchase.

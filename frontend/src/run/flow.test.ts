@@ -42,11 +42,11 @@ function stream(): TrajectoryEvent[] {
     exit('supervisor', 2, 2),
     enter('graph_analyst', 1, 2, 'dlg-a'),
     event('skill_loaded', 'graph_analyst', { skill: 'graph-investigation' }, at(1, 2, 'dlg-a')),
-    ...toolCall('graph_analyst', 'graph_query', 'c1', 1, 2, 'dlg-a', ['ADR-1', 'CUS-1']),
-    ...toolCall('graph_analyst', 'graph_query', 'c2', 1, 2, 'dlg-a', ['CUS-2']),
+    ...toolCall('graph_analyst', 'graph_query', 'c1', 1, 2, 'dlg-a', ['CRD-1', 'CMB-1']),
+    ...toolCall('graph_analyst', 'graph_query', 'c2', 1, 2, 'dlg-a', ['CMB-2']),
     event('model_call', 'graph_analyst', { input_tokens: 100, output_tokens: 20 }, at(1, 2, 'dlg-a')),
     enter('ring_mapper', 1, 2, 'dlg-b'),
-    ...toolCall('ring_mapper', 'graph_neighbors', 'c3', 1, 2, 'dlg-b', ['ADR-1']),
+    ...toolCall('ring_mapper', 'graph_neighbors', 'c3', 1, 2, 'dlg-b', ['CRD-1']),
     exit('graph_analyst', 1, 2, 'dlg-a'),
     edge('graph_analyst', 'supervisor', 1, 2, 'findings returned', 'dlg-a'),
     exit('ring_mapper', 1, 2, 'dlg-b'),
@@ -56,7 +56,7 @@ function stream(): TrajectoryEvent[] {
     exit('supervisor', 3, 3),
     edge('supervisor', 'adjudicator', 3, 3, 'forced: max_turns'),
     enter('adjudicator', 1, 3),
-    ...toolCall('adjudicator', 'graph_query', 'c4', 1, 3, null, ['TXN-1']),
+    ...toolCall('adjudicator', 'graph_query', 'c4', 1, 3, null, ['CHG-1']),
     exit('adjudicator', 1, 3),
     edge('adjudicator', 'consolidate_memory', 1, 3, 'decision complete'),
     enter('consolidate_memory', 1, 3),
@@ -108,7 +108,7 @@ describe('deriveFlow', () => {
   it('files tool calls under the visit that made them, including the memory step', () => {
     const analyst = flow.visits.get('graph_analyst')![0]
     expect(analyst.tools.map((c) => c.callId)).toEqual(['c1', 'c2'])
-    expect(analyst.tools[0].nodeIds).toEqual(['ADR-1', 'CUS-1'])
+    expect(analyst.tools[0].nodeIds).toEqual(['CRD-1', 'CMB-1'])
     expect(analyst.skills).toEqual(['graph-investigation'])
     expect(analyst.tokens).toBe(120)
     expect(flow.visits.get('consolidate_memory')![0].tools.map((c) => c.tool)).toEqual(['memory_write'])
@@ -135,7 +135,7 @@ describe('deriveFlow', () => {
       ['graph_analyst', 'c2'],
       ['adjudicator', 'c4'],
     ])
-    expect(calls.flatMap((c) => c.nodeIds)).toEqual(['ADR-1', 'CUS-1', 'CUS-2', 'TXN-1'])
+    expect(calls.flatMap((c) => c.nodeIds)).toEqual(['CRD-1', 'CMB-1', 'CMB-2', 'CHG-1'])
   })
 })
 

@@ -1,4 +1,6 @@
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from knowledge import build_knowledge
@@ -55,3 +57,17 @@ def test_precedents_cite_existing_clauses():
     text = Path("data/corpus/precedents.yaml").read_text()
     cited = set(re.findall(r"CLS-[A-Z0-9.-]*[A-Z0-9]", text))
     assert cited and cited <= clauses
+
+
+def test_concurrent_memory_notes_get_distinct_ids(tmp_path):
+    # Parallel runs share one knowledge store; each note must get its own id.
+    db = _db(tmp_path)
+    barrier = threading.Barrier(8)
+
+    def add(n):
+        barrier.wait()
+        return retrieval.add_note(db, f"lesson {n}", ["CLS-AMX-OFFER-1"], f"run-{n}", 0.5)
+
+    with ThreadPoolExecutor(8) as pool:
+        ids = list(pool.map(add, range(8)))
+    assert len(set(ids)) == 8

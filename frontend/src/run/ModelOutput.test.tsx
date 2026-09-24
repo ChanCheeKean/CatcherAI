@@ -10,18 +10,18 @@ describe('ModelOutput hypotheses', () => {
         output={{
           hypotheses: [
             {
-              hypothesis: 'The second posting is a split shipment',
+              hypothesis: 'The Offer was added to another Card',
               status: 'accepted',
-              why: 'Both clearings belong to one order.',
-              evidence: [{ claim: 'Both link to ORD-C04', node_ids: ['ORD-C04'], edge_ids: ['E-0507358'] }],
+              why: 'The Offer is enrolled on the Platinum Card.',
+              evidence: [{ claim: 'Enrolled on CRD-C01', node_ids: ['CRD-C01'], edge_ids: ['E-0507358'] }],
             },
           ],
         }}
       />,
     )
-    expect(screen.getByText('The second posting is a split shipment')).toBeTruthy()
+    expect(screen.getByText('The Offer was added to another Card')).toBeTruthy()
     expect(screen.getByText('accepted')).toBeTruthy()
-    expect(screen.getByText('Both clearings belong to one order.')).toBeTruthy()
+    expect(screen.getByText('The Offer is enrolled on the Platinum Card.')).toBeTruthy()
     expect(screen.getByText('E-0507358')).toBeTruthy()
   })
 

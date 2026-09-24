@@ -2,10 +2,8 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met); F1–F3 complete**
-Next stage: **S11b — Finish tuning** (then S12). S11b (eval tuning) is
-still open and does not depend on the F stages; it should start with the `ontology.yaml`
-description bug in §8 "F1 (part 2)".
+Current phase: **All stages complete (S0–S12, F1–F3). Final eval: pass@1 5/5, pass@3 5/5.**
+Next stage: **none.** The branch is ready for review; do not merge.
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -122,8 +120,8 @@ Details for each stage are in the plan section of the same name.
 | **S9** API, showcase, schemas | Medium | `/graph/ontology`; no run-graph copies; showcase exports events only; OpenAPI + event schema regenerated. | ☑ |
 | **S10** Frontend | Medium | Ontology-driven regions/colours; Notebook tab; Conclusion with category, six verdicts, System Improvements. | ☑ |
 | **S11** Real-LLM eval + tuning | Complex | pass@1 5/5 on A–E by improving skills, policy wording, ontology descriptions and prompts only. | ☑ (3/5; remainder in S11b) |
-| **S11b** Finish tuning | Complex | Fix the truncated `ontology.yaml` descriptions (§8 "F1 (part 2)"), then re-run eval on the final S11 skills and policy text (the case C fixes are untested live); tune until pass@1 5/5, then pass@3; refresh the showcase. | ☐ |
-| **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☐ |
+| **S11b** Finish tuning | Complex | Fix the truncated `ontology.yaml` descriptions (§8 "F1 (part 2)"), then re-run eval on the final S11 skills and policy text (the case C fixes are untested live); tune until pass@1 5/5, then pass@3; refresh the showcase. | ☑ |
+| **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☑ |
 | **F1** Demo: replay, funnel, cited graph + polish | Medium | Verify the replay, header funnel and "Cited only" graph already committed (see §8 "F1"), then the polish: graph colours by region, four-item legend, captions instead of raw ids, formatted money, proof on case cards, no truncated agent names. | ☑ |
 | **F2** Demo: report beside the graph | Medium | Claims and their highlighted evidence visible together; Amex-vs-Merchant Clause comparison; decoys ruled out tied to their nodes. | ☑ |
 | **F3** Demo: agents over time | Medium | Swimlane timeline of the agent flow (lane per agent, tool-call ticks, Notebook marks, sent-back loops) with tool edges on the map collapsed into per-agent counts; with nothing selected, the inspector narrates the replay. | ☑ |
@@ -859,3 +857,98 @@ per session, in order, under the §5 protocol, and take a screenshot check of th
     - Capsule chrome for the narration sections, which should read at a glance and not collapse.
     - A shared run-duration helper (two lines at two call sites).
 - No design decision changed; the spec was not edited. No backend change.
+
+### S11b — 2026-09-24
+- **Ontology descriptions (the F1 open issue).** Every `description` inside a YAML flow mapping in
+  `data/generator/ontology.yaml` is now quoted, so none is cut at a comma (the Parties group read
+  "Card Members"; `CardAccount.product`, `Merchant.category`, `CardMember.name` and others were
+  truncated). `ontology.py`'s `_require` became `_check`, which also rejects unknown keys: a
+  comma split now fails the build instead of adding silent `null` keys. New tests in
+  `tests/test_ontology.py`: whole-sentence descriptions, unknown keys rejected.
+- **Eval results** (gpt-5.6-luna, `data/generated/eval/`):
+
+  | Round | Changes before it | pass@1 | pass@3 | Notes |
+  |---|---|---|---|---|
+  | 1 (all, k=3) | ontology fix | 3/5 | 3/5 | A D E 3/3; B 0/3 and C 0/3, all on improvement targets (C-1 also rejected) |
+  | 2 (B, C) | dispute-outcomes: no time component, full-disputed-amount wording, "may" in a goodwill Clause, fact-first improvements, Card Member-facing silence; Dispute Guide I-1 | 0/2 | 1/2 | C verdict 3/3, improvements empty or timing wish-lists |
+  | 3 (B, C) | case-notebook: `improvement_idea` is a cause, not a wish-list; policy-analysis and offers-and-benefits prompts to record the gap | 1/2 | 2/2 | C 3/3, B 1/3 |
+  | 4 (B) | the Amex side of a Merchant Clause conflict (dispute-outcomes, policy-analysis) | 1/1 | 1/1 | B 3/3 |
+  | 5 (all, k=3) | none | 4/5 | 5/5 | 13/15; D-1 over-applied `amex_policy`, C-2 empty list |
+  | 6 (all, k=3) | the Card Member-facing silence rule narrowed to Merchant Clause conflicts (skill and Dispute Guide) | 4/5 | 5/5 | 12/15; B-3 missed `amex_policy`, C-1 and C-2 empty |
+  | 7 (B, C) | dispute-outcomes: when an empty list is right; an Amex-funded credit after a clear Clause was missed names the `process` step | 2/2 | 2/2 | 6/6 |
+  | 8 (all, k=3) | none (final) | **5/5** | **5/5** | 14/15; B-3 gave a full $300 credit the verdict `partially_accepted` |
+  | 9 (A, B, k=2) | none (showcase re-run, see S12) | 2/2 | 2/2 | 4/4 |
+
+  Solution coverage was 1.00 in every run; every failure was judgement about System Improvements
+  or, in round 1, goodwill.
+- **Knowledge fixes** (all general rules; no case ids, nothing that reveals an answer):
+  `skills/dispute-outcomes`, `skills/case-notebook`, `skills/policy-analysis`,
+  `skills/offers-and-benefits`, and `data/corpus/policies/amex/dispute-guide.md` I-1.
+- **Case C wording.** The Merchant's submission statement said "card-issuer offers are
+  administered by the issuer" (a Visa-era phrase in data). It now reads "Amex Offers are credited
+  by American Express, not by Northwind". Northwind's own Clause 2 keeps "your card issuer": a
+  Merchant's generic terms cover every card brand.
+- **Bug found by parallel runs: Memory Note ids collided.** `retrieval.add_note` counted notes
+  and then inserted inside a deferred transaction, so two runs finishing together picked the same
+  `MEM-…` id and one `memory_write` failed with `IntegrityError: UNIQUE constraint failed`. It now
+  opens `BEGIN IMMEDIATE` before counting. `tests/test_knowledge.py` adds eight concurrent writers;
+  the test failed three times out of three before the fix.
+- **Not a bug: "hung" runs were the Mac sleeping.** Several rounds stalled for 30–50 minutes with
+  every worker blocked in an SSL read; `pmset -g log` shows system sleep at exactly those times,
+  and SIGALRM does not advance during sleep. Run long evals under `caffeinate -s` (on AC power)
+  or `caffeinate -i` with the machine in use.
+- **Open.** Per-attempt pass rate on the final skills is 18/19 (rounds 8 and 9). The one miss is a
+  report verdict that contradicts its own charge (`partially_accepted` for the full disputed
+  amount) even though dispute-outcomes step 3 now says otherwise. A `CaseReport` validator ("when
+  every charge has one verdict, the report has it") would close it, but that is a spec §8 change.
+- **Commands.** `uv run pytest`: 73 passed. `ruff check`, `ruff format --check`, `git diff
+  --check`: passed. No tests deleted.
+- **`simplify`**: run once over the S11b and S12 changes together; see S12.
+- No design decision changed; the spec was not edited.
+
+### S12 — 2026-09-24
+- **Legacy sweep.** `rg -n "visa|Visa|cardholder|issuer|acquirer|Reg E|Reg Z|as_of|valid_from|Finding|graph_write|copy_store|run_dir" src tests skills config frontend/src data/generator README.md`
+  leaves only intentional hits: `Findings` (the framework's worker output schema, unchanged by
+  D16) and a showcase test's "Finding recorded" event summary. Fixed along the way: case C's
+  Merchant statement ("card-issuer offers", see S11b), and the frontend test fixtures' old
+  synthetic ids (`ADR-`, `CUS-`, `TXN-` in `flow.test.ts`) and split-shipment prose
+  (`ModelOutput.test.tsx`), the S10 leftover. Northwind's own Clause 2 ("your card issuer") is
+  kept: it is a Merchant's generic wording.
+- **Showcase.** `uv run inspect showcase-export` after the final eval: one passing run per case
+  (A and B re-run under `caffeinate -s` because the Mac slept during their final-round runs,
+  which inflated their run time; C, D and E from the final round). The committed ontology JSON
+  carries the fixed descriptions.
+- **Screenshots.** New `asset/` folder: `agent_graph.png`, `evidence_node.png`, `notebook.png`
+  and `timeline.png`, taken of case B with Playwright against `./dev.sh` (1600×1000 at 2×).
+  They showed that the Timeline axis printed a label every minute, which overlapped on a long run:
+  `lanes.ts` gained `axisTicks` (at most eight whole-minute marks), with a test in
+  `lanes.test.ts`.
+- **README** rewritten for Amex: objective, the four run views and the report beside the graph,
+  architecture (framework unchanged; static graph; Case Notebook; policies in the graph and in
+  search; schema as data in `ontology.yaml`), the five cases (title, category, what it shows,
+  no answers), the Merchant agent (built, not wired), how to run, the committed showcase,
+  evaluation (with the sleep caveat), and the data.
+- **Plan deviation.** The plan says to run each case once from the UI before exporting. The
+  showcase instead holds eval runs with the final skills and prompts: they go through the same
+  runtime and are also scored.
+- **`simplify`** (now installed) ran as four review agents over the S11b and S12 diff, not the whole
+  branch: every earlier stage ran its own review, and the full revamp diff is too large for a
+  single pass to review usefully. A whole-branch pass is still open if wanted.
+  - Applied: `ontology._check(name, item, required, optional)` instead of a hard-coded `props`
+    exception.
+  - Skipped:
+    - Computing the embedding outside the Memory Note write lock, and indexing the count
+      query. Both cost microseconds at this scale.
+    - A shared test helper for the two ontology-rejection tests.
+    - Exporting `MINUTE` for the tick test.
+    - Deduplicating skill wording across skills. Workers and the adjudicator load different
+      skills, and the final eval validated this exact text.
+  - **Open risk, recorded rather than changed:** the altitude reviewer flagged
+    `offers-and-benefits` step 8 and dispute-outcomes' Amex-funded-credit `process` sentence as
+    close to case C's expected improvement. Neither names a case or an id and both state general
+    Amex servicing practice, but a new case should test whether they generalise before more
+    tuning of this kind.
+- **Commands.** `uv run pytest`: 73 passed. `ruff check`, `ruff format --check`,
+  `git diff --check`: passed. `npx tsc -b`, `npx oxlint`: clean. `npx vitest run`: 52 passed.
+  `npm run build`: OK. `npm run e2e`: 1 passed.
+- The branch is complete. Do not merge; `main` still holds the Visa POC.
