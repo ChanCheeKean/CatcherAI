@@ -17,11 +17,11 @@ function renderWith(events: ReturnType<typeof event>[], showEvidence = vi.fn()) 
     highlight: { nodeIds: new Set(), edgeIds: new Set() },
     clearHighlight: vi.fn(),
     cited: { nodeIds: new Set(), edgeIds: new Set() },
-    graph: { nodes: new Map(), edges: new Map(), expand: vi.fn() },
-    graphModel: graphModel({ groups: { case: { title: 'Case', description: '' } }, labels: {}, edges: {} }),
+    graph: { nodes: new Map(), edges: new Map(), expand: vi.fn(), expanded: new Set() },
+    graphModel: graphModel({ groups: { case: { title: 'Case', description: '' } }, labels: {}, edges: {}, node_count: 0, edge_count: 0 }),
     showEvidence,
     tab: 'flow',
-    setTab: vi.fn(),
+    setTab: vi.fn(), truth: undefined, overlay: false, setOverlay: vi.fn(), graphScope: null, setGraphScope: vi.fn(),
   }
   render(
     <RunPanelsContext.Provider value={panels}>

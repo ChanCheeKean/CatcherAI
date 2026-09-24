@@ -40,6 +40,7 @@ def test_ontology_nodes_and_case_catalog(tmp_path):
     assert all(value["group"] in body["groups"] for value in body["labels"].values())
     assert all(value["description"] for value in body["labels"].values())
     assert all(value["description"] for value in body["edges"].values())
+    assert (body["node_count"], body["edge_count"]) == (1, 0)
 
     nodes = client.get("/graph/nodes", params={"ids": "CMB-TEST-1,CMB-MISSING"})
     assert nodes.status_code == 200

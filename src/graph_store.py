@@ -127,6 +127,10 @@ class GraphStore:
         }
         return {"groups": self.ontology["groups"], "nodes": nodes, "edges": edges}
 
+    def size(self) -> dict[str, int]:
+        """How many nodes and edges the whole graph holds."""
+        return {"nodes": self._count("(n)"), "edges": self._count("()-[n]->()")}
+
     def _count(self, pattern: str) -> int:
         return self.conn.execute(f"MATCH {pattern} RETURN count(n)").get_next()[0]
 

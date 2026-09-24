@@ -85,6 +85,8 @@ export interface GraphOntology {
   groups: Record<string, { title: string; description: string }>
   labels: Record<string, { group: string; description: string }>
   edges: Record<string, { description: string }>
+  node_count: number
+  edge_count: number
 }
 
 export type RunState = 'running' | 'completed' | 'failed'

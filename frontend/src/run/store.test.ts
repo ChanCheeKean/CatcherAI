@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { event, report } from './fixtures'
-import { emptyRun, openPlanItems, reduceEvent } from './store'
+import { emptyRun, graphIds, isFinal, openPlanItems, reduceEvent } from './store'
 import type { TrajectoryEvent } from '../api/types'
 
 const fold = (events: TrajectoryEvent[]) => events.reduce(reduceEvent, emptyRun())
@@ -32,6 +32,7 @@ describe('reduceEvent', () => {
     const view = fold([toolEvent('graph_analyst', ['CHG-1']), toolEvent('critic', ['CHG-1', 'CMB-2'])])
     expect(view.touched.get('CHG-1')).toMatchObject({ actor: 'graph_analyst', tool: 'graph_query', turn: 1 })
     expect(view.touched.get('CMB-2')?.actor).toBe('critic')
+    expect(view.touched.get('E-1')?.kind).toBe('edge')
     expect(view.touched.size).toBe(3)
     expect(view.visits.size).toBe(0)
   })
@@ -58,5 +59,15 @@ describe('reduceEvent', () => {
     const view = fold([event('error', 'runtime', { error: 'boom' })])
     expect(view.status).toBe('failed')
     expect(view.error).toBe('boom')
+  })
+
+  it('knows every graph id a whole run touches or cites, and when the run has ended', () => {
+    const events = [
+      event('tool_result', 'graph_query', { node_ids: ['CHG-1', 'CMB-2'], edge_ids: ['E-7'] }),
+      event('decision', 'adjudicator', { report }),
+      event('termination', 'consolidate_memory', {}),
+    ]
+    expect(graphIds(events).sort()).toEqual(['CHG-1', 'CMB-2', 'E-1', 'E-7'])
+    expect(events.map(isFinal)).toEqual([false, false, true])
   })
 })

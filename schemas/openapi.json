@@ -833,13 +833,23 @@
             },
             "type": "object",
             "title": "Edges"
+          },
+          "node_count": {
+            "type": "integer",
+            "title": "Node Count"
+          },
+          "edge_count": {
+            "type": "integer",
+            "title": "Edge Count"
           }
         },
         "type": "object",
         "required": [
           "groups",
           "labels",
-          "edges"
+          "edges",
+          "node_count",
+          "edge_count"
         ],
         "title": "GraphOntology"
       },

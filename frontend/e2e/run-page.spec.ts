@@ -12,8 +12,10 @@ test('a case run fills the agent map and the evidence graph, ends in a verdict, 
   await expect(page.getByText('evidence analyst')).toBeVisible()
   await expect(page.getByRole('status')).toHaveText('Decided')
 
-  // The evidence graph holds what the tools touched.
+  // The evidence graph opens on the evidence the verdict cites, and also holds everything the tools touched.
   await page.getByRole('tab', { name: 'Evidence graph' }).click()
+  await expect(page.getByRole('button', { name: 'Cited only' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Everything touched' }).click()
   const nodes = page.locator('.react-flow__node-entity')
   await expect(nodes.first()).toBeVisible()
   await expect(page.getByText('Test Merchant')).toBeVisible()
@@ -43,4 +45,11 @@ test('a case run fills the agent map and the evidence graph, ends in a verdict, 
   await page.getByText('evidence analyst').click()
   await page.getByRole('tab', { name: 'Evidence graph' }).click()
   await expect(page.getByText('Showing what evidence_analyst touched')).toBeVisible()
+
+  // A finished run can be replayed: back at the start nothing has been decided yet.
+  await page.getByRole('slider', { name: 'Replay position' }).fill('0')
+  const runStatus = page.getByRole('banner').getByRole('status')
+  await expect(runStatus).toHaveText('Replaying')
+  await page.getByRole('button', { name: 'Skip to verdict' }).click()
+  await expect(runStatus).toHaveText('Decided')
 })

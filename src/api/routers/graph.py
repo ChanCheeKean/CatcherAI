@@ -80,6 +80,7 @@ def graph_elements(
 def graph_ontology(ctx: Ctx) -> dict:
     with _store(ctx) as store:
         ontology = store.ontology
+        size = store.size()
     return {
         "groups": ontology["groups"],
         "labels": {
@@ -89,6 +90,8 @@ def graph_ontology(ctx: Ctx) -> dict:
         "edges": {
             edge: {"description": spec["description"]} for edge, spec in ontology["edges"].items()
         },
+        "node_count": size["nodes"],
+        "edge_count": size["edges"],
     }
 
 

@@ -69,6 +69,8 @@ class GraphOntology(BaseModel):
     groups: dict[str, OntologyGroup]
     labels: dict[str, OntologyLabel]
     edges: dict[str, OntologyEdge]
+    node_count: int
+    edge_count: int
 
 
 class Neighbor(BaseModel):

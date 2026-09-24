@@ -1,7 +1,9 @@
 import type { CaseReport, NotebookEntry, PlanItem, RunState, TrajectoryEvent } from '../api/types'
+import { citedBy } from './evidence'
 
 /** Who found a graph item, and where: the frontend's "found by <agent> via <tool>" answer. */
 export interface Touch {
+  kind: 'node' | 'edge'
   actor: string
   tool: string
   turn: number
@@ -63,9 +65,8 @@ export function reduceEvent(view: RunView, event: TrajectoryEvent): RunView {
       turn: event.turn,
       seq: event.seq,
     }
-    for (const id of [...((payload.node_ids as string[]) ?? []), ...((payload.edge_ids as string[]) ?? [])]) {
-      if (!touched.has(id)) touched.set(id, found)
-    }
+    for (const id of (payload.node_ids as string[]) ?? []) if (!touched.has(id)) touched.set(id, { kind: 'node', ...found })
+    for (const id of (payload.edge_ids as string[]) ?? []) if (!touched.has(id)) touched.set(id, { kind: 'edge', ...found })
     next.touched = touched
   }
   if (event.type === 'decision') {
@@ -80,3 +81,20 @@ export function reduceEvent(view: RunView, event: TrajectoryEvent): RunView {
 }
 
 export const openPlanItems = (view: RunView) => view.plan.filter((item) => item.status === 'open')
+
+/** The run's last event: nothing follows it on the stream. */
+export const isFinal = (event: TrajectoryEvent) =>
+  event.type === 'error' || (event.type === 'termination' && event.actor.name === 'consolidate_memory')
+
+/** Every graph id a whole run touches or cites, so a replay can fetch them all before it needs them. */
+export function graphIds(events: TrajectoryEvent[]): string[] {
+  const ids = new Set<string>()
+  for (const { type, payload } of events) {
+    if (GRAPH_TYPES.has(type)) for (const id of [...((payload.node_ids as string[]) ?? []), ...((payload.edge_ids as string[]) ?? [])]) ids.add(id)
+    if (type === 'decision') {
+      const { nodeIds, edgeIds } = citedBy(payload.report as CaseReport)
+      for (const id of [...nodeIds, ...edgeIds]) ids.add(id)
+    }
+  }
+  return [...ids]
+}

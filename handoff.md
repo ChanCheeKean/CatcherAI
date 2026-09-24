@@ -2,8 +2,11 @@
 
 Last updated: 2026-09-24
 Branch: `amex-dispute-revamp` (all work here; never commit to `main`; do not merge)
-Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met)**
-Next stage: **S11b — Finish tuning (case C) and confirm 5/5**
+Current phase: **S11 complete (pass@1 3/5, pass@3 4/5; target not yet met); F1 partly done
+(replay, funnel, cited graph committed; checks and polish left)**
+Next stage: **F1 — Finish replay, funnel and cited graph, add the visual polish, commit** (then
+F2, then F3; one session each). S11b (eval tuning) is still open and does not depend on the F
+stages.
 
 This file is the single entry point for any agent continuing this work. The previous handoff (the
 Visa graph-discovery revamp, S0–S14) is in git history: `git show main:handoff.md`.
@@ -122,6 +125,14 @@ Details for each stage are in the plan section of the same name.
 | **S11** Real-LLM eval + tuning | Complex | pass@1 5/5 on A–E by improving skills, policy wording, ontology descriptions and prompts only. | ☑ (3/5; remainder in S11b) |
 | **S11b** Finish tuning | Complex | Re-run eval on the final S11 skills and policy text (the case C fixes are untested live); tune until pass@1 5/5, then pass@3; refresh the showcase. | ☐ |
 | **S12** Final cleanup, showcase, README | Simple | Legacy sweep, screenshots, showcase export, Amex README; whole-branch `simplify`. | ☐ |
+| **F1** Demo: replay, funnel, cited graph + polish | Medium | Verify the replay, header funnel and "Cited only" graph already committed (see §8 "F1"), then the polish: graph colours by region, four-item legend, captions instead of raw ids, formatted money, proof on case cards, no truncated agent names. | ☐ |
+| **F2** Demo: report beside the graph | Medium | Claims and their highlighted evidence visible together; Amex-vs-Merchant Clause comparison; decoys ruled out tied to their nodes. | ☐ |
+| **F3** Demo: agents over time | Medium | Swimlane timeline of the agent flow (lane per agent, tool-call ticks, Notebook marks, sent-back loops) with tool edges on the map collapsed into per-agent counts; with nothing selected, the inspector narrates the replay. | ☐ |
+
+The F stages come from a frontend review for the demo (the frontend must show how robust the
+agents and the graph are). They have no plan section; their scope is in §8 "F1". Run one F stage
+per session, in order, under the §5 protocol, and take a screenshot check of the running app
+(`./dev.sh`, then open a case, which replays it) before committing.
 
 ## 7. Conflicts and open questions
 
@@ -564,3 +575,103 @@ Details for each stage are in the plan section of the same name.
   - Run `uv run inspect eval --k 3`, then `showcase-export`.
 - No design decision changed; the spec was not edited.
 
+
+### F1 — 2026-09-24 (part 1: replay, funnel, cited graph)
+- **Why.** A frontend review for the demo found three problems:
+  - a finished run opened already complete, so nothing showed the agents working;
+  - the scale of the search (6,509 nodes, 14,621 edges) and the eval's proof (solution facts
+    found, decoys named) were invisible;
+  - "Cited only" drew about 30 nodes in wide, mostly empty bands, at an unreadable size.
+- **Built:**
+  - **Replay.**
+    - `useRunEvents` now only collects events.
+    - `useRunView(stream, cursor)` folds them up to a cursor: forward steps fold only the new
+      events, and a step back refolds from the start (runs are about 700 events).
+    - `run/replay.ts` shortens gaps to 2 s and halves them (about 1 min replay per 5 min run),
+      finds the milestones (triage, delegations, decision sent back, verdict), and formats the
+      clock.
+    - `run/Timeline.tsx`: Play/Pause, 1×/2×/4× speed, a range scrubber with clickable milestone
+      marks, the real run clock, "Skip to verdict", and a live narration line. It appears only
+      once a run has finished.
+    - Cases with a recorded run open with `?replay`, which autoplays from the start.
+    - The header status reads "Replaying".
+  - **Funnel.**
+    - `run/Funnel.tsx` in the header shows nodes in the graph → examined → cited in the verdict,
+      with log-scaled bars.
+    - It also shows the eval answer key: squares per solution fact (found = touched) and per decoy
+      (named = id in the report JSON), the same definitions as `src/evaluation.py`.
+    - Clicking the answer key toggles the graph overlay.
+    - Backend: `GraphStore.size()`; `/graph/ontology` returns `node_count` and `edge_count`;
+      `schemas/openapi.json` regenerated (only those two fields changed); `tests/test_api.py`
+      asserts them.
+  - **Cited graph.**
+    - After a verdict the graph defaults to "Cited only". The reader's scope choice lives in the
+      run page (`graphScope` in `RunContext`), so it survives tab switches.
+    - A new scope is laid out afresh.
+    - `columnsFor` drops empty regions and uses a 200 px minimum band width; `bandBounds` has a
+      smaller minimum height.
+    - The graph refits on pane resize.
+    - The whole run's ids are fetched up front (`graphIds` in `store.ts`), and the graph draws
+      only what exists at the cursor.
+    - `Touch` gained `kind` (`node` or `edge`).
+    - `useEvidenceGraph` tracks reader-expanded ids.
+  - **Bug fix.** `run/useMeasuredNodes.ts` keeps the sizes React Flow measures. Rebuilt node
+    objects lose their measured size, and an unmeasured node stays hidden: during replay the agent
+    flow went blank and never refit. A fast live run could hit this too.
+- **Files.**
+  - Frontend, new: `Funnel.tsx`, `Timeline.tsx`, `replay.ts`, `replay.test.ts`,
+    `useMeasuredNodes.ts`.
+  - Frontend, changed: `RunPage.tsx`, `CasesPage.tsx`, `AgentFlow.tsx`, `EvidenceGraph.tsx`,
+    `evidenceLayout.ts`, `RunContext.tsx`, `store.ts`, `useEvidenceGraph.ts`, `useRunEvents.ts`,
+    `api/types.ts`, `index.css` (scrubber styles), plus tests and `e2e/run-page.spec.ts`.
+  - Backend: `src/graph_store.py`, `src/api/models.py`, `src/api/routers/graph.py`,
+    `tests/test_api.py`, `schemas/openapi.json`.
+- **Verified.**
+  - `npx tsc -b` and `npx oxlint`: no warnings.
+  - `npx vitest run`: 40 passed.
+  - `npm run e2e`: 1 passed. The spec now expects "Cited only" after the verdict and switches to
+    "Everything touched" before counting nodes; it also scrubs to the start and checks
+    "Replaying", then "Skip to verdict" and "Decided".
+  - `npx vite build`: OK.
+  - `uv run pytest`: 69 passed. `ruff check`, `ruff format --check` and `git diff --check`: passed.
+  - Screenshots of case B at 1440–1600 px, mid-replay and at the verdict: the flow fills in with
+    active agents pulsing, and the graph narrows to the cited evidence at the verdict.
+- **Left for F1 (do these, then the polish below, then commit):**
+  - Screenshot-check the replay of cases A, C, D and E. D has no decoys, so the Decoys row is
+    hidden; C failed its eval.
+  - Check the header, funnel and timeline at tablet and phone widths.
+  - Check the cases page after the copy change.
+  - Run `simplify` over the changed files.
+  - Commit and push per §5.
+- **Known behaviour, not bugs.**
+  - At the verdict the report drawer opens to 34 % of the window, so the cited graph is small
+    until "Hide details". F2 addresses this.
+  - The answer key fills early: case B finds 12/12 by about 1:10 of 5:35. It is accurate; the
+    visible narrowing happens at the verdict.
+  - The Timeline has no tests of its own (the replay maths is unit tested; the e2e test covers
+    scrubbing).
+- **Scope of the remaining F work** (from the same review, with screenshots of the current UI as
+  evidence):
+  - **F2 Report beside the graph.** Clicking a cited claim now collapses the report
+    (`Conclusion.tsx`, `reveal`), so claim and evidence are never on screen together. Show them
+    side by side. For clause-conflict cases (B), add an Amex Clause vs Merchant Clause comparison
+    with the deciding line highlighted. Tie "Decoys ruled out" to the decoy nodes, so each one can
+    light up.
+  - **F3, part 1: agent swimlane timeline.** On the agent map every worker connects to every tool,
+    which makes a dense bundle, and parallel work and sent-back loops are invisible. Add a
+    time-based view: one lane per agent, tool-call ticks, Notebook marks, and a visible break where
+    the supervisor looped. On the map, replace tool edges with per-agent tool counts. Every worker
+    shows `×1` and "ad hoc", which tells the viewer nothing; drop or condense them.
+  - **F3, part 2: inspector narration.** With nothing selected, the inspector wastes a third of the
+    screen ("Select an agent…"). During replay, show the supervisor's latest reasoning, the newest
+    Notebook finding and the open plan items (the plan list now sits in the bottom `LiveStatus` and
+    squeezes the canvas).
+  - **F1 polish.**
+    - Graph colours: about 20 labels in five similar hues with a 20-item legend that covers nodes.
+      Use four clearly different region hues (Case, Commerce, Parties, Terms) with tints per
+      label, and a four-item legend.
+    - Notebook and inspector show raw ids (`E-0014472`) and unformatted amounts (`1300`); use
+      captions and `money()`, with the id on hover.
+    - Case cards: add nodes examined, agents, run time and eval pass.
+    - Fix truncated names ("consolidate memo…") and tiny band titles.
+    - The React Flow attribution (`proOptions.hideAttribution`): check its licence note first.

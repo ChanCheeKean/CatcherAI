@@ -16,9 +16,9 @@ it('shows ordered entries and opens cited graph ids', async () => {
     view: events.reduce(reduceEvent, emptyRun()), flow: deriveFlow(events),
     selection: null, select: vi.fn(), highlight: { nodeIds: new Set(), edgeIds: new Set() },
     clearHighlight: vi.fn(), cited: { nodeIds: new Set(), edgeIds: new Set() },
-    graph: { nodes: new Map(), edges: new Map(), expand: vi.fn() },
-    graphModel: graphModel({ groups: { case: { title: 'Case', description: '' } }, labels: {}, edges: {} }),
-    showEvidence, tab: 'notebook', setTab: vi.fn(),
+    graph: { nodes: new Map(), edges: new Map(), expand: vi.fn(), expanded: new Set() },
+    graphModel: graphModel({ groups: { case: { title: 'Case', description: '' } }, labels: {}, edges: {}, node_count: 0, edge_count: 0 }),
+    showEvidence, tab: 'notebook', setTab: vi.fn(), truth: undefined, overlay: false, setOverlay: vi.fn(), graphScope: null, setGraphScope: vi.fn(),
   }
   render(<RunPanelsContext.Provider value={panels}><Notebook /></RunPanelsContext.Provider>)
   expect(screen.getByText('The accepted Clause applies.')).toBeInTheDocument()

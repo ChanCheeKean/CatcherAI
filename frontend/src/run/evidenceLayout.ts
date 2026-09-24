@@ -1,7 +1,7 @@
 import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from 'd3-force'
 import type { GraphRegion } from './graphModel'
 
-const MIN_BAND_WIDTH = 420
+const MIN_BAND_WIDTH = 200
 const BAND_GAP = 24
 export const NODE_RADIUS = 22
 
@@ -9,18 +9,21 @@ interface Column {
   centre: number
   width: number
 }
-type Columns = Record<GraphRegion, Column>
+type Columns = Partial<Record<GraphRegion, Column>>
 
-/** Side-by-side region columns, each wide enough for the nodes it holds (in steps, so growth rarely moves them). */
+/**
+ * Side-by-side columns for the regions that hold nodes, each wide enough for them (in steps, so
+ * growth rarely moves them). A small graph gets narrow columns, so it fills the view when framed.
+ */
 export function columnsFor(regions: { id: GraphRegion }[], nodes: { region: GraphRegion }[]): Columns {
-  const widths = regions.map(({ id }) => {
-    const count = nodes.filter((n) => n.region === id).length
-    return Math.max(MIN_BAND_WIDTH, Math.ceil((Math.sqrt(count) * 80) / 120) * 120)
-  })
+  const used = regions
+    .map(({ id }) => ({ id, count: nodes.filter((n) => n.region === id).length }))
+    .filter(({ count }) => count > 0)
+  const widths = used.map(({ count }) => Math.max(MIN_BAND_WIDTH, Math.ceil((Math.sqrt(count) * 80) / 120) * 120))
   const total = widths.reduce((sum, w) => sum + w, 0) + BAND_GAP * (widths.length - 1)
   let left = -total / 2
-  const columns = {} as Columns
-  regions.forEach(({ id }, i) => {
+  const columns: Columns = {}
+  used.forEach(({ id }, i) => {
     columns[id] = { centre: left + widths[i] / 2, width: widths[i] }
     left += widths[i] + BAND_GAP
   })
@@ -65,7 +68,7 @@ export function layoutGraph(
     const angle = index * 2.4
     const spread = 36 + (index % 5) * 6
     const place = {
-      x: (anchor?.x ?? columns[node.region].centre) + Math.cos(angle) * spread,
+      x: (anchor?.x ?? columns[node.region]!.centre) + Math.cos(angle) * spread,
       y: (anchor?.y ?? 0) + Math.sin(angle) * spread,
     }
     start.set(node.id, place)
@@ -78,14 +81,14 @@ export function layoutGraph(
     .force('link', forceLink<SimNode, (typeof links)[number]>(links).id((n) => n.id).distance(78).strength(0.6))
     .force('charge', forceManyBody().strength(-170))
     .force('collide', forceCollide(NODE_RADIUS + 16))
-    .force('x', forceX<SimNode>((n) => columns[n.region].centre).strength(0.06))
+    .force('x', forceX<SimNode>((n) => columns[n.region]!.centre).strength(0.06))
     .force('y', forceY(0).strength(0.05))
     .stop()
   // Clamp inside the loop, so nodes pushed against a band edge still get separated by the collision force.
   for (let i = 0; i < 280; i++) {
     simulation.tick()
     for (const n of simNodes) {
-      const { centre, width } = columns[n.region]
+      const { centre, width } = columns[n.region]!
       const limit = width / 2 - NODE_RADIUS - 8
       n.x = Math.max(centre - limit, Math.min(centre + limit, n.x))
     }
@@ -96,7 +99,7 @@ export function layoutGraph(
 /** The band behind a region: a fixed column as tall as the nodes it holds. */
 export function bandBounds(column: Column, positions: Point[]) {
   const ys = positions.map((p) => p.y)
-  const top = Math.min(-160, ...ys) - NODE_RADIUS - 48
-  const bottom = Math.max(160, ...ys) + NODE_RADIUS + 48
+  const top = Math.min(-60, ...ys) - NODE_RADIUS - 48
+  const bottom = Math.max(60, ...ys) + NODE_RADIUS + 48
   return { x: column.centre - column.width / 2, y: top, width: column.width, height: bottom - top }
 }

@@ -21,6 +21,7 @@ import { useEffect, useMemo } from 'react'
 import { words } from './format'
 import { layout, NODE_SIZE, REGIONS, TOOL_SIZE, type Flow, type FlowEdge, type FlowNode } from './flow'
 import { useRunPanels } from './RunContext'
+import { useMeasuredNodes } from './useMeasuredNodes'
 
 interface NodeData extends Record<string, unknown> {
   flow: FlowNode
@@ -223,7 +224,7 @@ function FlowCanvas({ flow, running }: { flow: Flow; running: boolean }) {
   const paneHeight = useStore((state) => state.height)
   const selected = selection?.kind === 'actor' ? selection.name : null
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes: built, edges } = useMemo(() => {
     const { position, regions, height } = layout(flow.nodes)
     const loops = flow.edges.find((e) => e.kind === 'self')?.count ?? 0
     const regionNodes: RegionNodeType[] = regions.map((region) => ({
@@ -268,6 +269,7 @@ function FlowCanvas({ flow, running }: { flow: Flow; running: boolean }) {
     }))
     return { nodes: [...regionNodes, ...flowNodes], edges: flowEdges }
   }, [flow, running, selected])
+  const { nodes, onNodesChange } = useMeasuredNodes(built)
 
   // A new node or a resized pane changes what fits; a repeat visit does not, so the view stays where the reader left it.
   const nodeCount = flow.nodes.length
@@ -281,6 +283,7 @@ function FlowCanvas({ flow, running }: { flow: Flow; running: boolean }) {
   return (
     <ReactFlow
       nodes={nodes}
+      onNodesChange={onNodesChange}
       edges={edges}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}

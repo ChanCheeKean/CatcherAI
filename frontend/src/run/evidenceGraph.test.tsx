@@ -15,6 +15,8 @@ const ontology = {
   groups: { parties: { title: 'Parties', description: '' }, commerce: { title: 'Commerce', description: '' }, terms: { title: 'Terms', description: '' }, case: { title: 'Case', description: '' } },
   labels: { CardMember: { group: 'parties', description: '' }, Charge: { group: 'commerce', description: '' }, Clause: { group: 'terms', description: '' }, Dispute: { group: 'case', description: '' } },
   edges: {},
+  node_count: 4,
+  edge_count: 2,
 }
 const model = graphModel(ontology)
 const ring = [
@@ -38,7 +40,7 @@ describe('layoutGraph', () => {
     expect(centre('CHG-1')).toBeGreaterThan(centre('CMB-1'))
     const columns = columnsFor(regions, ring)
     for (const { id, region } of ring) {
-      const { centre, width } = columns[region]
+      const { centre, width } = columns[region]!
       expect(Math.abs(first.get(id)!.x - centre)).toBeLessThanOrEqual(width / 2)
     }
   })
@@ -137,10 +139,11 @@ describe('GraphItemPanel', () => {
         nodes: new Map([address, customer].map((n) => [n.id, n])),
         edges: new Map([[lives.id, lives]]),
         expand: vi.fn(),
+        expanded: new Set(),
       },
       showEvidence: vi.fn(),
       tab: 'graph',
-      setTab: vi.fn(),
+      setTab: vi.fn(), truth: undefined, overlay: false, setOverlay: vi.fn(), graphScope: null, setGraphScope: vi.fn(),
     }
     render(
       <RunPanelsContext.Provider value={panels}>

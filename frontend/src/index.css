@@ -212,3 +212,37 @@ body {
     background: rgb(255 255 255 / 0.18);
   }
 }
+
+/* Replay scrubber: a thin track filled up to the playhead, with a round thumb. */
+.scrubber {
+  appearance: none;
+  height: 1rem;
+  background: transparent;
+  cursor: pointer;
+}
+.scrubber::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-ink) var(--share), var(--color-rule) var(--share));
+}
+.scrubber::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-ink) var(--share), var(--color-rule) var(--share));
+}
+.scrubber::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -5px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-vellum);
+  border-radius: 999px;
+  background: var(--color-ink);
+}
+.scrubber::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--color-vellum);
+  border-radius: 999px;
+  background: var(--color-ink);
+}

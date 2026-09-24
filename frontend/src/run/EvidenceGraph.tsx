@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import {
   Background,
   BaseEdge,
@@ -10,6 +9,7 @@ import {
   ReactFlowProvider,
   useNodesInitialized,
   useReactFlow,
+  useStore,
   type Edge,
   type EdgeProps,
   type Node,
@@ -17,18 +17,17 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useEffect, useMemo, useState } from 'react'
-import { api } from '../api/client'
 import type { GraphEdge, GraphNode } from '../api/types'
 import { bandBounds, columnsFor, layoutGraph, NODE_RADIUS, type Point } from './evidenceLayout'
 import { touchedBy } from './evidence'
 import { Icon } from './GraphIcon'
 import { caption } from './graphModel'
-import { useRunPanels } from './RunContext'
+import { type GraphScope, useRunPanels } from './RunContext'
+import { useMeasuredNodes } from './useMeasuredNodes'
 
 type Ring = 'solution' | 'decoy' | null
-type Scope = 'connected' | 'all' | 'cited'
 
-const SCOPES: { id: Scope; label: string; hint: string }[] = [
+const SCOPES: { id: GraphScope; label: string; hint: string }[] = [
   { id: 'connected', label: 'Connected', hint: 'Nodes that have at least one drawn edge, plus cited evidence' },
   { id: 'all', label: 'Everything touched', hint: 'Every node the agents saw, including isolated query hits' },
   { id: 'cited', label: 'Cited only', hint: 'Only the evidence the final report cites' },
@@ -158,16 +157,16 @@ function ringFor(id: string, solution: Set<string>, decoy: Set<string>): Ring {
 }
 
 function GraphCanvas() {
-  const { view, flow, graph, graphModel, selection, select, highlight, clearHighlight, cited } = useRunPanels()
+  const { view, flow, graph, graphModel, selection, select, highlight, clearHighlight, cited, truth, overlay, setOverlay, graphScope, setGraphScope } =
+    useRunPanels()
   const { fitView } = useReactFlow()
   const measured = useNodesInitialized()
   const running = view.status === 'running'
-  const [overlay, setOverlay] = useState(false)
-  const [scope, setScope] = useState<Scope>('connected')
-  const evalData = useQuery({ queryKey: ['eval'], queryFn: api.evalLatest, staleTime: 60_000 })
-  const truth = evalData.data?.cases.find((c) => c.case_id === view.events[0]?.case_id)
-  const [settled, setSettled] = useState<{ shape: Shape | null; positions: Map<string, Point> }>({
+  // Until the reader picks a scope, the graph narrows to the cited evidence once there is a verdict.
+  const scope = graphScope ?? (view.report ? 'cited' : 'connected')
+  const [settled, setSettled] = useState<{ shape: Shape | null; scope: GraphScope; positions: Map<string, Point> }>({
     shape: null,
+    scope,
     positions: new Map(),
   })
 
@@ -182,39 +181,43 @@ function GraphCanvas() {
   const selectedId = selection?.kind === 'node' ? selection.id : null
 
   const shape = useMemo<Shape>(() => {
-    const drawable = [...graph.edges.values()].filter((e) => graph.nodes.has(e.src) && graph.nodes.has(e.dst))
+    // The graph holds everything the whole run touches; draw only what exists at this point of the run.
+    const present = (id: string) =>
+      view.touched.has(id) || cited.nodeIds.has(id) || cited.edgeIds.has(id) || highlight.nodeIds.has(id) || highlight.edgeIds.has(id) || graph.expanded.has(id) || id === selectedId
+    const drawable = [...graph.edges.values()].filter((e) => present(e.id) && graph.nodes.has(e.src) && graph.nodes.has(e.dst))
     const linked = new Set(drawable.flatMap((e) => [e.src, e.dst]))
     const keep = (node: GraphNode) =>
-      scope === 'all' ||
       cited.nodeIds.has(node.id) ||
       highlight.nodeIds.has(node.id) ||
       node.id === selectedId ||
-      (scope === 'connected' && linked.has(node.id))
+      (scope !== 'cited' && linked.has(node.id)) ||
+      (scope === 'all' && present(node.id))
     const nodes = [...graph.nodes.values()].filter(keep)
     const shown = new Set(nodes.map((n) => n.id))
     const edges = drawable.filter((e) => shown.has(e.src) && shown.has(e.dst))
     return { nodes, edges }
-  }, [graph.nodes, graph.edges, scope, cited, highlight, selectedId])
+  }, [graph.nodes, graph.edges, graph.expanded, view.touched, scope, cited, highlight, selectedId])
 
   // Derived state: when the graph grows, settle the layout once, starting from where nodes were.
+  // A new scope is a different picture, so it is laid out afresh to fit its own nodes.
   let placed = settled.positions
   if (settled.shape !== shape) {
     placed = layoutGraph(
       graphModel.regions,
       shape.nodes.map((n) => ({ id: n.id, region: graphModel.labelStyle(n.label).region })),
       shape.edges.map((e) => ({ source: e.src, target: e.dst })),
-      settled.positions,
+      settled.scope === scope ? settled.positions : new Map(),
     )
-    setSettled({ shape, positions: placed })
+    setSettled({ shape, scope, positions: placed })
   }
 
-  const { nodes, edges } = useMemo(() => {
+  const { nodes: built, edges } = useMemo(() => {
     const solution = new Set(overlay ? (truth?.solution_node_ids ?? []) : [])
     const decoy = new Set(overlay ? (truth?.decoy_node_ids ?? []) : [])
     const columns = columnsFor(graphModel.regions, shape.nodes.map((n) => ({ region: graphModel.labelStyle(n.label).region })))
-    const bands: BandNode[] = graphModel.regions.map(({ id, title }) => {
+    const bands: BandNode[] = graphModel.regions.filter(({ id }) => columns[id]).map(({ id, title }) => {
       const inside = shape.nodes.filter((n) => graphModel.labelStyle(n.label).region === id)
-      const bounds = bandBounds(columns[id], inside.map((n) => placed.get(n.id)!))
+      const bounds = bandBounds(columns[id]!, inside.map((n) => placed.get(n.id)!))
       return {
         id: `band-${id}`,
         type: 'band',
@@ -280,23 +283,27 @@ function GraphCanvas() {
     })
     return { nodes: [...bands, ...entities], edges: links }
   }, [shape, placed, focus, selectedId, cited, truth, overlay, running, view.touched, highlight, graphModel])
+  const { nodes, onNodesChange } = useMeasuredNodes(built)
 
-  // Frame the graph when it grows or the cited set changes; not on every selection.
+  // Frame the graph when it grows, the cited set changes or the pane is resized; not on every selection.
   // Both keys are strings so the effect compares by value rather than by array identity.
   const citedShown = chipFocus ? [...highlight.nodeIds].filter((id) => graph.nodes.has(id)).join(',') : ''
   const nodeCount = shape.nodes.length
+  const paneWidth = useStore((state) => state.width)
+  const paneHeight = useStore((state) => state.height)
   useEffect(() => {
     if (!measured) return
     const onto = citedShown ? citedShown.split(',').map((id) => ({ id })) : undefined
     const timer = setTimeout(() => void fitView({ duration: 300, padding: 0.12, nodes: onto }), 200)
     return () => clearTimeout(timer)
-  }, [nodeCount, citedShown, measured, fitView])
+  }, [nodeCount, citedShown, measured, paneWidth, paneHeight, fitView])
 
-  const found = truth ? truth.solution_node_ids.filter((id) => graph.nodes.has(id)).length : 0
+  const found = truth ? truth.solution_node_ids.filter((id) => view.touched.has(id)).length : 0
 
   return (
     <ReactFlow
       nodes={nodes}
+      onNodesChange={onNodesChange}
       edges={edges}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
@@ -320,7 +327,7 @@ function GraphCanvas() {
               title={hint}
               aria-pressed={scope === id}
               disabled={id === 'cited' && !cited.nodeIds.size}
-              onClick={() => setScope(id)}
+              onClick={() => setGraphScope(id)}
               className="cursor-pointer px-2.5 py-1 not-first:border-l enabled:not-aria-pressed:hover:bg-paper disabled:cursor-not-allowed disabled:opacity-40 aria-pressed:bg-ink aria-pressed:text-vellum"
             >
               {label}
@@ -380,8 +387,8 @@ function Legend({ labels }: { labels: string[] }) {
 }
 
 export function EvidenceGraph() {
-  const { graph } = useRunPanels()
-  if (!graph.nodes.size) return <p className="p-4 text-graphite">Nothing discovered yet. Nodes appear as agents query the graph.</p>
+  const { view, cited } = useRunPanels()
+  if (!view.touched.size && !cited.nodeIds.size) return <p className="p-4 text-graphite">Nothing discovered yet. Nodes appear as agents query the graph.</p>
   return (
     <ReactFlowProvider>
       <GraphCanvas />

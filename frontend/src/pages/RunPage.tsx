@@ -1,21 +1,26 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { EvidenceLink } from '../api/types'
 import { Canvas } from '../run/Canvas'
 import { Conclusion } from '../run/Conclusion'
 import { citedBy } from '../run/evidence'
 import { deriveFlow } from '../run/flow'
+import { Funnel } from '../run/Funnel'
 import { graphModel } from '../run/graphModel'
 import { Inspector } from '../run/Inspector'
-import { type CanvasTab, type Highlight, RunPanelsContext, type Selection } from '../run/RunContext'
+import { type CanvasTab, type GraphScope, type Highlight, RunPanelsContext, type Selection } from '../run/RunContext'
+import { graphIds } from '../run/store'
+import { Timeline } from '../run/Timeline'
 import { useEvidenceGraph } from '../run/useEvidenceGraph'
-import { useRunEvents } from '../run/useRunEvents'
+import { useRunEvents, useRunView } from '../run/useRunEvents'
 
 const NO_HIGHLIGHT: Highlight = { nodeIds: new Set(), edgeIds: new Set() }
 
 const statusLabel = { running: 'Running', completed: 'Decided', failed: 'Failed' } as const
+/** Opening a case with `?replay` plays its recorded run from the start. */
+const REPLAY_PARAM = 'replay'
 const statusDot = { running: 'bg-partial breathing', completed: 'bg-accepted', failed: 'bg-rejected' } as const
 
 /** Keyed by run so that "Run again" starts with a clean selection, highlight and graph. */
@@ -27,9 +32,19 @@ export function RunPage() {
 function RunView() {
   const { caseId = '', runId = '' } = useParams()
   const navigate = useNavigate()
-  const view = useRunEvents(runId)
+  const [search] = useSearchParams()
+  const autoplay = search.has(REPLAY_PARAM)
+  const stream = useRunEvents(runId)
+  // How many events are shown: all of them (following a live run) until the replay controls take over.
+  const [cursor, setCursor] = useState<number | null>(autoplay ? 0 : null)
+  const view = useRunView(stream, cursor ?? stream.events.length)
+  const replaying = cursor !== null && cursor < stream.events.length
   const cases = useQuery({ queryKey: ['cases'], queryFn: api.listCases })
   const ontology = useQuery({ queryKey: ['ontology'], queryFn: api.getOntology, staleTime: Infinity })
+  const evalData = useQuery({ queryKey: ['eval'], queryFn: api.evalLatest, staleTime: 60_000 })
+  const truth = evalData.data?.cases.find((item) => item.case_id === caseId)
+  const [overlay, setOverlay] = useState(false)
+  const [graphScope, setGraphScope] = useState<GraphScope | null>(null)
   const model = useMemo(() => ontology.data && graphModel(ontology.data), [ontology.data])
   const title = cases.data?.find((item) => item.case_id === caseId)?.title ?? caseId
 
@@ -48,16 +63,21 @@ function RunView() {
   })
   const flow = useMemo(() => deriveFlow(view.events), [view.events])
   const cited = useMemo(() => citedBy(view.report), [view.report])
+  // Fetch what the whole run touches up front, so a replay never waits on the graph.
+  const runIds = useMemo(() => graphIds(stream.events), [stream.events])
   const graph = useEvidenceGraph([
-    ...view.touched.keys(),
+    ...runIds,
     ...cited.nodeIds,
     ...cited.edgeIds,
     ...highlight.nodeIds,
     ...highlight.edgeIds,
   ])
   const panels = useMemo(
-    () => model && ({ view, flow, selection, select, highlight, clearHighlight, cited, graph, graphModel: model, showEvidence, tab, setTab }),
-    [view, flow, selection, highlight, clearHighlight, cited, graph, model, showEvidence, tab],
+    () =>
+      model && {
+        view, flow, selection, select, highlight, clearHighlight, cited, graph, graphModel: model, showEvidence, tab, setTab, truth, overlay, setOverlay, graphScope, setGraphScope,
+      },
+    [view, flow, selection, highlight, clearHighlight, cited, graph, model, showEvidence, tab, truth, overlay, graphScope],
   )
 
   return (
@@ -73,8 +93,13 @@ function RunView() {
           <h1 className="text-lg font-semibold">{title}</h1>
           <span role="status" className="flex items-center gap-2 text-sm">
             <span className={`size-2.5 rounded-full ${statusDot[view.status]}`} aria-hidden />
-            {statusLabel[view.status]}
+            {replaying && view.status === 'running' ? 'Replaying' : statusLabel[view.status]}
           </span>
+          {ontology.data && (
+            <div className="order-last basis-full lg:order-none lg:ml-6 lg:basis-auto">
+              <Funnel total={ontology.data.node_count} />
+            </div>
+          )}
           <button
             type="button"
             onClick={() => rerun.mutate()}
@@ -84,6 +109,7 @@ function RunView() {
             Run again
           </button>
         </header>
+        {stream.finished && <Timeline events={stream.events} onCursor={setCursor} autoplay={autoplay} />}
 
         <div className="grid min-h-[28rem] flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(26rem,32%)]">
           <Canvas />

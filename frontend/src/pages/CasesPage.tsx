@@ -11,9 +11,9 @@ export function CasesPage() {
     mutationFn: (caseId: string) => api.startRun(caseId),
     onSuccess: (run) => navigate(`/cases/${run.case_id}/runs/${run.run_id}`),
   })
-  /** A case that has already been investigated opens its last run; a fresh one starts an investigation. */
+  /** A case that has already been investigated replays its last run; a fresh one starts an investigation. */
   function openCase(item: CaseSummary) {
-    if (item.latest_run_id) navigate(`/cases/${item.case_id}/runs/${item.latest_run_id}`)
+    if (item.latest_run_id) navigate(`/cases/${item.case_id}/runs/${item.latest_run_id}?replay`)
     else start.mutate(item.case_id)
   }
 
@@ -22,8 +22,8 @@ export function CasesPage() {
       <header className="mb-8 max-w-2xl">
         <h1 className="font-serif text-4xl leading-tight font-semibold">Disputed card charges</h1>
         <p className="mt-2 text-graphite">
-          Pick a case. A case that has been investigated before opens its last decision; run it
-          again to watch the agents investigate the evidence graph from scratch.
+          Pick a case to replay its last investigation: the agents search the evidence graph, narrow
+          it to the facts that matter, and reach a verdict. Run it again to investigate live.
         </p>
       </header>
 

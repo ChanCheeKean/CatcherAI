@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { EvidenceLink } from '../api/types'
+import type { EvalCase, EvidenceLink } from '../api/types'
 import type { Flow } from './flow'
 import type { EvidenceGraph } from './useEvidenceGraph'
 import type { RunView } from './store'
@@ -13,6 +13,8 @@ export interface Highlight {
 }
 
 export type CanvasTab = 'flow' | 'graph' | 'notebook'
+/** Which nodes the evidence graph draws. */
+export type GraphScope = 'connected' | 'all' | 'cited'
 
 /** Everything the run page's panels share: the derived run plus the two cross-panel selections. */
 export interface RunPanels {
@@ -32,6 +34,14 @@ export interface RunPanels {
   showEvidence: (link: Pick<EvidenceLink, 'node_ids' | 'edge_ids'>) => void
   tab: CanvasTab
   setTab: (tab: CanvasTab) => void
+  /** The evaluation's answer key for this case, when there is one. */
+  truth: EvalCase | undefined
+  /** Whether the evidence graph rings the answer key's solution and decoy nodes. */
+  overlay: boolean
+  setOverlay: (on: boolean) => void
+  /** The scope the reader picked for the evidence graph; null until they pick one. Kept across tabs. */
+  graphScope: GraphScope | null
+  setGraphScope: (scope: GraphScope) => void
 }
 
 export const RunPanelsContext = createContext<RunPanels | null>(null)
